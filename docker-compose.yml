@@ -1,0 +1,73 @@
+# Docker Compose configuration for Food Store development environment
+# 
+# This file defines the services required for local development:
+# - PostgreSQL 16 (Alpine) for the main database with persistence
+# - Health checks to ensure service readiness
+# - Volume persistence to maintain data across container restarts
+# - Environment variables for easy configuration
+#
+# Usage:
+#   docker-compose up -d       # Start services in background
+#   docker-compose down        # Stop services (preserves data in volumes)
+#   docker-compose down -v     # Stop services and remove all data
+#   docker-compose logs -f     # View service logs
+#   docker exec <container> psql -U user -d database  # Connect to PostgreSQL
+
+services:
+  # PostgreSQL 16 service for the Food Store application
+  postgres:
+    image: postgres:16-alpine
+    container_name: foodstore-postgres
+    environment:
+      # Database credentials and configuration
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-foodstore_db}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+    
+    ports:
+      # Map container port 5432 to host port 5432
+      # Access: localhost:5432
+      - "5432:5432"
+    
+    volumes:
+      # Named volume for database persistence
+      # Data survives container stop/restart but removed with 'docker-compose down -v'
+      - postgres_data:/var/lib/postgresql/data
+    
+    # Health check to verify PostgreSQL is ready to accept connections
+    # FastAPI startup will wait for this before attempting connections
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-foodstore_db}"]
+      interval: 10s           # Check every 10 seconds
+      timeout: 5s             # Consider unhealthy if check takes > 5 seconds
+      retries: 5              # Fail after 5 consecutive failed checks
+      start_period: 10s       # Wait 10s before starting checks
+    
+    restart: unless-stopped   # Restart container if it exits unexpectedly
+    networks:
+      - foodstore_network
+    
+    # Resource limits for development (adjust for production)
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+
+# Named volume for PostgreSQL data persistence
+volumes:
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/postgres
+
+# Network for service communication
+networks:
+  foodstore_network:
+    driver: bridge
