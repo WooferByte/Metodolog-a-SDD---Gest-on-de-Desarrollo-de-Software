@@ -4,191 +4,35 @@
 
 ---
 
-## 🎯 Stack Tecnológico
+## 📍 UBICACIÓN Y USO DE ESTE ARCHIVO
 
-| Capa | Tecnologías |
-|------|------------|
-| **Frontend** | React 18, TypeScript, Vite, Zustand, TanStack Query, Axios, Tailwind CSS, React Router |
-| **Backend** | FastAPI, SQLModel, Alembic, PostgreSQL, Passlib[bcrypt], python-jose, slowapi, MercadoPago SDK |
+> **CRÍTICO**: Este archivo DEBE estar en `.agents/AGENTS.md` (en el proyecto, versionado en Git).
 
----
+### ¿Por qué aquí?
 
-## 📁 Estructura
+- ✅ **Parte del proyecto**: Versionado con Git, diferente por proyecto
+- ✅ **Contexto específico Food Store**: Stack, skills, matriz CHANGEs, patrones
+- ✅ **Accesible a todos los agentes**: Inyectado en contexto principal + delegaciones
+- ✅ **Persistencia**: Engram guarda referencias a este archivo para futuras sesiones
 
-```
-backend/           ← Feature-first (auth/, usuarios/, productos/, etc.)
-frontend/          ← Feature-Sliced Design (app/, pages/, widgets/, features/, entities/, shared/)
-docs/              ← Descripcion.txt, Historias_de_usuario.txt, CHANGES.md
-openspec/          ← Changes y specs SDD
-.agents/skills/    ← 12 skills locales
-```
+### Cómo se usa:
 
----
+**Yo (Orquestador)**:
+- Leo este archivo al inicio de cada sesión
+- Cargo skills especificados en la Matriz Skills vs. Changes
+- Doy contexto a subagentes en cada delegación
 
-## 🛠️ Skills Locales: Cuándo Usarlas
+**Subagentes** (delegados):
+- Reciben referencia a este archivo en el prompt
+- Leen la Matriz Skills vs. Changes para saber qué skills cargar
+- Siguen los patrones documentados en "Decisiones Arquitectónicas Clave"
+- Respetan el Checklist Antes de Commitear
 
-### 1. **python-fastapi-ddd-skill** ← SIEMPRE para backend
-Pattern: Router → Service → UoW → Repository → Model (feature-first vertical)
-
-### 2. **api-design** ← Nuevo endpoint REST
-Pattern: `/api/v1/recurso`, métodos HTTP correctos, RFC 7807 errors, paginación
-
-### 3. **jwt-security** ← Auth, tokens, refresh
-Pattern: Access token 30min, refresh token 7días, rotación + replay attack detection
-
-### 4. **rest-api-design-patterns** ← Estructura API global
-Pattern: Versionado `/api/v1`, query params para filtros, HATEOAS
-
-### 5. **supabase-postgres-best-practices** ← Optimizar queries
-Pattern: Indexes en FK, SELECT FOR UPDATE para stock, CTE para jerárquico, EXPLAIN ANALYZE
-
-### 6. **tailwind-design-system** ← Componentes reutilizables
-Pattern: Design tokens (colores, espacios), dark mode, componentes atómicos
-
-### 7. **ui-design-system** ← Accesibilidad + Radix/shadcn
-Pattern: Radix primitivos, ARIA labels, keyboard nav, WCAG 2.1 AA
-
-### 8. **vercel-react-best-practices** ← Performance frontend
-Pattern: Code splitting (lazy load rutas), memoize si mide costo, TanStack Query staleTime, bundle < 200KB
-
-### 9. **zustand-state-management** ← Stores cliente
-Pattern: 4 stores (authStore, cartStore, paymentStore, uiStore), slice subscription, localStorage persist
-
-### 10. **web-payments** ← MercadoPago checkout
-Pattern: Tarjeta tokenizada en cliente (SDK), webhook IPN, idempotency_key, PCI DSS SAQ-A
-
-### 11. **frontend-state-management** ← Eligir estado
-Pattern: Zustand (cliente) + TanStack Query (servidor), NO duplicar datos
-
-### 12. **expo-tailwind-setup**
-⚫ NO usar (proyecto es web-only, habilitar si pivota mobile)
-
----
-
-## 📊 Matriz Skills vs. Changes
-
-| Change | fastapi-ddd | api-design | jwt | rest-api | postgres | tailwind | ui | react-perf | zustand | payments |
-|--------|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| backend-fastapi-core | ✅ | ✅ | - | ✅ | - | - | - | - | - | - |
-| auth-login/register | ✅ | ✅ | ✅ | ✅ | - | - | - | - | - | - |
-| products-crud | ✅ | ✅ | - | ✅ | ✅ | - | - | - | - | - |
-| orders-fsm | ✅ | ✅ | - | ✅ | ✅ | - | - | - | - | - |
-| payments-mp | ✅ | ✅ | - | ✅ | ✅ | - | - | - | - | ✅ |
-| frontend-catalog | - | - | - | - | - | ✅ | ✅ | ✅ | - | - |
-| frontend-cart | - | - | - | - | - | ✅ | ✅ | - | ✅ | - |
-| frontend-checkout | - | - | - | - | - | ✅ | ✅ | ✅ | ✅ | ✅ |
-| admin-dashboard | - | - | - | - | ✅ | ✅ | - | ✅ | - | - |
-
----
-
-## 🚀 Guía por Escenario
-
-### Implementar módulo backend nuevo
-```
-1. Cargar python-fastapi-ddd-skill
-2. Crear carpeta modulo/ → model.py, schemas.py, repository.py, service.py, router.py
-3. Repository hereda BaseRepository[T]
-4. Service contiene lógica negocio
-5. Router con require_role() para autorización
-6. Cargar api-design para validar endpoints
-```
-
-### Implementar endpoint pagos
-```
-1. Cargar python-fastapi-ddd-skill + web-payments
-2. Modelo Pago + schema
-3. Router: POST /pagos/crear + POST /pagos/webhook
-4. UoW atómico: PENDIENTE → CONFIRMADO + decremento stock
-5. Validar webhook signature MercadoPago
-```
-
-### Componente UI accesible
-```
-1. Cargar ui-design-system + tailwind-design-system
-2. Radix primitivos, Tailwind utilities, ARIA labels
-3. Validar WCAG 2.1 AA (contrast, keyboard nav)
-4. Cargar vercel-react-best-practices si needed
-```
-
-### Optimizar performance
-```
-1. Profiler / Lighthouse
-2. Cargar vercel-react-best-practices
-3. Lazy load rutas (React.lazy + Suspense)
-4. TanStack Query staleTime para caching
-5. Revisar bundle size
-```
-
-### Indexar BD
-```
-1. EXPLAIN ANALYZE query lenta
-2. Cargar supabase-postgres-best-practices
-3. Crear index en FK, WHERE, JOIN
-4. SELECT FOR UPDATE para stock decrement
-```
-
----
-
-## ✅ Checklist Antes de Commitear
-
-- [ ] ¿Requiere JWT? ¿Validado?
-- [ ] ¿Requiere rol? ¿require_role() aplicado?
-- [ ] ¿Validación Pydantic?
-- [ ] ¿Queries parametrizadas (no SQL concat)?
-- [ ] ¿.env NO commiteado? (solo .env.example)
-- [ ] ¿Passwords hasheadas bcrypt cost >= 10?
-- [ ] ¿JWT refresh rotated?
-- [ ] ¿Rate limiting en endpoints sensibles?
-- [ ] ¿UoW commit/rollback correcto?
-- [ ] ¿Tests escritos?
-
----
-
-## 🎓 Workflow SDD
-
-```
-1. Usuario solicita cambio
-   ↓
-2. Identificar skill(s) necesaria(s)
-   ↓
-3. Cargar skill() antes de escribir código
-   ↓
-4. Implementar siguiendo guidance + patrones
-   ↓
-5. Tests >= 60% (backend), >= 40% (frontend)
-   ↓
-6. Commitear + Archivar change OPSX
-```
-
----
-
-## 🔗 Referencia Documentación
-
-| Documento | Ubicación | Qué |
-|-----------|-----------|-----|
-| Visión + Stack + Arquitectura | `docs/Descripcion.txt` | Completo del sistema |
-| Historias de usuario + Reglas negocio | `docs/Historias_de_usuario.txt` | Todas las US, criterios aceptación |
-| Mapeo completo changes OPSX | `docs/CHANGES.md` | 30+ changes + dependencias + orden |
-| ERD v5 (16 tablas) | `docs/Descripcion.txt` § 4 | Modelo datos |
-| API REST endpoints | `docs/Descripcion.txt` § 7 | Todos los endpoints |
-
----
-
-## 🏗️ Decisiones Arquitectónicas Clave
-
-**Backend**: DDD + Onion (Router → Service → UoW → Repository → Model). UoW = context manager para transacciones ACID. Soft delete = nunca hard-delete, solo `eliminado_en = now()`.
-
-**Frontend**: FSD (rutas → pages → widgets → features → entities → shared). Zustand (cliente) + TanStack Query (servidor). NUNCA duplicar datos entre stores.
-
-**BD**: PostgreSQL 3NF, 16 tablas, 3 dominios. Snapshots para inmutabilidad (precio_snapshot, direccion_snapshot). HistorialEstadoPedido append-only (solo INSERT).
-
-**Seguridad**: RBAC 4 roles (ADMIN, STOCK, PEDIDOS, CLIENT). JWT 30min access + 7días refresh con rotación. PCI DSS SAQ-A: tarjeta tokenizada en cliente (SDK MP), nunca en servidor.
-
----
-
-# AGENTS.md — Food Store E-Commerce
-
-**Food Store** es un e-commerce de alimentos con: React + FastAPI, RBAC (4 roles), integración MercadoPago, máquina de estados pedidos, ERD v5 (16 tablas), SDD con OPSX.
+**Si este archivo NO está aquí**:
+- ❌ Los agentes NO tendrán contexto de proyecto
+- ❌ Los skills NO serán cargados en orden correcto
+- ❌ Los patrones NO serán seguidos uniformemente
+- ❌ Las sesiones futuras perderán contexto
 
 ---
 
@@ -208,7 +52,7 @@ backend/           ← Feature-first (auth/, usuarios/, productos/, etc.)
 frontend/          ← Feature-Sliced Design (app/, pages/, widgets/, features/, entities/, shared/)
 docs/              ← Descripcion.txt, Historias_de_usuario.txt, CHANGES.md
 openspec/          ← Changes y specs SDD
-.agents/skills/    ← 12 skills locales
+.agents/           ← AGENTS.md (ESTE ARCHIVO) + skills/ locales
 ```
 
 ---
@@ -605,5 +449,5 @@ git commit -m "chore: archive CHANGE [nombre]"
 
 ---
 
-## 📝 **Última actualización**: 26 de abril de 2026
-## 📌 **Versión**: 2.0 — Ahora con Testing Manual OBLIGATORIO
+## 📝 **Última actualización**: 5 de mayo de 2026
+## 📌 **Versión**: 2.1 — Ubicación y acceso de AGENTS.md documentado. Listo para delegaciones con contexto completo.
