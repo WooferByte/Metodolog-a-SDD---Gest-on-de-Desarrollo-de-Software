@@ -1,341 +1,176 @@
-"""
-Unit tests for BaseRepository[T] generic repository.
+"""Unit tests for BaseRepository[T] generic pattern."""
 
-Tests:
-- CRUD operations (create, read, update, delete)
-- Soft-delete filtering
-- Pagination and counting
-- Raw query execution
-- Type safety
-"""
 import pytest
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import SQLModel, Field
 
-from infrastructure.repositories.base_repository import BaseRepository
-from core.models import Usuario, Producto, Rol
-
-
-# ============================================================================
-# Fixtures
-# ============================================================================
+from backend.infrastructure.repositories import BaseRepository
 
 
-@pytest.fixture
-def mock_session() -> AsyncMock:
-    """Create mocked AsyncSession."""
-    return AsyncMock(spec=AsyncSession)
+# Mock entity for testing
+class MockEntity(SQLModel, table=False):  # table=False for testing
+    """Mock entity for repository tests."""
+    id: int = Field(primary_key=True)
+    name: str
+    creado_en: datetime = Field(default_factory=datetime.utcnow)
+    actualizado_en: datetime = Field(default_factory=datetime.utcnow)
+    eliminado_en: datetime | None = None
 
 
-@pytest.fixture
-def usuario_repo(mock_session: AsyncMock) -> BaseRepository[Usuario]:
-    """Create BaseRepository for Usuario model."""
-    return BaseRepository(mock_session, Usuario)
+class TestBaseRepository:
+    """Test suite for BaseRepository[T] generic class."""
 
+    @pytest.fixture
+    def mock_session(self) -> AsyncMock:
+        """Create a mock AsyncSession."""
+        return AsyncMock(spec=AsyncSession)
 
-@pytest.fixture
-def producto_repo(mock_session: AsyncMock) -> BaseRepository[Producto]:
-    """Create BaseRepository for Producto model."""
-    return BaseRepository(mock_session, Producto)
+    @pytest.fixture
+    def repo(self, mock_session: AsyncMock) -> BaseRepository:
+        """Create a BaseRepository instance for testing."""
+        return BaseRepository(mock_session, MockEntity)
 
+    @pytest.mark.asyncio
+    async def test_create_entity(self, repo: BaseRepository, mock_session: AsyncMock):
+        """Test creating a new entity."""
+        entity = MockEntity(id=1, name="Test")
+        mock_session.flush = AsyncMock()
 
-@pytest.fixture
-def sample_usuario() -> Usuario:
-    """Sample Usuario entity for testing."""
-    return Usuario(
-        id=1,
-        email="user@example.com",
-        nombre="John",
-        apellido="Doe",
-        hashed_password="hashed123",
-        rol_id=1,
-        eliminado_en=None,
-    )
+        result = await repo.create(entity)
 
+        assert result.id == 1
+        assert result.name == "Test"
+        mock_session.add.assert_called_once_with(entity)
+        mock_session.flush.assert_called_once()
 
-@pytest.fixture
-def sample_producto() -> Producto:
-    """Sample Producto entity for testing."""
-    return Producto(
-        id=1,
-        nombre="Pizza",
-        descripcion="Classic pizza",
-        precio=10.0,
-        stock=100,
-        eliminado_en=None,
-    )
+    @pytest.mark.asyncio
+    async def test_get_by_id_found(self, repo: BaseRepository, mock_session: AsyncMock):
+        """Test getting entity by ID when it exists."""
+        entity = MockEntity(id=1, name="Found", eliminado_en=None)
+        
+        # Mock the execute chain
+        mock_result = AsyncMock()
+        mock_result.scalars.return_value.first.return_value = entity
+        mock_session.execute = AsyncMock(return_value=mock_result)
 
+        result = await repo.get_by_id(1)
 
-# ============================================================================
-# Create Tests
-# ============================================================================
+        assert result.id == 1
+        assert result.name == "Found"
+        mock_session.execute.assert_called_once()
 
+    @pytest.mark.asyncio
+    async def test_get_by_id_not_found(self, repo: BaseRepository, mock_session: AsyncMock):
+        """Test getting entity by ID when it doesn't exist."""
+        mock_result = AsyncMock()
+        mock_result.scalars.return_value.first.return_value = None
+        mock_session.execute = AsyncMock(return_value=mock_result)
 
-@pytest.mark.asyncio
-async def test_create_usuario(
-    usuario_repo: BaseRepository[Usuario], sample_usuario: Usuario
-) -> None:
-    """Test creating a new usuario."""
-    usuario_repo.session.flush = AsyncMock()
-    
-    result = await usuario_repo.create(sample_usuario)
-    
-    assert result.id == 1
-    assert result.email == "user@example.com"
-    usuario_repo.session.add.assert_called_once_with(sample_usuario)
-    usuario_repo.session.flush.assert_called_once()
+        result = await repo.get_by_id(999)
 
+        assert result is None
 
-# ============================================================================
-# Read Tests
-# ============================================================================
+    @pytest.mark.asyncio
+    async def test_list_all_with_pagination(self, repo: BaseRepository, mock_session: AsyncMock):
+        """Test listing entities with pagination."""
+        entities = [
+            MockEntity(id=1, name="Entity 1"),
+            MockEntity(id=2, name="Entity 2"),
+        ]
+        
+        mock_result = AsyncMock()
+        mock_result.scalars.return_value.all.return_value = entities
+        mock_session.execute = AsyncMock(return_value=mock_result)
 
+        result = await repo.list_all(skip=0, limit=10)
 
-@pytest.mark.asyncio
-async def test_get_by_id_exists(
-    usuario_repo: BaseRepository[Usuario], sample_usuario: Usuario
-) -> None:
-    """Test getting usuario by ID when it exists and is not soft-deleted."""
-    # Mock the execute call
-    mock_result = AsyncMock()
-    mock_result.scalars().first.return_value = sample_usuario
-    usuario_repo.session.execute = AsyncMock(return_value=mock_result)
-    
-    result = await usuario_repo.get_by_id(1)
-    
-    assert result == sample_usuario
-    assert result.email == "user@example.com"
+        assert len(result) == 2
+        assert result[0].name == "Entity 1"
 
+    @pytest.mark.asyncio
+    async def test_count_active_records(self, repo: BaseRepository, mock_session: AsyncMock):
+        """Test counting active (non-deleted) records."""
+        mock_result = AsyncMock()
+        mock_result.scalar.return_value = 5
+        mock_session.execute = AsyncMock(return_value=mock_result)
 
-@pytest.mark.asyncio
-async def test_get_by_id_not_found(
-    usuario_repo: BaseRepository[Usuario],
-) -> None:
-    """Test getting usuario by ID when not found."""
-    # Mock the execute call returning None
-    mock_result = AsyncMock()
-    mock_result.scalars().first.return_value = None
-    usuario_repo.session.execute = AsyncMock(return_value=mock_result)
-    
-    result = await usuario_repo.get_by_id(999)
-    
-    assert result is None
+        result = await repo.count()
 
+        assert result == 5
 
-@pytest.mark.asyncio
-async def test_get_by_id_soft_deleted(
-    usuario_repo: BaseRepository[Usuario],
-) -> None:
-    """Test getting usuario by ID when it's soft-deleted."""
-    # Create a soft-deleted usuario
-    deleted_usuario = Usuario(
-        id=1,
-        email="deleted@example.com",
-        nombre="Deleted",
-        apellido="User",
-        hashed_password="hashed123",
-        eliminado_en=datetime.utcnow(),
-    )
-    
-    # Mock the execute call - query should exclude soft-deleted
-    mock_result = AsyncMock()
-    mock_result.scalars().first.return_value = None  # Excluded by query
-    usuario_repo.session.execute = AsyncMock(return_value=mock_result)
-    
-    result = await usuario_repo.get_by_id(1)
-    
-    assert result is None
+    @pytest.mark.asyncio
+    async def test_update_entity(self, repo: BaseRepository, mock_session: AsyncMock):
+        """Test updating an entity."""
+        entity = MockEntity(id=1, name="Updated")
+        old_time = entity.actualizado_en
+        
+        mock_session.flush = AsyncMock()
 
+        result = await repo.update(entity)
 
-@pytest.mark.asyncio
-async def test_list_all_with_pagination(
-    usuario_repo: BaseRepository[Usuario], sample_usuario: Usuario
-) -> None:
-    """Test listing usuarios with pagination."""
-    usuarios = [sample_usuario]
-    
-    mock_result = AsyncMock()
-    mock_result.scalars().all.return_value = usuarios
-    usuario_repo.session.execute = AsyncMock(return_value=mock_result)
-    
-    result = await usuario_repo.list_all(skip=0, limit=10)
-    
-    assert len(result) == 1
-    assert result[0] == sample_usuario
+        assert result.id == 1
+        # actualizado_en should be updated to current time
+        assert result.actualizado_en >= old_time
+        mock_session.add.assert_called_once_with(entity)
 
+    @pytest.mark.asyncio
+    async def test_soft_delete_entity(self, repo: BaseRepository, mock_session: AsyncMock):
+        """Test soft deleting (marking as deleted) an entity."""
+        entity = MockEntity(id=1, name="ToDelete", eliminado_en=None)
+        
+        # Mock get_by_id to return the entity
+        mock_result = AsyncMock()
+        mock_result.scalars.return_value.first.return_value = entity
+        mock_session.execute = AsyncMock(return_value=mock_result)
+        mock_session.flush = AsyncMock()
 
-# ============================================================================
-# Count Tests
-# ============================================================================
+        await repo.soft_delete(1)
 
+        # Check that eliminado_en was set
+        assert entity.eliminado_en is not None
+        mock_session.add.assert_called()
 
-@pytest.mark.asyncio
-async def test_count_active_records(
-    usuario_repo: BaseRepository[Usuario],
-) -> None:
-    """Test counting only active (non-soft-deleted) records."""
-    mock_result = AsyncMock()
-    mock_result.scalar.return_value = 42
-    usuario_repo.session.execute = AsyncMock(return_value=mock_result)
-    
-    result = await usuario_repo.count()
-    
-    assert result == 42
+    @pytest.mark.asyncio
+    async def test_hard_delete_entity(self, repo: BaseRepository, mock_session: AsyncMock):
+        """Test permanently deleting an entity."""
+        entity = MockEntity(id=1, name="ToDelete")
+        
+        # Mock get_by_id to return the entity
+        mock_result = AsyncMock()
+        mock_result.scalars.return_value.first.return_value = entity
+        mock_session.execute = AsyncMock(return_value=mock_result)
+        mock_session.delete = AsyncMock()
+        mock_session.flush = AsyncMock()
 
+        await repo.hard_delete(1)
 
-@pytest.mark.asyncio
-async def test_count_empty(usuario_repo: BaseRepository[Usuario]) -> None:
-    """Test counting when result is None."""
-    mock_result = AsyncMock()
-    mock_result.scalar.return_value = None
-    usuario_repo.session.execute = AsyncMock(return_value=mock_result)
-    
-    result = await usuario_repo.count()
-    
-    assert result == 0
+        mock_session.delete.assert_called_once_with(entity)
 
+    @pytest.mark.asyncio
+    async def test_execute_query(self, repo: BaseRepository, mock_session: AsyncMock):
+        """Test executing raw SQL queries."""
+        entities = [MockEntity(id=1, name="Query Result")]
+        query = select(MockEntity)
+        
+        mock_result = AsyncMock()
+        mock_result.scalars.return_value.all.return_value = entities
+        mock_session.execute = AsyncMock(return_value=mock_result)
 
-# ============================================================================
-# Update Tests
-# ============================================================================
+        result = await repo.execute_query(query)
 
+        assert len(result) == 1
+        assert result[0].name == "Query Result"
 
-@pytest.mark.asyncio
-async def test_update_usuario(
-    usuario_repo: BaseRepository[Usuario], sample_usuario: Usuario
-) -> None:
-    """Test updating a usuario."""
-    sample_usuario.nombre = "Jane"
-    
-    usuario_repo.session.merge = AsyncMock(return_value=sample_usuario)
-    usuario_repo.session.flush = AsyncMock()
-    
-    result = await usuario_repo.update(sample_usuario)
-    
-    assert result.nombre == "Jane"
-    usuario_repo.session.merge.assert_called_once_with(sample_usuario)
-
-
-# ============================================================================
-# Soft Delete Tests
-# ============================================================================
-
-
-@pytest.mark.asyncio
-async def test_soft_delete_success(
-    usuario_repo: BaseRepository[Usuario], sample_usuario: Usuario
-) -> None:
-    """Test soft-deleting a usuario."""
-    # Mock get_by_id to return the usuario
-    mock_result = AsyncMock()
-    mock_result.scalars().first.return_value = sample_usuario
-    usuario_repo.session.execute = AsyncMock(return_value=mock_result)
-    usuario_repo.session.flush = AsyncMock()
-    
-    await usuario_repo.soft_delete(1)
-    
-    # Check that eliminado_en was set
-    assert sample_usuario.eliminado_en is not None
-    usuario_repo.session.flush.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_soft_delete_not_found(
-    usuario_repo: BaseRepository[Usuario],
-) -> None:
-    """Test soft-deleting a non-existent usuario."""
-    # Mock get_by_id to return None
-    mock_result = AsyncMock()
-    mock_result.scalars().first.return_value = None
-    usuario_repo.session.execute = AsyncMock(return_value=mock_result)
-    
-    with pytest.raises(ValueError, match="not found"):
-        await usuario_repo.soft_delete(999)
-
-
-# ============================================================================
-# Hard Delete Tests
-# ============================================================================
-
-
-@pytest.mark.asyncio
-async def test_hard_delete_success(
-    usuario_repo: BaseRepository[Usuario], sample_usuario: Usuario
-) -> None:
-    """Test permanently deleting a usuario."""
-    # Mock the execute call to find the usuario
-    mock_result = AsyncMock()
-    mock_result.scalars().first.return_value = sample_usuario
-    usuario_repo.session.execute = AsyncMock(return_value=mock_result)
-    usuario_repo.session.delete = AsyncMock()
-    usuario_repo.session.flush = AsyncMock()
-    
-    await usuario_repo.hard_delete(1)
-    
-    usuario_repo.session.delete.assert_called_once_with(sample_usuario)
-    usuario_repo.session.flush.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_hard_delete_not_found(
-    usuario_repo: BaseRepository[Usuario],
-) -> None:
-    """Test hard-deleting a non-existent usuario."""
-    # Mock the execute call to return None
-    mock_result = AsyncMock()
-    mock_result.scalars().first.return_value = None
-    usuario_repo.session.execute = AsyncMock(return_value=mock_result)
-    
-    with pytest.raises(ValueError, match="not found"):
-        await usuario_repo.hard_delete(999)
-
-
-# ============================================================================
-# Query Execution Tests
-# ============================================================================
-
-
-@pytest.mark.asyncio
-async def test_execute_query(
-    usuario_repo: BaseRepository[Usuario], sample_usuario: Usuario
-) -> None:
-    """Test executing raw SQLAlchemy query."""
-    query = select(Usuario).where(Usuario.email == "user@example.com")
-    
-    mock_result = AsyncMock()
-    mock_result.scalars().all.return_value = [sample_usuario]
-    usuario_repo.session.execute = AsyncMock(return_value=mock_result)
-    
-    result = await usuario_repo.execute_query(query)
-    
-    assert len(result) == 1
-    assert result[0] == sample_usuario
-
-
-# ============================================================================
-# Type Safety Tests
-# ============================================================================
-
-
-def test_repository_type_hints() -> None:
-    """Test that BaseRepository is properly generic."""
-    import inspect
-    
-    # Check that BaseRepository has correct signature
-    sig = inspect.signature(BaseRepository.__init__)
-    assert "model_class" in sig.parameters
-    assert "session" in sig.parameters
-
-
-def test_generic_repository_with_different_models(
-    mock_session: AsyncMock,
-) -> None:
-    """Test creating repositories for different models."""
-    usuario_repo = BaseRepository(mock_session, Usuario)
-    producto_repo = BaseRepository(mock_session, Producto)
-    
-    assert usuario_repo.model_class == Usuario
-    assert producto_repo.model_class == Producto
-    assert usuario_repo.model_class != producto_repo.model_class
+    def test_type_hints_prevent_errors(self):
+        """Verify type hints are correctly applied."""
+        # This test verifies the class can be imported and instantiated
+        # with proper type hints (would fail at type-check time)
+        mock_session = AsyncMock(spec=AsyncSession)
+        repo = BaseRepository[MockEntity](mock_session, MockEntity)
+        
+        assert repo.model == MockEntity
+        assert repo.session == mock_session

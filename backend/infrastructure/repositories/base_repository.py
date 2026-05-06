@@ -1,66 +1,49 @@
 """
-Generic BaseRepository[T] for DDD infrastructure layer.
+BaseRepository[T] - Generic repository pattern for DDD infrastructure layer.
 
-Provides common CRUD operations for all SQLModel entities with:
-- Type-safe generic interface
-- Soft-delete support (respects eliminado_en field)
-- Pagination and filtering
-- Transaction-scoped session
+Implements CRUD operations with soft-delete pattern support and type-safe queries.
+Works with all SQLModel entities from CHANGE 3.
 """
-from typing import TypeVar, Generic, Optional, Any, List
+
+from typing import Generic, Optional, Type, TypeVar
 from datetime import datetime
 
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import SQLModel
 
-# TypeVar for generic repository
 T = TypeVar("T", bound=SQLModel)
 
 
 class BaseRepository(Generic[T]):
     """
-    Generic repository base class for all SQLModel entities.
-    
-    Usage:
-        repo = BaseRepository[Usuario](session, Usuario)
-        user = await repo.get_by_id(1)
-        users = await repo.list_all(skip=0, limit=10)
+    Generic repository for all entities (Usuario, Producto, Pedido, etc.).
     
     Features:
-    - Automatic soft-delete filtering (queries exclude eliminado_en IS NOT NULL)
-    - Generic type safety with TypeVar
-    - Async/await support via AsyncSession
-    - Pagination with skip/limit
-    - Raw query execution support
-    """
+    - Type-safe CRUD operations
+    - Automatic soft-delete filtering
+    - Pagination support
+    - Raw query execution
+    - Transaction-safe operations
     
-    def __init__(self, session: AsyncSession, model_class: type[T]):
+    Usage:
+        session = AsyncSession(engine)
+        repo = BaseRepository[Usuario](session, Usuario)
+        user = await repo.create(Usuario(...))
+        user = await repo.get_by_id(1)
+    """
+
+    def __init__(self, session: AsyncSession, model: Type[T]):
         """
-        Initialize repository with session and model class.
+        Initialize repository with async session and model type.
         
         Args:
             session: AsyncSession for database operations
-            model_class: SQLModel class (e.g., Usuario, Producto)
+            model: SQLModel entity class (e.g., Usuario, Producto)
         """
         self.session = session
-        self.model_class = model_class
-    
-    def _base_query(self) -> select:
-        """
-        Build base query with soft-delete filtering.
-        
-        Returns:
-            select: Query that excludes soft-deleted records
-        """
-        # Check if model has eliminado_en field for soft-delete filtering
-        if hasattr(self.model_class, "eliminado_en"):
-            return select(self.model_class).where(
-                self.model_class.eliminado_en.is_(None)
-            )
-        else:
-            return select(self.model_class)
-    
+        self.model = model
+
     async def create(self, entity: T) -> T:
         """
         Create and persist a new entity.
@@ -69,76 +52,73 @@ class BaseRepository(Generic[T]):
             entity: Entity instance to create
             
         Returns:
-            T: Persisted entity with ID
+            Persisted entity with ID
             
-        Example:
-            new_user = Usuario(email="user@example.com", nombre="John")
-            created = await repo.create(new_user)
-            print(created.id)  # Now has auto-generated ID
+        Raises:
+            SQLAlchemy exceptions on constraint violations
         """
         self.session.add(entity)
-        await self.session.flush()  # Flush to get ID without commit
+        await self.session.flush()  # Flush to get the ID
         return entity
-    
-    async def get_by_id(self, entity_id: int) -> Optional[T]:
+
+    async def get_by_id(self, id: int) -> Optional[T]:
         """
-        Get entity by ID with soft-delete filtering.
+        Get entity by ID, excluding soft-deleted records.
         
         Args:
-            entity_id: Entity primary key
+            id: Primary key value
             
         Returns:
-            Optional[T]: Entity if found and not soft-deleted, None otherwise
-            
-        Example:
-            user = await repo.get_by_id(1)
-            if user is None:
-                raise UserNotFoundError()
+            Entity if found and not deleted, None otherwise
         """
-        query = self._base_query().where(self.model_class.id == entity_id)
+        query = select(self.model).where(self.model.id == id)
+        
+        # Add soft-delete filter if model has eliminado_en field
+        if hasattr(self.model, "eliminado_en"):
+            query = query.where(self.model.eliminado_en.is_(None))
+        
         result = await self.session.execute(query)
         return result.scalars().first()
-    
-    async def list_all(self, skip: int = 0, limit: int = 100) -> List[T]:
+
+    async def list_all(self, skip: int = 0, limit: int = 100) -> list[T]:
         """
-        List all entities with pagination, excluding soft-deleted.
+        List all active (non-deleted) entities with pagination.
         
         Args:
-            skip: Number of records to skip (offset)
-            limit: Maximum number of records to return
+            skip: Number of records to skip
+            limit: Maximum records to return (default 100, max 1000)
             
         Returns:
-            List[T]: List of entities
-            
-        Example:
-            users = await repo.list_all(skip=0, limit=10)
-            for user in users:
-                print(user.email)
+            List of entities (excluding soft-deleted)
         """
-        query = self._base_query().offset(skip).limit(limit)
+        # Enforce reasonable limits
+        limit = min(limit, 1000)
+        
+        query = select(self.model).offset(skip).limit(limit)
+        
+        # Add soft-delete filter if model has eliminado_en field
+        if hasattr(self.model, "eliminado_en"):
+            query = query.where(self.model.eliminado_en.is_(None))
+        
         result = await self.session.execute(query)
         return result.scalars().all()
-    
+
     async def count(self) -> int:
         """
-        Count total active (non-soft-deleted) records.
+        Count active (non-deleted) entities.
         
         Returns:
-            int: Number of active records
-            
-        Example:
-            total_users = await user_repo.count()
-            print(f"Total users: {total_users}")
+            Number of active records
         """
-        query = select(func.count(self.model_class.id))
+        query = select(func.count(self.model.id))
         
-        # Add soft-delete filter if applicable
-        if hasattr(self.model_class, "eliminado_en"):
-            query = query.where(self.model_class.eliminado_en.is_(None))
+        # Add soft-delete filter if model has eliminado_en field
+        if hasattr(self.model, "eliminado_en"):
+            query = query.where(self.model.eliminado_en.is_(None))
         
         result = await self.session.execute(query)
         return result.scalar() or 0
-    
+
     async def update(self, entity: T) -> T:
         """
         Update an existing entity.
@@ -147,90 +127,70 @@ class BaseRepository(Generic[T]):
             entity: Entity with updated values (must have ID)
             
         Returns:
-            T: Updated entity
+            Updated entity
             
-        Example:
-            user = await repo.get_by_id(1)
-            user.nombre = "Jane"
-            updated = await repo.update(user)
+        Note:
+            The entity should already be attached to the session.
+            Updates actualizado_en if present.
         """
-        # Merge entity into session and flush
-        result = await self.session.merge(entity)
+        # Set actualizado_en if field exists
+        if hasattr(entity, "actualizado_en"):
+            entity.actualizado_en = datetime.utcnow()
+        
+        self.session.add(entity)
         await self.session.flush()
-        return result
-    
-    async def soft_delete(self, entity_id: int) -> None:
+        return entity
+
+    async def soft_delete(self, id: int) -> None:
         """
-        Soft-delete an entity by setting eliminado_en timestamp.
+        Soft delete (mark as deleted) an entity by ID.
+        
+        Sets eliminado_en timestamp. Only works if model has eliminado_en field.
         
         Args:
-            entity_id: Entity ID to soft-delete
+            id: Primary key of entity to delete
             
         Raises:
-            ValueError: If entity not found
-            AttributeError: If model doesn't have eliminado_en field
-            
-        Example:
-            await user_repo.soft_delete(1)
-            # User still exists in DB but is filtered from queries
+            AttributeError if model doesn't support soft delete
         """
-        if not hasattr(self.model_class, "eliminado_en"):
-            raise AttributeError(
-                f"{self.model_class.__name__} does not support soft-delete"
-            )
+        if not hasattr(self.model, "eliminado_en"):
+            raise AttributeError(f"{self.model.__name__} does not support soft delete")
         
-        entity = await self.get_by_id(entity_id)
-        if entity is None:
-            raise ValueError(f"Entity with id {entity_id} not found")
-        
-        entity.eliminado_en = datetime.utcnow()
-        await self.session.flush()
-    
-    async def hard_delete(self, entity_id: int) -> None:
+        entity = await self.get_by_id(id)
+        if entity:
+            entity.eliminado_en = datetime.utcnow()
+            self.session.add(entity)
+            await self.session.flush()
+
+    async def hard_delete(self, id: int) -> None:
         """
-        Permanently delete an entity from database.
+        Permanently delete an entity by ID (use carefully!).
+        
+        This performs an actual DELETE, not soft delete.
         
         Args:
-            entity_id: Entity ID to delete
-            
-        Raises:
-            ValueError: If entity not found
-            
-        Example:
-            await user_repo.hard_delete(1)
-            # User is completely removed from DB
+            id: Primary key of entity to delete
         """
-        # Get entity without soft-delete filter for hard delete
-        query = select(self.model_class).where(self.model_class.id == entity_id)
-        result = await self.session.execute(query)
-        entity = result.scalars().first()
-        
-        if entity is None:
-            raise ValueError(f"Entity with id {entity_id} not found")
-        
-        await self.session.delete(entity)
-        await self.session.flush()
-    
-    async def execute_query(self, query: select) -> List[T]:
+        entity = await self.get_by_id(id)
+        if entity:
+            await self.session.delete(entity)
+            await self.session.flush()
+
+    async def execute_query(self, query: select) -> list[T]:
         """
-        Execute raw SQLAlchemy query against this model.
+        Execute a raw SQLAlchemy select query.
+        
+        Useful for complex queries beyond basic CRUD.
         
         Args:
             query: SQLAlchemy select() query
             
         Returns:
-            List[T]: Query results
+            List of entities matching query
             
         Example:
-            from sqlalchemy import and_, select
-            
-            query = select(Usuario).where(
-                and_(
-                    Usuario.eliminado_en.is_(None),
-                    Usuario.rol_id == 1
-                )
-            )
-            admins = await repo.execute_query(query)
+            query = select(Usuario).where(Usuario.email.like("%@gmail.com%"))
+            users = await repo.execute_query(query)
         """
         result = await self.session.execute(query)
         return result.scalars().all()
