@@ -12,13 +12,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from fastapi import Depends
 
-from infrastructure.repositories.base_repository import BaseRepository
-from core.models import (
+from .repositories.base_repository import BaseRepository
+from backend.core.models import (
     Usuario, Rol, RefreshToken, DireccionEntrega,
     Categoria, Producto, Ingrediente, ProductoCategoria, ProductoIngrediente,
     EstadoPedido, FormaPago, Pedido, DetallePedido, HistorialEstadoPedido, Pago
 )
-from core.database import get_db
+from backend.core.database import get_db
 
 
 class UnitOfWork:

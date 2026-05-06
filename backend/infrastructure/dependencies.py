@@ -14,10 +14,10 @@ from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException, status, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.models import Usuario
-from core.security import verify_token, extract_token_from_header
-from core.database import get_db
-from infrastructure.uow import UnitOfWork, get_uow
+from backend.core.models import Usuario
+from backend.core.security import verify_token, extract_token_from_header
+from backend.core.database import get_db
+from .uow import UnitOfWork, get_uow
 
 
 async def extract_token(auth_header: Optional[str] = Header(None, alias="authorization")) -> str:
