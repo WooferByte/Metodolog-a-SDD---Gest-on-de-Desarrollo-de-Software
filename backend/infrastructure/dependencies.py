@@ -1,234 +1,197 @@
 """
-FastAPI dependencies for authentication and authorization.
+FastAPI dependencies for authentication, JWT validation, and RBAC.
 
 Provides:
-- get_current_user(): Extracts and validates JWT, returns Usuario
-- require_role(): Factory for role-based access control (RBAC)
-- Token extraction and validation
+- extract_token(): Parse Authorization header
+- verify_token_dependency(): Validate JWT signature and expiration
+- get_current_user(): Return current Usuario from token
+- require_role(roles): Factory for role-based access control
 """
-from typing import Callable, Optional
 
-from fastapi import Depends, HTTPException, Header, status
+from typing import Optional, Callable
+from datetime import datetime, timedelta
+import os
+
+from fastapi import Depends, HTTPException, status, Request
+from fastapi.security import HTTPBearer, HTTPAuthCredentials
+from jwt import decode, encode, ExpiredSignatureError, InvalidTokenError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.database import get_db
-from core.models import Usuario
-from core.security import extract_token_from_header, verify_token
-from .uow import UnitOfWork
+from backend.core.models import Usuario
+from backend.infrastructure.uow import UnitOfWork, get_uow
 
 
-# ============================================================================
-# JWT Token Extraction & Validation
-# ============================================================================
+# JWT Configuration (loaded from environment)
+SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+
+# HTTP Bearer authentication scheme
+security = HTTPBearer()
 
 
-async def extract_token(
-    authorization: Optional[str] = Header(None),
-) -> str:
+async def extract_token(credentials: HTTPAuthCredentials = Depends(security)) -> str:
     """
-    Extract Bearer token from Authorization header.
+    Extract JWT token from Authorization header.
     
     Args:
-        authorization: Authorization header value
+        credentials: HTTPAuthCredentials from FastAPI security
         
     Returns:
-        str: Extracted JWT token
+        JWT token string
         
     Raises:
-        HTTPException: 401 if header missing or malformed
+        HTTPException 401 if token missing or malformed
     """
-    return extract_token_from_header(authorization)
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing authorization token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return credentials.credentials
 
 
 async def verify_token_dependency(token: str = Depends(extract_token)) -> dict:
     """
-    Verify JWT token and extract payload.
+    Verify JWT token signature and expiration.
     
     Args:
-        token: JWT token from Authorization header
+        token: JWT token string from extract_token()
         
     Returns:
-        dict: Decoded token payload
+        Decoded JWT payload (dict)
         
     Raises:
-        HTTPException: 401 if token invalid or expired
+        HTTPException 401 if token invalid or expired
     """
-    return verify_token(token)
-
-
-# ============================================================================
-# Current User Dependency
-# ============================================================================
+    try:
+        payload = decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token: missing user_id",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        return payload
+        
+    except ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except InvalidTokenError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid token: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 async def get_current_user(
-    token_payload: dict = Depends(verify_token_dependency),
-    db: AsyncSession = Depends(get_db),
+    payload: dict = Depends(verify_token_dependency),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> Usuario:
     """
     Get current authenticated user from JWT token.
     
-    Performs:
-    - JWT token extraction and validation
-    - User lookup by ID from database
-    - Soft-delete check (fails if user.eliminado_en is not None)
-    
     Args:
-        token_payload: Decoded JWT token payload
-        db: Database session
+        payload: Decoded JWT payload from verify_token_dependency()
+        uow: UnitOfWork for database access
         
     Returns:
-        Usuario: Current authenticated user entity
+        Current Usuario entity (fetched from database)
         
     Raises:
-        HTTPException: 401 if token invalid
-        HTTPException: 401 if user not found
-        HTTPException: 403 if user is soft-deleted
-        
-    Usage:
-        @app.get("/api/v1/perfil")
-        async def get_profile(current_user: Usuario = Depends(get_current_user)):
-            return {"email": current_user.email, "nombre": current_user.nombre}
+        HTTPException 404 if user not found
+        HTTPException 403 if user is soft-deleted (eliminado_en IS NOT NULL)
     """
-    # Extract user ID from token payload
-    user_id: Optional[int] = token_payload.get("sub")
-    if user_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token is missing user ID (sub claim)",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    user_id = int(payload.get("sub"))
     
-    # Convert user_id to int if it's a string
-    try:
-        user_id = int(user_id) if isinstance(user_id, str) else user_id
-    except (ValueError, TypeError):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid user ID in token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    # Look up user in database
-    uow = UnitOfWork(db)
     async with uow:
         user = await uow.usuarios.get_by_id(user_id)
     
-    if user is None:
+    if not user:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-            headers={"WWW-Authenticate": "Bearer"},
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User {user_id} not found",
         )
     
     # Check if user is soft-deleted
     if user.eliminado_en is not None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account has been deactivated",
+            detail="User account has been deleted",
         )
     
     return user
 
 
-# ============================================================================
-# Role-Based Access Control (RBAC) Factory
-# ============================================================================
-
-
-def require_role(required_roles: list[str]) -> Callable:
+async def require_role(*allowed_roles: str) -> Callable:
     """
-    Factory function for role-based route protection.
+    Factory function that returns a dependency for role-based access control.
     
-    Returns a FastAPI dependency that validates current user has at least
-    one of the specified roles.
+    Usage in route:
+        @app.post("/api/v1/usuarios")
+        async def create_user(
+            user_create: UserCreateSchema,
+            current_user: Usuario = Depends(get_current_user),
+            _ = Depends(require_role("ADMIN"))
+        ):
+            ...
     
     Args:
-        required_roles: List of role names (e.g., ["ADMIN", "STOCK"])
+        allowed_roles: One or more role names (ADMIN, STOCK, PEDIDOS, CLIENT)
         
     Returns:
-        Callable: Async dependency function
+        Async dependency function for FastAPI
         
     Raises:
-        HTTPException: 403 Forbidden if user lacks required role
-        
-    Usage:
-        @app.post("/api/v1/categorias")
-        async def create_category(
-            data: CreateCategoryRequest,
-            current_user: Usuario = Depends(get_current_user),
-            _ = Depends(require_role(["ADMIN", "STOCK"]))
-        ):
-            # Only ADMIN or STOCK users can reach here
-            pass
-        
-        @app.delete("/api/v1/usuarios/{user_id}")
-        async def delete_user(
-            user_id: int,
-            current_user: Usuario = Depends(get_current_user),
-            _ = Depends(require_role(["ADMIN"]))
-        ):
-            # Only ADMIN can reach here
-            pass
+        HTTPException 403 if user's role not in allowed_roles
     """
-    
-    async def check_role(current_user: Usuario = Depends(get_current_user)) -> bool:
-        """
-        Validate current user has at least one required role.
-        
-        Args:
-            current_user: Current authenticated user from get_current_user()
-            
-        Returns:
-            bool: True if user has required role
-            
-        Raises:
-            HTTPException: 403 Forbidden if role not matched
-        """
+    async def check_role(current_user: Usuario = Depends(get_current_user)) -> Usuario:
+        """Check if current user has one of the allowed roles."""
+        # current_user.rol is a Rol entity, need to check rol.nombre
         if current_user.rol is None:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="User has no assigned role",
+                detail="User has no role assigned",
             )
         
-        # Check if user's role is in required roles list
-        if current_user.rol.nombre not in required_roles:
+        if current_user.rol.nombre not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"User role '{current_user.rol.nombre}' not authorized. "
-                       f"Required one of: {', '.join(required_roles)}",
+                detail=f"User role '{current_user.rol.nombre}' not authorized. Required: {', '.join(allowed_roles)}",
             )
         
-        return True
+        return current_user
     
     return check_role
 
 
-# ============================================================================
-# Unit of Work Dependency
-# ============================================================================
-
-
-async def get_uow(db: AsyncSession = Depends(get_db)) -> UnitOfWork:
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """
-    FastAPI dependency for Unit of Work.
+    Create a JWT access token.
     
-    Returns:
-        UnitOfWork: Configured for request-scoped transaction
+    Args:
+        data: Dictionary with claims to encode (should include "sub" for user_id)
+        expires_delta: Optional custom expiration time
         
-    Usage:
-        @app.post("/api/v1/pedidos")
-        async def create_order(
-            data: CreateOrderRequest,
-            current_user: Usuario = Depends(get_current_user),
-            uow: UnitOfWork = Depends(get_uow),
-        ):
-            async with uow:
-                # Multiple repository operations in single transaction
-                new_order = Pedido(usuario_id=current_user.id, ...)
-                await uow.pedidos.create(new_order)
-                
-                # Auto-commit on exit if no exception
-                # Auto-rollback if exception
+    Returns:
+        Encoded JWT token string
     """
-    return UnitOfWork(db)
+    to_encode = data.copy()
+    
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    
+    to_encode.update({"exp": expire})
+    
+    encoded_jwt = encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
