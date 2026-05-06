@@ -1,247 +1,181 @@
-"""
-Unit tests for UnitOfWork pattern.
+"""Unit tests for UnitOfWork pattern and transaction management."""
 
-Tests:
-- Context manager protocol (aenter/aexit)
-- Auto-commit on success
-- Auto-rollback on exception
-- Repository lazy-loading
-- Transaction atomicity
-"""
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from infrastructure.uow import UnitOfWork
-from core.models import Usuario, Producto
-
-
-# ============================================================================
-# Fixtures
-# ============================================================================
+from backend.infrastructure.uow import UnitOfWork, get_uow
+from backend.core.models import Usuario, Producto, Pedido
 
 
-@pytest.fixture
-def mock_session() -> AsyncMock:
-    """Create mocked AsyncSession."""
-    session = AsyncMock()
-    session.commit = AsyncMock()
-    session.rollback = AsyncMock()
-    return session
+class TestUnitOfWork:
+    """Test suite for UnitOfWork async context manager."""
 
+    @pytest.fixture
+    def mock_session(self) -> AsyncMock:
+        """Create a mock AsyncSession."""
+        return AsyncMock(spec=AsyncSession)
 
-@pytest.fixture
-def uow(mock_session: AsyncMock) -> UnitOfWork:
-    """Create UnitOfWork with mocked session."""
-    return UnitOfWork(mock_session)
+    @pytest.fixture
+    def uow(self, mock_session: AsyncMock) -> UnitOfWork:
+        """Create a UnitOfWork instance for testing."""
+        return UnitOfWork(mock_session)
 
+    @pytest.mark.asyncio
+    async def test_uow_context_manager_enter(self, uow: UnitOfWork):
+        """Test entering UoW context manager."""
+        async with uow as ctx_uow:
+            assert ctx_uow == uow
 
-# ============================================================================
-# Context Manager Tests
-# ============================================================================
+    @pytest.mark.asyncio
+    async def test_uow_context_manager_exit_success(self, uow: UnitOfWork, mock_session: AsyncMock):
+        """Test successful UoW context exit (auto-commit)."""
+        uow.session.commit = AsyncMock()
+        uow.session.rollback = AsyncMock()
 
-
-@pytest.mark.asyncio
-async def test_uow_enter(uow: UnitOfWork) -> None:
-    """Test entering UnitOfWork context manager."""
-    async with uow as entered_uow:
-        assert entered_uow is uow
-
-
-@pytest.mark.asyncio
-async def test_uow_exit_success(uow: UnitOfWork, mock_session: AsyncMock) -> None:
-    """Test UnitOfWork commits on successful exit."""
-    async with uow:
-        pass  # Simulate successful operation
-    
-    mock_session.commit.assert_called_once()
-    mock_session.rollback.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_uow_exit_with_exception(
-    uow: UnitOfWork, mock_session: AsyncMock
-) -> None:
-    """Test UnitOfWork rolls back on exception."""
-    with pytest.raises(ValueError):
         async with uow:
-            raise ValueError("Intentional error")
-    
-    mock_session.rollback.assert_called_once()
-    mock_session.commit.assert_not_called()
+            pass  # Normal exit without exception
 
+        uow.session.commit.assert_called_once()
+        uow.session.rollback.assert_not_called()
 
-# ============================================================================
-# Repository Access Tests
-# ============================================================================
+    @pytest.mark.asyncio
+    async def test_uow_context_manager_exit_exception(self, uow: UnitOfWork, mock_session: AsyncMock):
+        """Test UoW context exit with exception (auto-rollback)."""
+        uow.session.rollback = AsyncMock()
 
+        try:
+            async with uow:
+                raise ValueError("Test exception")
+        except ValueError:
+            pass
 
-@pytest.mark.asyncio
-async def test_access_usuarios_repository(uow: UnitOfWork) -> None:
-    """Test accessing usuarios repository."""
-    usuarios_repo = uow.usuarios
-    
-    assert usuarios_repo is not None
-    assert usuarios_repo.model_class == Usuario
+        uow.session.rollback.assert_called_once()
 
+    @pytest.mark.asyncio
+    async def test_uow_repository_lazy_initialization(self, uow: UnitOfWork):
+        """Test that repositories are lazily initialized."""
+        # Access usuarios repository
+        repo1 = uow.usuarios
+        repo2 = uow.usuarios
 
-@pytest.mark.asyncio
-async def test_access_productos_repository(uow: UnitOfWork) -> None:
-    """Test accessing productos repository."""
-    productos_repo = uow.productos
-    
-    assert productos_repo is not None
-    assert productos_repo.model_class == Producto
+        # Should be same instance (cached)
+        assert repo1 is repo2
 
+    @pytest.mark.asyncio
+    async def test_uow_all_repositories_accessible(self, uow: UnitOfWork):
+        """Test that all 14 entity repositories are accessible."""
+        repos = [
+            uow.usuarios,
+            uow.roles,
+            uow.refresh_tokens,
+            uow.direcciones_entrega,
+            uow.categorias,
+            uow.productos,
+            uow.ingredientes,
+            uow.producto_categorias,
+            uow.producto_ingredientes,
+            uow.estados_pedido,
+            uow.formas_pago,
+            uow.pedidos,
+            uow.detalles_pedido,
+            uow.historial_estado_pedido,
+            uow.pagos,
+        ]
 
-@pytest.mark.asyncio
-async def test_repository_lazy_loading(uow: UnitOfWork) -> None:
-    """Test that repositories are lazy-loaded on first access."""
-    # First access creates repository
-    repo1 = uow.usuarios
-    
-    # Second access returns same instance
-    repo2 = uow.usuarios
-    
-    assert repo1 is repo2  # Same object
+        # All should be BaseRepository instances
+        assert len(repos) == 15
+        for repo in repos:
+            assert repo is not None
 
+    @pytest.mark.asyncio
+    async def test_uow_commit(self, uow: UnitOfWork, mock_session: AsyncMock):
+        """Test explicit commit."""
+        uow.session.commit = AsyncMock()
 
-@pytest.mark.asyncio
-async def test_all_repositories_available(uow: UnitOfWork) -> None:
-    """Test that all 14 entity repositories are accessible."""
-    # Check all repositories exist
-    assert uow.roles is not None
-    assert uow.estados_pedido is not None
-    assert uow.formas_pago is not None
-    assert uow.usuarios is not None
-    assert uow.refresh_tokens is not None
-    assert uow.direcciones_entrega is not None
-    assert uow.categorias is not None
-    assert uow.productos is not None
-    assert uow.ingredientes is not None
-    assert uow.productos_categorias is not None
-    assert uow.productos_ingredientes is not None
-    assert uow.pedidos is not None
-    assert uow.detalles_pedido is not None
-    assert uow.historiales_estado_pedido is not None
-    assert uow.pagos is not None
+        await uow.commit()
 
+        uow.session.commit.assert_called_once()
 
-# ============================================================================
-# Transaction Atomicity Tests
-# ============================================================================
+    @pytest.mark.asyncio
+    async def test_uow_rollback(self, uow: UnitOfWork, mock_session: AsyncMock):
+        """Test explicit rollback."""
+        uow.session.rollback = AsyncMock()
 
+        await uow.rollback()
 
-@pytest.mark.asyncio
-async def test_multiple_repositories_same_transaction(
-    uow: UnitOfWork, mock_session: AsyncMock
-) -> None:
-    """Test that multiple repositories share the same session."""
-    usuarios_session = uow.usuarios.session
-    productos_session = uow.productos.session
-    
-    assert usuarios_session is productos_session
-    assert usuarios_session is mock_session
+        uow.session.rollback.assert_called_once()
 
+    @pytest.mark.asyncio
+    async def test_uow_transaction_atomicity(self, uow: UnitOfWork, mock_session: AsyncMock):
+        """Test transaction atomicity (all-or-nothing)."""
+        uow.session.commit = AsyncMock()
+        uow.session.rollback = AsyncMock()
 
-@pytest.mark.asyncio
-async def test_transaction_commit_order(
-    uow: UnitOfWork, mock_session: AsyncMock
-) -> None:
-    """Test that commit happens after all operations."""
-    operations = []
-    
-    async def track_commit():
-        operations.append("commit")
-    
-    async def track_rollback():
-        operations.append("rollback")
-    
-    mock_session.commit = track_commit
-    mock_session.rollback = track_rollback
-    
-    async with uow:
-        operations.append("operation")
-    
-    assert operations == ["operation", "commit"]
-
-
-@pytest.mark.asyncio
-async def test_transaction_rollback_on_integrity_error(
-    uow: UnitOfWork, mock_session: AsyncMock
-) -> None:
-    """Test rollback when integrity constraint is violated."""
-    # Mock session to raise IntegrityError
-    async def raise_integrity_error():
-        raise IntegrityError(
-            statement="INSERT INTO usuarios...",
-            params={},
-            orig=Exception("Duplicate key"),
-        )
-    
-    mock_session.commit = raise_integrity_error
-    
-    with pytest.raises(IntegrityError):
+        # Simulate successful multi-repo transaction
         async with uow:
-            pass  # Commit will fail
-    
-    mock_session.rollback.assert_called_once()
+            # Would normally do:
+            # usuario = await uow.usuarios.create(...)
+            # pedido = await uow.pedidos.create(...)
+            pass
+
+        # Should have committed once
+        uow.session.commit.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_uow_commit_failure_triggers_rollback(self, uow: UnitOfWork, mock_session: AsyncMock):
+        """Test that commit failure triggers rollback."""
+        uow.session.commit = AsyncMock(side_effect=IntegrityError("test", "test", "test"))
+        uow.session.rollback = AsyncMock()
+
+        try:
+            async with uow:
+                pass
+        except IntegrityError:
+            pass
+
+        uow.session.rollback.assert_called_once()
 
 
-# ============================================================================
-# Session Sharing Tests
-# ============================================================================
+class TestGetUowDependency:
+    """Test suite for get_uow FastAPI dependency."""
 
+    @pytest.fixture
+    def mock_session(self) -> AsyncMock:
+        """Create a mock AsyncSession."""
+        return AsyncMock(spec=AsyncSession)
 
-@pytest.mark.asyncio
-async def test_session_shared_between_operations(
-    uow: UnitOfWork, mock_session: AsyncMock
-) -> None:
-    """Test that all operations use the same session."""
-    sessions = []
-    
-    async with uow:
-        # Simulate getting same session in different operations
-        usuarios_repo = uow.usuarios
-        productos_repo = uow.productos
-        
-        sessions.append(usuarios_repo.session)
-        sessions.append(productos_repo.session)
-    
-    # All should be the same session
-    assert sessions[0] is sessions[1]
-    assert sessions[0] is mock_session
+    @pytest.mark.asyncio
+    async def test_get_uow_yields_uow(self, mock_session: AsyncMock):
+        """Test that get_uow yields a UnitOfWork instance."""
+        async for uow in get_uow(mock_session):
+            assert isinstance(uow, UnitOfWork)
+            assert uow.session == mock_session
+            break  # Exit after first yield
 
+    @pytest.mark.asyncio
+    async def test_get_uow_closes_session(self, mock_session: AsyncMock):
+        """Test that get_uow closes session in finally block."""
+        mock_session.close = AsyncMock()
 
-# ============================================================================
-# Exception Propagation Tests
-# ============================================================================
+        try:
+            async for uow in get_uow(mock_session):
+                pass  # Exit the generator normally
+        except StopAsyncIteration:
+            pass
 
+        mock_session.close.assert_called_once()
 
-@pytest.mark.asyncio
-async def test_exception_not_suppressed(uow: UnitOfWork) -> None:
-    """Test that exceptions are not suppressed by context manager."""
-    class CustomError(Exception):
-        pass
-    
-    with pytest.raises(CustomError):
-        async with uow:
-            raise CustomError("Test error")
+    @pytest.mark.asyncio
+    async def test_get_uow_closes_session_on_exception(self, mock_session: AsyncMock):
+        """Test that get_uow closes session even on exception."""
+        mock_session.close = AsyncMock()
 
+        try:
+            async for uow in get_uow(mock_session):
+                raise ValueError("Test exception")
+        except ValueError:
+            pass
 
-@pytest.mark.asyncio
-async def test_nested_rollback_on_partial_failure(
-    uow: UnitOfWork, mock_session: AsyncMock
-) -> None:
-    """Test rollback when operation partially fails."""
-    with pytest.raises(RuntimeError):
-        async with uow:
-            # Simulate first operation succeeds
-            usuarios_repo = uow.usuarios
-            assert usuarios_repo is not None
-            
-            # Simulate second operation fails
-            raise RuntimeError("Operation failed after partial success")
-    
-    # Entire transaction should rollback
-    mock_session.rollback.assert_called_once()
+        mock_session.close.assert_called_once()

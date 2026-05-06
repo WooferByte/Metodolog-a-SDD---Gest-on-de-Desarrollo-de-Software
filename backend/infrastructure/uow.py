@@ -1,216 +1,219 @@
 """
-Unit of Work pattern for DDD infrastructure layer.
+Unit of Work (UoW) Pattern - Async context manager for transaction coordination.
 
-Coordinates multiple repositories in a single transaction with:
-- Async context manager protocol
-- Auto-commit on success
-- Auto-rollback on exception
-- Transaction-scoped session sharing
+Coordinates multiple repositories in a single database transaction.
+Ensures atomicity: all changes commit together or all rollback on exception.
 """
+
 from typing import Optional
+from contextlib import asynccontextmanager
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.exc import IntegrityError
 
-from .base_repository import BaseRepository
-from core.models import (
-    Rol,
-    EstadoPedido,
-    FormaPago,
-    Usuario,
-    RefreshToken,
-    DireccionEntrega,
-    Categoria,
-    Producto,
-    Ingrediente,
-    ProductoCategoria,
-    ProductoIngrediente,
-    Pedido,
-    DetallePedido,
-    HistorialEstadoPedido,
-    Pago,
+from backend.infrastructure.repositories import BaseRepository
+from backend.core.models import (
+    Usuario, Rol, RefreshToken, DireccionEntrega,
+    Categoria, Producto, Ingrediente, ProductoCategoria, ProductoIngrediente,
+    EstadoPedido, FormaPago, Pedido, DetallePedido, HistorialEstadoPedido, Pago
 )
 
 
 class UnitOfWork:
     """
-    Unit of Work context manager for coordinating repository operations.
+    Unit of Work pattern for coordinating repository operations in a transaction.
     
-    Ensures atomicity across multiple repositories by:
-    - Sharing a single AsyncSession across all repos
-    - Auto-committing on successful context exit
-    - Auto-rolling back on any exception
+    Use as async context manager to ensure atomicity:
     
     Usage:
-        async def create_product_and_order(session: AsyncSession):
-            async with UnitOfWork(session) as uow:
-                # Create product
-                product = Producto(nombre="Pizza", precio=10.0)
-                await uow.productos.create(product)
-                
-                # Create order referencing product
-                order = Pedido(usuario_id=1, estado_id=1)
-                await uow.pedidos.create(order)
-                
-                # If both succeed, auto-commit happens on exit
-                # If any exception, auto-rollback happens
+        async with UnitOfWork(session) as uow:
+            usuario = await uow.usuarios.create(new_usuario)
+            pedido = await uow.pedidos.create(new_pedido)
+            await uow.commit()  # Commits both or rolls back both
     
-    Attributes:
-        session: AsyncSession for all repository operations
-        _repos: Dict of lazy-loaded repositories
+    Features:
+    - Automatic commit on success
+    - Automatic rollback on exception
+    - Repository attributes for all 15 entities
+    - Transaction isolation
+    - Clean separation of concerns
     """
-    
+
     def __init__(self, session: AsyncSession):
         """
-        Initialize UnitOfWork with async session.
+        Initialize Unit of Work with async database session.
         
         Args:
             session: AsyncSession from FastAPI dependency
         """
         self.session = session
-        self._repos: dict = {}
-    
-    # Repository attributes (lazy-loaded)
-    @property
-    def roles(self) -> BaseRepository[Rol]:
-        """Roles repository"""
-        if "roles" not in self._repos:
-            self._repos["roles"] = BaseRepository(self.session, Rol)
-        return self._repos["roles"]
-    
-    @property
-    def estados_pedido(self) -> BaseRepository[EstadoPedido]:
-        """Order statuses repository"""
-        if "estados_pedido" not in self._repos:
-            self._repos["estados_pedido"] = BaseRepository(self.session, EstadoPedido)
-        return self._repos["estados_pedido"]
-    
-    @property
-    def formas_pago(self) -> BaseRepository[FormaPago]:
-        """Payment methods repository"""
-        if "formas_pago" not in self._repos:
-            self._repos["formas_pago"] = BaseRepository(self.session, FormaPago)
-        return self._repos["formas_pago"]
-    
+        self._repositories: dict = {}
+
     @property
     def usuarios(self) -> BaseRepository[Usuario]:
-        """Users repository"""
-        if "usuarios" not in self._repos:
-            self._repos["usuarios"] = BaseRepository(self.session, Usuario)
-        return self._repos["usuarios"]
-    
+        """Repository for Usuario entity."""
+        if "usuarios" not in self._repositories:
+            self._repositories["usuarios"] = BaseRepository(self.session, Usuario)
+        return self._repositories["usuarios"]
+
+    @property
+    def roles(self) -> BaseRepository[Rol]:
+        """Repository for Rol entity (immutable reference)."""
+        if "roles" not in self._repositories:
+            self._repositories["roles"] = BaseRepository(self.session, Rol)
+        return self._repositories["roles"]
+
     @property
     def refresh_tokens(self) -> BaseRepository[RefreshToken]:
-        """Refresh tokens repository"""
-        if "refresh_tokens" not in self._repos:
-            self._repos["refresh_tokens"] = BaseRepository(self.session, RefreshToken)
-        return self._repos["refresh_tokens"]
-    
+        """Repository for RefreshToken entity."""
+        if "refresh_tokens" not in self._repositories:
+            self._repositories["refresh_tokens"] = BaseRepository(self.session, RefreshToken)
+        return self._repositories["refresh_tokens"]
+
     @property
     def direcciones_entrega(self) -> BaseRepository[DireccionEntrega]:
-        """Delivery addresses repository"""
-        if "direcciones_entrega" not in self._repos:
-            self._repos["direcciones_entrega"] = BaseRepository(
-                self.session, DireccionEntrega
-            )
-        return self._repos["direcciones_entrega"]
-    
+        """Repository for DireccionEntrega entity."""
+        if "direcciones_entrega" not in self._repositories:
+            self._repositories["direcciones_entrega"] = BaseRepository(self.session, DireccionEntrega)
+        return self._repositories["direcciones_entrega"]
+
     @property
     def categorias(self) -> BaseRepository[Categoria]:
-        """Product categories repository"""
-        if "categorias" not in self._repos:
-            self._repos["categorias"] = BaseRepository(self.session, Categoria)
-        return self._repos["categorias"]
-    
+        """Repository for Categoria entity."""
+        if "categorias" not in self._repositories:
+            self._repositories["categorias"] = BaseRepository(self.session, Categoria)
+        return self._repositories["categorias"]
+
     @property
     def productos(self) -> BaseRepository[Producto]:
-        """Products repository"""
-        if "productos" not in self._repos:
-            self._repos["productos"] = BaseRepository(self.session, Producto)
-        return self._repos["productos"]
-    
+        """Repository for Producto entity."""
+        if "productos" not in self._repositories:
+            self._repositories["productos"] = BaseRepository(self.session, Producto)
+        return self._repositories["productos"]
+
     @property
     def ingredientes(self) -> BaseRepository[Ingrediente]:
-        """Ingredients repository"""
-        if "ingredientes" not in self._repos:
-            self._repos["ingredientes"] = BaseRepository(self.session, Ingrediente)
-        return self._repos["ingredientes"]
-    
+        """Repository for Ingrediente entity."""
+        if "ingredientes" not in self._repositories:
+            self._repositories["ingredientes"] = BaseRepository(self.session, Ingrediente)
+        return self._repositories["ingredientes"]
+
     @property
-    def productos_categorias(self) -> BaseRepository[ProductoCategoria]:
-        """Product-Category junction repository"""
-        if "productos_categorias" not in self._repos:
-            self._repos["productos_categorias"] = BaseRepository(
-                self.session, ProductoCategoria
-            )
-        return self._repos["productos_categorias"]
-    
+    def producto_categorias(self) -> BaseRepository[ProductoCategoria]:
+        """Repository for ProductoCategoria pivot entity."""
+        if "producto_categorias" not in self._repositories:
+            self._repositories["producto_categorias"] = BaseRepository(self.session, ProductoCategoria)
+        return self._repositories["producto_categorias"]
+
     @property
-    def productos_ingredientes(self) -> BaseRepository[ProductoIngrediente]:
-        """Product-Ingredient junction repository"""
-        if "productos_ingredientes" not in self._repos:
-            self._repos["productos_ingredientes"] = BaseRepository(
-                self.session, ProductoIngrediente
-            )
-        return self._repos["productos_ingredientes"]
-    
+    def producto_ingredientes(self) -> BaseRepository[ProductoIngrediente]:
+        """Repository for ProductoIngrediente pivot entity."""
+        if "producto_ingredientes" not in self._repositories:
+            self._repositories["producto_ingredientes"] = BaseRepository(self.session, ProductoIngrediente)
+        return self._repositories["producto_ingredientes"]
+
+    @property
+    def estados_pedido(self) -> BaseRepository[EstadoPedido]:
+        """Repository for EstadoPedido entity (immutable reference)."""
+        if "estados_pedido" not in self._repositories:
+            self._repositories["estados_pedido"] = BaseRepository(self.session, EstadoPedido)
+        return self._repositories["estados_pedido"]
+
+    @property
+    def formas_pago(self) -> BaseRepository[FormaPago]:
+        """Repository for FormaPago entity (immutable reference)."""
+        if "formas_pago" not in self._repositories:
+            self._repositories["formas_pago"] = BaseRepository(self.session, FormaPago)
+        return self._repositories["formas_pago"]
+
     @property
     def pedidos(self) -> BaseRepository[Pedido]:
-        """Orders repository"""
-        if "pedidos" not in self._repos:
-            self._repos["pedidos"] = BaseRepository(self.session, Pedido)
-        return self._repos["pedidos"]
-    
+        """Repository for Pedido entity."""
+        if "pedidos" not in self._repositories:
+            self._repositories["pedidos"] = BaseRepository(self.session, Pedido)
+        return self._repositories["pedidos"]
+
     @property
     def detalles_pedido(self) -> BaseRepository[DetallePedido]:
-        """Order details repository"""
-        if "detalles_pedido" not in self._repos:
-            self._repos["detalles_pedido"] = BaseRepository(
-                self.session, DetallePedido
-            )
-        return self._repos["detalles_pedido"]
-    
+        """Repository for DetallePedido entity."""
+        if "detalles_pedido" not in self._repositories:
+            self._repositories["detalles_pedido"] = BaseRepository(self.session, DetallePedido)
+        return self._repositories["detalles_pedido"]
+
     @property
-    def historiales_estado_pedido(self) -> BaseRepository[HistorialEstadoPedido]:
-        """Order status history repository"""
-        if "historiales_estado_pedido" not in self._repos:
-            self._repos["historiales_estado_pedido"] = BaseRepository(
-                self.session, HistorialEstadoPedido
-            )
-        return self._repos["historiales_estado_pedido"]
-    
+    def historial_estado_pedido(self) -> BaseRepository[HistorialEstadoPedido]:
+        """Repository for HistorialEstadoPedido entity (append-only)."""
+        if "historial_estado_pedido" not in self._repositories:
+            self._repositories["historial_estado_pedido"] = BaseRepository(self.session, HistorialEstadoPedido)
+        return self._repositories["historial_estado_pedido"]
+
     @property
     def pagos(self) -> BaseRepository[Pago]:
-        """Payments repository"""
-        if "pagos" not in self._repos:
-            self._repos["pagos"] = BaseRepository(self.session, Pago)
-        return self._repos["pagos"]
-    
-    async def __aenter__(self) -> "UnitOfWork":
+        """Repository for Pago entity."""
+        if "pagos" not in self._repositories:
+            self._repositories["pagos"] = BaseRepository(self.session, Pago)
+        return self._repositories["pagos"]
+
+    async def commit(self) -> None:
         """
-        Enter async context manager.
+        Commit all changes in the transaction.
         
-        Returns:
-            UnitOfWork: Self for use in async with statement
+        Raises:
+            SQLAlchemy exceptions on constraint violations
         """
+        await self.session.commit()
+
+    async def rollback(self) -> None:
+        """Rollback all changes in the transaction."""
+        await self.session.rollback()
+
+    async def __aenter__(self) -> "UnitOfWork":
+        """Enter async context manager (transaction start)."""
         return self
-    
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> Optional[bool]:
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         """
-        Exit async context manager with auto-commit/rollback.
+        Exit async context manager (transaction end).
+        
+        Auto-commits on success, auto-rolls back on exception.
         
         Args:
             exc_type: Exception type if exception occurred
-            exc_val: Exception instance
+            exc_val: Exception value
             exc_tb: Exception traceback
-            
-        Returns:
-            Optional[bool]: None to propagate exception (not suppressed)
         """
         if exc_type is not None:
-            # Exception occurred - rollback
-            await self.session.rollback()
-            return None  # Propagate exception
+            # Exception occurred: rollback
+            await self.rollback()
         else:
-            # Success - commit
-            await self.session.commit()
-            return None
+            # Success: commit
+            try:
+                await self.commit()
+            except Exception:
+                await self.rollback()
+                raise
+
+
+async def get_uow(session: AsyncSession) -> UnitOfWork:
+    """
+    FastAPI dependency for injecting Unit of Work into route handlers.
+    
+    Usage in routes:
+        @app.post("/api/v1/usuarios")
+        async def create_user(user: UserCreateSchema, uow: UnitOfWork = Depends(get_uow)):
+            async with uow:
+                new_user = Usuario(...)
+                user = await uow.usuarios.create(new_user)
+                return user
+    
+    Args:
+        session: AsyncSession injected by FastAPI
+        
+    Yields:
+        UnitOfWork instance for the request
+    """
+    uow = UnitOfWork(session)
+    try:
+        yield uow
+    finally:
+        await session.close()
