@@ -20,6 +20,7 @@ from slowapi.errors import RateLimitExceeded
 
 from core.config import settings
 from core.database import check_db_connection, close_db_connection
+from infrastructure.error_middleware import register_error_handlers
 
 
 # ============================================================================
@@ -79,6 +80,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Register RFC 7807 error middleware
+register_error_handlers(app)
+
 # Add rate limiter to app
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, lambda request, exc: JSONResponse(
@@ -110,92 +114,8 @@ app.add_middleware(
 )
 
 
-# ============================================================================
-# RFC 7807 Error Middleware
-# ============================================================================
-
-from fastapi import Request
-from fastapi.exceptions import RequestValidationError
-from starlette.exceptions import HTTPException as StarletteHTTPException
-
-
-@app.exception_handler(StarletteHTTPException)
-async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    """
-    Handle HTTP exceptions with RFC 7807 format.
-    
-    RFC 7807 specifies a standard problem details format for HTTP APIs:
-    - type: URI identifying the problem type
-    - title: Short human-readable summary
-    - detail: Explanation specific to this instance
-    - status: HTTP status code
-    - instance: URI of the affected resource
-    """
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={
-            "type": f"https://httpwg.org/specs/rfc7231.html#status.{exc.status_code}",
-            "title": exc.__class__.__name__,
-            "detail": exc.detail,
-            "status": exc.status_code,
-            "instance": str(request.url.path),
-        }
-    )
-
-
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    """
-    Handle validation errors with RFC 7807 format including field-level details.
-    """
-    errors = []
-    for error in exc.errors():
-        errors.append({
-            "field": ".".join(str(x) for x in error["loc"][1:]),
-            "message": error["msg"],
-            "code": error["type"],
-        })
-    
-    return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={
-            "type": "https://tools.ietf.org/html/rfc7231#section-6.5.1",
-            "title": "Validation Error",
-            "detail": "Request validation failed",
-            "status": 422,
-            "instance": str(request.url.path),
-            "errors": errors,
-        }
-    )
-
-
-@app.exception_handler(Exception)
-async def general_exception_handler(request: Request, exc: Exception):
-    """
-    Handle unexpected exceptions with generic RFC 7807 response.
-    
-    In development, includes traceback for debugging.
-    In production, hides internal details.
-    """
-    if settings.is_prod():
-        # Production: generic message
-        detail = "An unexpected error occurred. Please contact support."
-    else:
-        # Development: include error details for debugging
-        detail = f"{exc.__class__.__name__}: {str(exc)}"
-    
-    print(f"❌ Unhandled exception: {exc}")
-    
-    return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={
-            "type": "https://tools.ietf.org/html/rfc7231#section-6.6.1",
-            "title": "Internal Server Error",
-            "detail": detail,
-            "status": 500,
-            "instance": str(request.url.path),
-        }
-    )
+# Note: RFC 7807 error handlers are registered via infrastructure.error_middleware
+# See register_error_handlers(app) call above
 
 
 # ============================================================================
