@@ -142,7 +142,23 @@ async def create_db_tables() -> None:
     - Is idempotent (safe to call multiple times)
     """
     # Import models to register them with SQLAlchemy metadata
-    from core.models import Rol, EstadoPedido, FormaPago, Usuario  # noqa: F401
+    from core.models import (
+        Rol,
+        EstadoPedido,
+        FormaPago,
+        Usuario,
+        RefreshToken,
+        DireccionEntrega,
+        Categoria,
+        Producto,
+        Ingrediente,
+        ProductoCategoria,
+        ProductoIngrediente,
+        Pedido,
+        DetallePedido,
+        HistorialEstadoPedido,
+        Pago,
+    )  # noqa: F401
     
     # Create all tables defined in models
     async with engine.begin() as conn:

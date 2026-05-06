@@ -4,6 +4,7 @@ SQLModel domain models for the Food Store application.
 Models use SQLModel which combines SQLAlchemy ORM capabilities with Pydantic validation.
 """
 from datetime import datetime
+from decimal import Decimal
 from typing import Optional
 from sqlmodel import SQLModel, Field
 from passlib.context import CryptContext
@@ -79,6 +80,7 @@ class Usuario(SQLModel, table=True):
     - apellido: User's last name
     - rol_id: Foreign key to Rol table
     - activo: Account status
+    - eliminado_en: Soft delete timestamp
     """
     __tablename__ = "usuarios"
     
@@ -91,6 +93,7 @@ class Usuario(SQLModel, table=True):
     activo: bool = Field(default=True)
     creado_en: datetime = Field(default_factory=datetime.utcnow)
     actualizado_en: datetime = Field(default_factory=datetime.utcnow)
+    eliminado_en: Optional[datetime] = None
     
     @staticmethod
     def hash_password(password: str) -> str:
@@ -100,3 +103,194 @@ class Usuario(SQLModel, table=True):
     def verify_password(self, password: str) -> bool:
         """Verify a password against the stored hash."""
         return pwd_context.verify(password, self.hashed_password)
+
+
+class RefreshToken(SQLModel, table=True):
+    """
+    Refresh token entity for JWT token refresh operations.
+    
+    Tracks issued refresh tokens with expiration and revocation support.
+    """
+    __tablename__ = "refresh_tokens"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    usuario_id: int = Field(foreign_key="usuarios.id", ondelete="CASCADE")
+    token: str = Field(unique=True, index=True)
+    expires_at: datetime
+    revoked_at: Optional[datetime] = None
+    creado_en: datetime = Field(default_factory=datetime.utcnow)
+
+
+class DireccionEntrega(SQLModel, table=True):
+    """
+    Delivery address entity for order fulfillment.
+    
+    Stores customer delivery addresses with soft delete support.
+    """
+    __tablename__ = "direcciones_entrega"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    usuario_id: int = Field(foreign_key="usuarios.id", ondelete="CASCADE")
+    alias: str
+    linea1: str
+    piso: Optional[str] = None
+    departamento: Optional[str] = None
+    ciudad: str
+    codigo_postal: str
+    referencia: Optional[str] = None
+    es_principal: bool = False
+    creado_en: datetime = Field(default_factory=datetime.utcnow)
+    actualizado_en: datetime = Field(default_factory=datetime.utcnow)
+    eliminado_en: Optional[datetime] = None
+
+
+class Categoria(SQLModel, table=True):
+    """
+    Product category entity with hierarchical support.
+    
+    Supports parent-child relationships for category trees.
+    """
+    __tablename__ = "categorias"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    nombre: str = Field(unique=True, index=True, max_length=255)
+    descripcion: Optional[str] = None
+    padre_id: Optional[int] = Field(default=None, foreign_key="categorias.id")
+    creado_en: datetime = Field(default_factory=datetime.utcnow)
+    actualizado_en: datetime = Field(default_factory=datetime.utcnow)
+    eliminado_en: Optional[datetime] = None
+
+
+class Producto(SQLModel, table=True):
+    """
+    Product entity for store inventory.
+    
+    Stores product information including pricing, stock, and availability.
+    """
+    __tablename__ = "productos"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    nombre: str = Field(index=True, max_length=255)
+    descripcion: Optional[str] = None
+    precio_base: Decimal = Field(decimal_places=2, max_digits=10)
+    stock_cantidad: int = 0
+    disponible: bool = True
+    imagen_url: Optional[str] = None
+    creado_en: datetime = Field(default_factory=datetime.utcnow)
+    actualizado_en: datetime = Field(default_factory=datetime.utcnow)
+    eliminado_en: Optional[datetime] = None
+
+
+class Ingrediente(SQLModel, table=True):
+    """
+    Ingredient entity for product composition.
+    
+    Tracks ingredients with allergen information.
+    """
+    __tablename__ = "ingredientes"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    nombre: str = Field(unique=True, index=True, max_length=255)
+    es_alergeno: bool = False
+    creado_en: datetime = Field(default_factory=datetime.utcnow)
+    eliminado_en: Optional[datetime] = None
+
+
+class ProductoCategoria(SQLModel, table=True):
+    """
+    N:M pivot table for Product-Category relationships.
+    
+    Allows products to belong to multiple categories.
+    """
+    __tablename__ = "producto_categoria"
+    
+    producto_id: int = Field(foreign_key="productos.id", primary_key=True, ondelete="CASCADE")
+    categoria_id: int = Field(foreign_key="categorias.id", primary_key=True, ondelete="CASCADE")
+
+
+class ProductoIngrediente(SQLModel, table=True):
+    """
+    N:M pivot table for Product-Ingredient relationships.
+    
+    Tracks product composition with removable ingredient flag.
+    """
+    __tablename__ = "producto_ingrediente"
+    
+    producto_id: int = Field(foreign_key="productos.id", primary_key=True, ondelete="CASCADE")
+    ingrediente_id: int = Field(foreign_key="ingredientes.id", primary_key=True, ondelete="CASCADE")
+    es_removible: bool = False
+
+
+class Pedido(SQLModel, table=True):
+    """
+    Order entity for customer purchases.
+    
+    Tracks order state, payment, and delivery information.
+    """
+    __tablename__ = "pedidos"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    usuario_id: int = Field(foreign_key="usuarios.id", ondelete="RESTRICT")
+    direccion_entrega_id: int = Field(foreign_key="direcciones_entrega.id")
+    forma_pago_id: int = Field(foreign_key="formas_pago.id")
+    estado_pedido_id: int = Field(foreign_key="estados_pedido.id")
+    total: Decimal = Field(decimal_places=2, max_digits=10)
+    observacion: Optional[str] = None
+    creado_en: datetime = Field(default_factory=datetime.utcnow)
+    actualizado_en: datetime = Field(default_factory=datetime.utcnow)
+    eliminado_en: Optional[datetime] = None
+
+
+class DetallePedido(SQLModel, table=True):
+    """
+    Order line item entity.
+    
+    Tracks individual products in orders with price and ingredient snapshots.
+    """
+    __tablename__ = "detalle_pedido"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    pedido_id: int = Field(foreign_key="pedidos.id", ondelete="CASCADE")
+    producto_id: int = Field(foreign_key="productos.id", ondelete="RESTRICT")
+    cantidad: int
+    precio_snapshot: Decimal = Field(decimal_places=2, max_digits=10)
+    nombre_snapshot: str
+    ingredientes_excluidos: Optional[str] = None  # JSON array as string
+    creado_en: datetime = Field(default_factory=datetime.utcnow)
+
+
+class HistorialEstadoPedido(SQLModel, table=True):
+    """
+    Append-only audit log for order status changes.
+    
+    Tracks all status transitions for orders (immutable).
+    """
+    __tablename__ = "historial_estado_pedido"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    pedido_id: int = Field(foreign_key="pedidos.id", ondelete="RESTRICT")
+    estado_anterior_id: Optional[int] = Field(default=None, foreign_key="estados_pedido.id")
+    estado_nuevo_id: int = Field(foreign_key="estados_pedido.id")
+    observacion: Optional[str] = None
+    usuario_responsable_id: Optional[int] = Field(default=None, foreign_key="usuarios.id")
+    creado_en: datetime = Field(default_factory=datetime.utcnow)
+
+
+class Pago(SQLModel, table=True):
+    """
+    Payment entity for order transactions.
+    
+    Tracks payments with MercadoPago integration and idempotency.
+    """
+    __tablename__ = "pagos"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    pedido_id: int = Field(foreign_key="pedidos.id", ondelete="RESTRICT")
+    mp_payment_id: Optional[str] = Field(default=None, unique=True)
+    mp_status: Optional[str] = None
+    external_reference: str  # UUID
+    idempotency_key: str = Field(unique=True)  # UUID
+    gateway_response: Optional[str] = None  # JSON
+    creado_en: datetime = Field(default_factory=datetime.utcnow)
+    actualizado_en: datetime = Field(default_factory=datetime.utcnow)
+    eliminado_en: Optional[datetime] = None
