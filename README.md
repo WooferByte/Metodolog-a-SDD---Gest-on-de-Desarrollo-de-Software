@@ -2,6 +2,12 @@
 
 A modern, scalable full-stack e-commerce platform built with Python FastAPI, React, and PostgreSQL. This is a demonstration project showcasing Domain-Driven Design (DDD), clean architecture, and modern web development practices.
 
+## 📚 Documentation
+
+For detailed documentation, design decisions, and setup guides, see **[`docs/INDEX.md`](./docs/INDEX.md)**.
+
+> Includes: Architecture overview, database setup, skills guides, testing procedures, and OPSX change logs.
+
 ## Tech Stack
 
 ### Backend
