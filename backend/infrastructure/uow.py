@@ -8,15 +8,17 @@ Ensures atomicity: all changes commit together or all rollback on exception.
 from typing import Optional
 from contextlib import asynccontextmanager
 
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from fastapi import Depends
 
-from backend.infrastructure.repositories import BaseRepository
-from backend.core.models import (
+from infrastructure.repositories.base_repository import BaseRepository
+from core.models import (
     Usuario, Rol, RefreshToken, DireccionEntrega,
     Categoria, Producto, Ingrediente, ProductoCategoria, ProductoIngrediente,
     EstadoPedido, FormaPago, Pedido, DetallePedido, HistorialEstadoPedido, Pago
 )
+from core.database import get_db
 
 
 class UnitOfWork:
@@ -194,7 +196,7 @@ class UnitOfWork:
                 raise
 
 
-async def get_uow(session: AsyncSession) -> UnitOfWork:
+async def get_uow(session: AsyncSession = Depends(get_db)) -> UnitOfWork:
     """
     FastAPI dependency for injecting Unit of Work into route handlers.
     
@@ -209,11 +211,7 @@ async def get_uow(session: AsyncSession) -> UnitOfWork:
     Args:
         session: AsyncSession injected by FastAPI
         
-    Yields:
+    Returns:
         UnitOfWork instance for the request
     """
-    uow = UnitOfWork(session)
-    try:
-        yield uow
-    finally:
-        await session.close()
+    return UnitOfWork(session)

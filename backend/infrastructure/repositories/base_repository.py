@@ -5,7 +5,7 @@ Implements CRUD operations with soft-delete pattern support and type-safe querie
 Works with all SQLModel entities from CHANGE 3.
 """
 
-from typing import Generic, Optional, Type, TypeVar
+from typing import Generic, Optional, Type, TypeVar, Any
 from datetime import datetime
 
 from sqlalchemy import select, func
@@ -171,7 +171,11 @@ class BaseRepository(Generic[T]):
         Args:
             id: Primary key of entity to delete
         """
-        entity = await self.get_by_id(id)
+        # Note: get_by_id filters soft-deleted, but we need raw entity for hard delete
+        # So we query without the soft-delete filter
+        query = select(self.model).where(self.model.id == id)
+        result = await self.session.execute(query)
+        entity = result.scalars().first()
         if entity:
             await self.session.delete(entity)
             await self.session.flush()
@@ -194,3 +198,20 @@ class BaseRepository(Generic[T]):
         """
         result = await self.session.execute(query)
         return result.scalars().all()
+
+    async def execute_scalar(self, query: select) -> Any:
+        """
+        Execute a scalar query (COUNT, aggregates, etc.).
+        
+        Args:
+            query: SQLAlchemy select() query that returns a scalar
+            
+        Returns:
+            Scalar result (e.g., count, sum, etc.)
+            
+        Example:
+            query = select(func.count(Usuario.id))
+            count = await repo.execute_scalar(query)
+        """
+        result = await self.session.execute(query)
+        return result.scalar()

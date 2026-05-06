@@ -1,14 +1,20 @@
 """Unit tests for BaseRepository[T] generic pattern."""
 
 import pytest
+import sys
+from pathlib import Path
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
+
+# Add backend directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import SQLModel, Field
 
-from backend.infrastructure.repositories import BaseRepository
+# Import BaseRepository directly from module, not from __init__
+from infrastructure.repositories.base_repository import BaseRepository
 
 
 # Mock entity for testing

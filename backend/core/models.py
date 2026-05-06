@@ -5,8 +5,8 @@ Models use SQLModel which combines SQLAlchemy ORM capabilities with Pydantic val
 """
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
-from sqlmodel import SQLModel, Field
+from typing import Optional, List
+from sqlmodel import SQLModel, Field, Relationship
 from passlib.context import CryptContext
 
 # Password hashing context
@@ -29,6 +29,9 @@ class Rol(SQLModel, table=True):
     nombre: str = Field(unique=True, index=True, max_length=50)
     descripcion: Optional[str] = Field(default=None, max_length=500)
     creado_en: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Relationships
+    usuarios: List["Usuario"] = Relationship(back_populates="rol")
 
 
 class EstadoPedido(SQLModel, table=True):
@@ -94,6 +97,9 @@ class Usuario(SQLModel, table=True):
     creado_en: datetime = Field(default_factory=datetime.utcnow)
     actualizado_en: datetime = Field(default_factory=datetime.utcnow)
     eliminado_en: Optional[datetime] = None
+    
+    # Relationships
+    rol: Optional["Rol"] = Relationship(back_populates="usuarios")
     
     @staticmethod
     def hash_password(password: str) -> str:
