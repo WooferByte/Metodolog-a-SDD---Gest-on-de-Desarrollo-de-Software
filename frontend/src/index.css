@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+/* Base styles */
+* {
+  @apply border-slate-200;
+}
+
+html {
+  @apply scroll-smooth;
+}
+
+body {
+  @apply bg-white text-slate-900;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+a {
+  @apply text-blue-600 hover:text-blue-700 underline;
+}
