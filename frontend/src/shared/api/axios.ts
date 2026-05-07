@@ -36,3 +36,8 @@ export function createAxiosClient(baseURL: string): AxiosInstance {
 export const apiClient = createAxiosClient(
   import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 )
+
+/**
+ * Alias for apiClient for convenience
+ */
+export const axiosInstance = apiClient

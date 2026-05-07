@@ -17,7 +17,7 @@ const ProtectedAdmin = withAuth(Admin, ['ADMIN'])
 
 /**
  * Router component - defines all routes for the application
- * Public routes: /, /login, /register
+ * Public routes: /, /catalog, /login, /register
  * Private routes: /profile, /orders (CLIENT+), /admin/* (ADMIN only)
  */
 export default function Router() {
@@ -25,6 +25,7 @@ export default function Router() {
     <Routes>
       {/* Public routes */}
       <Route path="/" element={<Catalog />} />
+      <Route path="/catalog" element={<Catalog />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 

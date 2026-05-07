@@ -11,7 +11,6 @@
 
 import { X } from 'lucide-react'
 import { useCategoriesHierarchy } from '@/features/products/hooks'
-import type { Category } from '@/features/products/types'
 
 interface AppliedFiltersProps {
   search: string
@@ -57,7 +56,8 @@ export function AppliedFilters({
 
   // Get category names from IDs
   const getCategoryName = (id: string): string => {
-    return categories.find((cat: Category) => cat.id === id)?.nombre || id
+    const cat = categories.find((c: any) => c.id === id)
+    return cat?.nombre || id
   }
 
   // Get allergen names from IDs

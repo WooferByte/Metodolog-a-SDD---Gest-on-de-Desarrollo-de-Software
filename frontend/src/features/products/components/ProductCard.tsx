@@ -24,7 +24,6 @@
  */
 
 import { ShoppingCart, Eye } from 'lucide-react'
-import type { Product } from '@/features/products/types'
 import type { ProductCardProps } from '@/features/products/types'
 
 /**

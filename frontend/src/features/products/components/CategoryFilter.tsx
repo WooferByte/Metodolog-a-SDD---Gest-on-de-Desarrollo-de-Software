@@ -12,7 +12,6 @@
 import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { useCategoriesHierarchy, buildCategoryHierarchy } from '@/features/products/hooks'
-import type { Category } from '@/features/products/types'
 
 interface CategoryFilterProps {
   selectedIds: string[]
