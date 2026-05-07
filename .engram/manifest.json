@@ -8,6 +8,14 @@
       "sessions": 9,
       "memories": 25,
       "prompts": 35
+    },
+    {
+      "id": "14b61765",
+      "created_by": "Woofe",
+      "created_at": "2026-05-07T11:59:24Z",
+      "sessions": 12,
+      "memories": 24,
+      "prompts": 40
     }
   ]
 }
