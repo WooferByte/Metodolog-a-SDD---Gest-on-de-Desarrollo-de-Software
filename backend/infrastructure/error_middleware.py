@@ -16,7 +16,7 @@ Structure:
 
 import logging
 from typing import Callable, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
@@ -117,7 +117,7 @@ async def http_exception_handler(request: Request, exc: Exception) -> JSONRespon
             "type": "https://api.example.com/errors/conflict",
             "title": "Conflict",
         },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
             "type": "https://api.example.com/errors/validation-error",
             "title": "Validation Error",
         },
@@ -178,7 +178,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         })
 
     problem = ProblemDetail(
-        status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status=status.HTTP_422_UNPROCESSABLE_CONTENT,
         title="Validation Error",
         detail=f"Invalid request: {len(errors)} validation error(s)",
         error_type="https://api.example.com/errors/validation-error",
@@ -192,7 +192,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
         content=problem.to_dict(),
         media_type="application/problem+json",
     )
@@ -273,7 +273,7 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
         exc_info=exc,
         extra={
             "instance": str(request.url),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         },
     )
 

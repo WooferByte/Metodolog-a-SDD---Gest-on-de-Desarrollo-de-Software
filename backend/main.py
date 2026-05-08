@@ -9,6 +9,7 @@ Initializes the core application with:
 - Health check endpoint
 - Auto-generated API documentation (Swagger/ReDoc)
 """
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, status
@@ -22,6 +23,16 @@ from core.config import settings
 from core.database import check_db_connection, close_db_connection
 from infrastructure.error_middleware import register_error_handlers
 
+
+# ============================================================================
+# Logging Configuration
+# ============================================================================
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%dT%H:%M:%S",
+)
 
 # ============================================================================
 # Rate Limiter Setup
