@@ -189,15 +189,20 @@ async def root():
 
 
 # ============================================================================
-# Placeholder for future routers
+# Routers — se registran aquí cuando cada módulo esté implementado
 # ============================================================================
 
-# Future routers will be included here:
-# from api.v1 import auth, products, orders, payments
-# app.include_router(auth.router, prefix="/api/v1")
-# app.include_router(products.router, prefix="/api/v1")
-# app.include_router(orders.router, prefix="/api/v1")
-# app.include_router(payments.router, prefix="/api/v1")
+# Ejemplo de registro (descomentar cuando el módulo esté listo):
+# from auth.router import router as auth_router
+# from usuarios.router import router as usuarios_router
+# from productos.router import router as productos_router
+# from pedidos.router import router as pedidos_router
+# from pagos.router import router as pagos_router
+# app.include_router(auth_router, prefix="/api/v1")
+# app.include_router(usuarios_router, prefix="/api/v1")
+# app.include_router(productos_router, prefix="/api/v1")
+# app.include_router(pedidos_router, prefix="/api/v1")
+# app.include_router(pagos_router, prefix="/api/v1")
 
 
 if __name__ == "__main__":

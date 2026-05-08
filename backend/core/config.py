@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     )
 
     # MercadoPago
-    mercadopago_access_token: str = Field(default="", alias="MERCADOPAGO_ACCESS_TOKEN")
+    mp_access_token: str = Field(default="", alias="MP_ACCESS_TOKEN")
     mercadopago_public_key: str = Field(default="", alias="MERCADOPAGO_PUBLIC_KEY")
 
     # Rate Limiting

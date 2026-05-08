@@ -104,6 +104,8 @@ class Usuario(SQLModel, table=True):
     nombre: str = Field(max_length=100)
     apellido: Optional[str] = Field(default=None, max_length=100)
     activo: bool = Field(default=True)
+    telefono: Optional[str] = Field(default=None, max_length=20)
+    ultimo_login: Optional[datetime] = None
     creado_en: datetime = Field(default_factory=datetime.utcnow)
     actualizado_en: datetime = Field(default_factory=datetime.utcnow)
     eliminado_en: Optional[datetime] = None
@@ -252,6 +254,7 @@ class Pedido(SQLModel, table=True):
     estado_pedido_id: int = Field(foreign_key="estados_pedido.id")
     total: Decimal = Field(decimal_places=2, max_digits=10)
     observacion: Optional[str] = None
+    direccion_snapshot: Optional[str] = None  # JSON con datos de dirección al momento del pedido
     creado_en: datetime = Field(default_factory=datetime.utcnow)
     actualizado_en: datetime = Field(default_factory=datetime.utcnow)
     eliminado_en: Optional[datetime] = None

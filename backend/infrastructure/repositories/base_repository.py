@@ -202,16 +202,56 @@ class BaseRepository(Generic[T]):
     async def execute_scalar(self, query: select) -> Any:
         """
         Execute a scalar query (COUNT, aggregates, etc.).
-        
+
         Args:
             query: SQLAlchemy select() query that returns a scalar
-            
+
         Returns:
             Scalar result (e.g., count, sum, etc.)
-            
+
         Example:
             query = select(func.count(Usuario.id))
             count = await repo.execute_scalar(query)
         """
         result = await self.session.execute(query)
         return result.scalar()
+
+    async def find_by(self, **kwargs) -> Optional[T]:
+        """
+        Return first record matching all keyword filters (exact match).
+
+        Args:
+            **kwargs: Field name → value pairs to filter by (AND logic)
+
+        Returns:
+            First matching entity, or None if not found
+
+        Example:
+            user = await repo.find_by(email="alice@example.com")
+        """
+        stmt = select(self.model)
+        for field, value in kwargs.items():
+            stmt = stmt.where(getattr(self.model, field) == value)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def find_all_by(self, **kwargs) -> list[T]:
+        """
+        Return all records matching all keyword filters (exact match), excluding soft-deleted.
+
+        Args:
+            **kwargs: Field name → value pairs to filter by (AND logic)
+
+        Returns:
+            List of matching entities (excluding soft-deleted)
+
+        Example:
+            active_users = await repo.find_all_by(activo=True)
+        """
+        stmt = select(self.model)
+        for field, value in kwargs.items():
+            stmt = stmt.where(getattr(self.model, field) == value)
+        if hasattr(self.model, "eliminado_en"):
+            stmt = stmt.where(getattr(self.model, "eliminado_en") == None)
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
