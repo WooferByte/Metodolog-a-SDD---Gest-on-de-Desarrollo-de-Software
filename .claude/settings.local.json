@@ -28,7 +28,13 @@
       "Bash(openspec list *)",
       "Bash(claude --resume 7519bf70-4514-4ebb-b436-86d09880d886 --print)",
       "Bash(claude *)",
-      "mcp__plugin_engram_engram__mem_session_summary"
+      "mcp__plugin_engram_engram__mem_session_summary",
+      "Bash(openspec status *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git commit -m 'fix: mover get_uow al import correcto en infrastructure/__init__.py *)",
+      "Bash(python -c \"import sys; sys.path.insert\\(0, '.'\\); import main\")",
+      "Bash(./venv/Scripts/python.exe -c \"import sys; sys.path.insert\\(0, '.'\\); import main\")"
     ]
   }
 }
