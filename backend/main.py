@@ -48,22 +48,22 @@ async def lifespan(app: FastAPI):
     - Cleanup resources
     """
     # ========== STARTUP ==========
-    print(f"🚀 Starting {settings.app_name} v{settings.app_version}")
-    print(f"📦 Environment: {settings.env}")
-    
+    print(f"[START] Starting {settings.app_name} v{settings.app_version}")
+    print(f"[ENV] Environment: {settings.env}")
+
     # Check database connectivity
     db_ok = await check_db_connection()
     if db_ok:
-        print("✅ Database connection verified")
+        print("[OK] Database connection verified")
     else:
-        print("⚠️  Database connection FAILED - continuing anyway")
-    
+        print("[WARN] Database connection FAILED - continuing anyway")
+
     yield
-    
+
     # ========== SHUTDOWN ==========
-    print("🛑 Shutting down application")
+    print("[STOP] Shutting down application")
     await close_db_connection()
-    print("✅ Cleanup complete")
+    print("[OK] Cleanup complete")
 
 
 # ============================================================================

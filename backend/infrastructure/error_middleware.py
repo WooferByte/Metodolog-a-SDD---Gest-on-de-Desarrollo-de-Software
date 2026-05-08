@@ -290,7 +290,7 @@ def register_error_handlers(app: FastAPI) -> None:
     
     Usage:
         from fastapi import FastAPI
-        from backend.infrastructure.error_middleware import register_error_handlers
+        from infrastructure.error_middleware import register_error_handlers
         
         app = FastAPI()
         register_error_handlers(app)

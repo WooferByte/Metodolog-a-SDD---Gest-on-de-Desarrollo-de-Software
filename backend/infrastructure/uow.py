@@ -13,12 +13,12 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import Depends
 
 from .repositories.base_repository import BaseRepository
-from backend.core.models import (
+from core.models import (
     Usuario, Rol, RefreshToken, DireccionEntrega,
     Categoria, Producto, Ingrediente, ProductoCategoria, ProductoIngrediente,
     EstadoPedido, FormaPago, Pedido, DetallePedido, HistorialEstadoPedido, Pago
 )
-from backend.core.database import get_db
+from core.database import get_db
 
 
 class UnitOfWork:

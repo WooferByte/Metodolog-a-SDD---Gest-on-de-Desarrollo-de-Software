@@ -120,7 +120,7 @@ class RefreshToken(SQLModel, table=True):
     __tablename__ = "refresh_tokens"
     
     id: Optional[int] = Field(default=None, primary_key=True)
-    usuario_id: int = Field(foreign_key="usuarios.id", ondelete="CASCADE")
+    usuario_id: int = Field(foreign_key="usuarios.id")
     token: str = Field(unique=True, index=True)
     expires_at: datetime
     revoked_at: Optional[datetime] = None
@@ -136,7 +136,7 @@ class DireccionEntrega(SQLModel, table=True):
     __tablename__ = "direcciones_entrega"
     
     id: Optional[int] = Field(default=None, primary_key=True)
-    usuario_id: int = Field(foreign_key="usuarios.id", ondelete="CASCADE")
+    usuario_id: int = Field(foreign_key="usuarios.id")
     alias: str
     linea1: str
     piso: Optional[str] = None
@@ -210,8 +210,8 @@ class ProductoCategoria(SQLModel, table=True):
     """
     __tablename__ = "producto_categoria"
     
-    producto_id: int = Field(foreign_key="productos.id", primary_key=True, ondelete="CASCADE")
-    categoria_id: int = Field(foreign_key="categorias.id", primary_key=True, ondelete="CASCADE")
+    producto_id: int = Field(foreign_key="productos.id", primary_key=True)
+    categoria_id: int = Field(foreign_key="categorias.id", primary_key=True)
 
 
 class ProductoIngrediente(SQLModel, table=True):
@@ -222,8 +222,8 @@ class ProductoIngrediente(SQLModel, table=True):
     """
     __tablename__ = "producto_ingrediente"
     
-    producto_id: int = Field(foreign_key="productos.id", primary_key=True, ondelete="CASCADE")
-    ingrediente_id: int = Field(foreign_key="ingredientes.id", primary_key=True, ondelete="CASCADE")
+    producto_id: int = Field(foreign_key="productos.id", primary_key=True)
+    ingrediente_id: int = Field(foreign_key="ingredientes.id", primary_key=True)
     es_removible: bool = False
 
 
@@ -236,7 +236,7 @@ class Pedido(SQLModel, table=True):
     __tablename__ = "pedidos"
     
     id: Optional[int] = Field(default=None, primary_key=True)
-    usuario_id: int = Field(foreign_key="usuarios.id", ondelete="RESTRICT")
+    usuario_id: int = Field(foreign_key="usuarios.id")
     direccion_entrega_id: int = Field(foreign_key="direcciones_entrega.id")
     forma_pago_id: int = Field(foreign_key="formas_pago.id")
     estado_pedido_id: int = Field(foreign_key="estados_pedido.id")
@@ -256,8 +256,8 @@ class DetallePedido(SQLModel, table=True):
     __tablename__ = "detalle_pedido"
     
     id: Optional[int] = Field(default=None, primary_key=True)
-    pedido_id: int = Field(foreign_key="pedidos.id", ondelete="CASCADE")
-    producto_id: int = Field(foreign_key="productos.id", ondelete="RESTRICT")
+    pedido_id: int = Field(foreign_key="pedidos.id")
+    producto_id: int = Field(foreign_key="productos.id")
     cantidad: int
     precio_snapshot: Decimal = Field(decimal_places=2, max_digits=10)
     nombre_snapshot: str
@@ -274,7 +274,7 @@ class HistorialEstadoPedido(SQLModel, table=True):
     __tablename__ = "historial_estado_pedido"
     
     id: Optional[int] = Field(default=None, primary_key=True)
-    pedido_id: int = Field(foreign_key="pedidos.id", ondelete="RESTRICT")
+    pedido_id: int = Field(foreign_key="pedidos.id")
     estado_anterior_id: Optional[int] = Field(default=None, foreign_key="estados_pedido.id")
     estado_nuevo_id: int = Field(foreign_key="estados_pedido.id")
     observacion: Optional[str] = None
@@ -291,7 +291,7 @@ class Pago(SQLModel, table=True):
     __tablename__ = "pagos"
     
     id: Optional[int] = Field(default=None, primary_key=True)
-    pedido_id: int = Field(foreign_key="pedidos.id", ondelete="RESTRICT")
+    pedido_id: int = Field(foreign_key="pedidos.id")
     mp_payment_id: Optional[str] = Field(default=None, unique=True)
     mp_status: Optional[str] = None
     external_reference: str  # UUID

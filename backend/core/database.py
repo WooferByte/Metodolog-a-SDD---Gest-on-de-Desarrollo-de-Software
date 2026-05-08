@@ -22,18 +22,26 @@ from sqlmodel import SQLModel
 from core.config import settings
 
 
-# Create async SQLAlchemy engine with connection pooling
-engine: AsyncEngine = create_async_engine(
-    settings.database_url,
-    echo=settings.is_dev(),  # Log SQL in development
-    future=True,
-    pool_pre_ping=True,  # Verify connections before using them
-    # Use AsyncAdaptedQueuePool for async connections (not NullPool)
-    poolclass=NullPool if settings.is_test() else AsyncAdaptedQueuePool,
-    # Connection pool settings
-    pool_size=settings.database_pool_size if not settings.is_test() else 1,
-    max_overflow=settings.database_max_overflow if not settings.is_test() else 0,
-)
+# Create async SQLAlchemy engine with connection pooling.
+# NullPool (used in tests) does not accept pool_size/max_overflow, so those
+# kwargs are only passed when using AsyncAdaptedQueuePool.
+if settings.is_test():
+    engine: AsyncEngine = create_async_engine(
+        settings.database_url,
+        echo=False,
+        future=True,
+        poolclass=NullPool,
+    )
+else:
+    engine: AsyncEngine = create_async_engine(
+        settings.database_url,
+        echo=settings.is_dev(),  # Log SQL in development
+        future=True,
+        pool_pre_ping=True,  # Verify connections before using them
+        poolclass=AsyncAdaptedQueuePool,
+        pool_size=settings.database_pool_size,
+        max_overflow=settings.database_max_overflow,
+    )
 
 
 # Create async session factory

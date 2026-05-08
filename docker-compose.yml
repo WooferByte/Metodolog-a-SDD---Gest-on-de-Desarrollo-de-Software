@@ -26,9 +26,9 @@ services:
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
     
     ports:
-      # Map container port 5432 to host port 5432
-      # Access: localhost:5432
-      - "5432:5432"
+      # Map container port 5432 to host port 5433 (5432 used by tesis_postgres)
+      # Access: localhost:5433
+      - "5433:5432"
     
     volumes:
       # Named volume for database persistence

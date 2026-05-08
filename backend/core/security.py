@@ -18,9 +18,8 @@ from passlib.context import CryptContext
 from core.config import settings
 
 
-# Argon2 password hashing context (more secure than bcrypt)
 pwd_context = CryptContext(
-    schemes=["argon2"],
+    schemes=["bcrypt"],
     deprecated="auto",
 )
 
