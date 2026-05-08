@@ -8,10 +8,9 @@ Exports:
 - Error middleware: RFC 7807 error handling
 """
 from .repositories.base_repository import BaseRepository
-from .uow import UnitOfWork
+from .uow import UnitOfWork, get_uow
 from .dependencies import (
     get_current_user,
-    get_uow,
     require_role,
     extract_token,
     verify_token_dependency,
@@ -21,8 +20,8 @@ from .error_middleware import register_error_handlers
 __all__ = [
     "BaseRepository",
     "UnitOfWork",
-    "get_current_user",
     "get_uow",
+    "get_current_user",
     "require_role",
     "extract_token",
     "verify_token_dependency",
