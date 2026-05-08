@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { useAuthStore } from '../authStore'
 import { useCartStore } from '../cartStore'
 import { usePaymentStore } from '../paymentStore'
@@ -294,11 +294,11 @@ describe('MANUAL TESTS - CHANGE 8 (frontend-zustand-stores-setup)', () => {
       const store = usePaymentStore.getState()
 
       store.startCheckout()
-      store.updatePaymentStatus('pending')
-      expect(store.paymentStatus).toBe('pending')
+      store.updatePaymentStatus('processing')
+      expect(store.paymentStatus).toBe('processing')
 
-      store.updatePaymentStatus('success')
-      expect(store.paymentStatus).toBe('success')
+      store.updatePaymentStatus('completed')
+      expect(store.paymentStatus).toBe('completed')
     })
 
     it('Test 19: Set preference ID', () => {
@@ -312,8 +312,8 @@ describe('MANUAL TESTS - CHANGE 8 (frontend-zustand-stores-setup)', () => {
     it('Test 20: Payment status updates', () => {
       const store = usePaymentStore.getState()
 
-      store.updatePaymentStatus('pending')
-      expect(store.paymentStatus).toBe('pending')
+      store.updatePaymentStatus('processing')
+      expect(store.paymentStatus).toBe('processing')
 
       store.updatePaymentStatus('failed')
       expect(store.paymentStatus).toBe('failed')
@@ -324,13 +324,13 @@ describe('MANUAL TESTS - CHANGE 8 (frontend-zustand-stores-setup)', () => {
 
       store.startCheckout()
       store.setPreference('pref-123')
-      store.updatePaymentStatus('success')
+      store.updatePaymentStatus('completed')
 
       store.resetPayment()
 
-      expect(store.checkoutStep).toBe(null)
+      expect(store.checkoutStep).toBe('cart')
       expect(store.preferenceId).toBe(null)
-      expect(store.paymentStatus).toBe(null)
+      expect(store.paymentStatus).toBe('idle')
     })
 
     it('Test 22: NO persistence (security check)', () => {
@@ -374,13 +374,12 @@ describe('MANUAL TESTS - CHANGE 8 (frontend-zustand-stores-setup)', () => {
       store.toasts = []
 
       store.addToast({
-        id: 'toast-1',
         message: 'Item added to cart',
         type: 'success'
       })
 
       expect(store.toasts.length).toBe(1)
-      expect(store.toasts[0].id).toBe('toast-1')
+      expect(store.toasts[0].message).toBe('Item added to cart')
     })
 
     it('Test 26: Remove toast', () => {
