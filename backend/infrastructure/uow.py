@@ -14,7 +14,7 @@ from fastapi import Depends
 
 from .repositories.base_repository import BaseRepository
 from core.models import (
-    Usuario, Rol, RefreshToken, DireccionEntrega,
+    Usuario, Rol, UsuarioRol, RefreshToken, DireccionEntrega,
     Categoria, Producto, Ingrediente, ProductoCategoria, ProductoIngrediente,
     EstadoPedido, FormaPago, Pedido, DetallePedido, HistorialEstadoPedido, Pago
 )
@@ -148,6 +148,13 @@ class UnitOfWork:
         if "historial_estado_pedido" not in self._repositories:
             self._repositories["historial_estado_pedido"] = BaseRepository(self.session, HistorialEstadoPedido)
         return self._repositories["historial_estado_pedido"]
+
+    @property
+    def usuario_roles(self) -> BaseRepository[UsuarioRol]:
+        """Repository for UsuarioRol N:M pivot entity."""
+        if "usuario_roles" not in self._repositories:
+            self._repositories["usuario_roles"] = BaseRepository(self.session, UsuarioRol)
+        return self._repositories["usuario_roles"]
 
     @property
     def pagos(self) -> BaseRepository[Pago]:

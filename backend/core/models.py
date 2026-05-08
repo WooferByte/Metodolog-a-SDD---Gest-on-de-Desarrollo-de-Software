@@ -13,10 +13,22 @@ from passlib.context import CryptContext
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+class UsuarioRol(SQLModel, table=True):
+    """
+    N:M pivot table for Usuario-Rol relationships.
+
+    Allows users to have multiple roles (ERD v5).
+    """
+    __tablename__ = "usuario_rol"
+
+    usuario_id: Optional[int] = Field(default=None, foreign_key="usuarios.id", primary_key=True)
+    rol_id: Optional[int] = Field(default=None, foreign_key="roles.id", primary_key=True)
+
+
 class Rol(SQLModel, table=True):
     """
     Role entity for role-based access control (RBAC).
-    
+
     Roles:
     - ADMIN: Full system access
     - STOCK: Stock/inventory management
@@ -24,14 +36,14 @@ class Rol(SQLModel, table=True):
     - CLIENT: Customer account
     """
     __tablename__ = "roles"
-    
+
     id: Optional[int] = Field(default=None, primary_key=True)
     nombre: str = Field(unique=True, index=True, max_length=50)
     descripcion: Optional[str] = Field(default=None, max_length=500)
     creado_en: datetime = Field(default_factory=datetime.utcnow)
-    
+
     # Relationships
-    usuarios: List["Usuario"] = Relationship(back_populates="rol")
+    usuarios: List["Usuario"] = Relationship(back_populates="roles", link_model=UsuarioRol)
 
 
 class EstadoPedido(SQLModel, table=True):
@@ -75,31 +87,29 @@ class FormaPago(SQLModel, table=True):
 class Usuario(SQLModel, table=True):
     """
     User account entity for authentication and authorization.
-    
+
     Fields:
     - email: Unique identifier
     - hashed_password: Bcrypt-hashed password (never store plain text)
     - nombre: User's display name
     - apellido: User's last name
-    - rol_id: Foreign key to Rol table
     - activo: Account status
     - eliminado_en: Soft delete timestamp
     """
     __tablename__ = "usuarios"
-    
+
     id: Optional[int] = Field(default=None, primary_key=True)
     email: str = Field(unique=True, index=True, max_length=255)
     hashed_password: str = Field(max_length=255)
     nombre: str = Field(max_length=100)
     apellido: Optional[str] = Field(default=None, max_length=100)
-    rol_id: Optional[int] = Field(default=None, foreign_key="roles.id")
     activo: bool = Field(default=True)
     creado_en: datetime = Field(default_factory=datetime.utcnow)
     actualizado_en: datetime = Field(default_factory=datetime.utcnow)
     eliminado_en: Optional[datetime] = None
-    
-    # Relationships
-    rol: Optional["Rol"] = Relationship(back_populates="usuarios")
+
+    # Relationships — N:M via UsuarioRol pivot table
+    roles: List["Rol"] = Relationship(back_populates="usuarios", link_model=UsuarioRol)
     
     @staticmethod
     def hash_password(password: str) -> str:

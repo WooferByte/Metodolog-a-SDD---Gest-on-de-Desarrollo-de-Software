@@ -9,15 +9,15 @@ Provides:
 """
 
 from typing import Optional, Callable, Any
-from datetime import datetime, timedelta
 
 from fastapi import Depends, HTTPException, status, Header
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.models import Usuario
 from core.security import verify_token, extract_token_from_header
 from core.database import get_db
-from .uow import UnitOfWork, get_uow
 
 
 async def extract_token(auth_header: Optional[str] = Header(None, alias="authorization")) -> str:
@@ -62,41 +62,53 @@ async def verify_token_dependency(token: str = Depends(extract_token)) -> dict[s
 
 async def get_current_user(
     payload: dict[str, Any] = Depends(verify_token_dependency),
-    uow: UnitOfWork = Depends(get_uow),
+    session: AsyncSession = Depends(get_db),
 ) -> Usuario:
     """
     Get current authenticated user from JWT token.
-    
+
+    Uses a direct session query with eager-loaded roles to avoid UoW atomicity issues.
+
     Args:
         payload: Decoded JWT payload from verify_token_dependency()
-        uow: UnitOfWork for database access
-        
+        session: AsyncSession for database access
+
     Returns:
-        Current Usuario entity (fetched from database)
-        
+        Current Usuario entity with roles eagerly loaded
+
     Raises:
-        HTTPException 401 if user not found
+        HTTPException 401 if token payload invalid or user not found
         HTTPException 403 if user is soft-deleted (eliminado_en IS NOT NULL)
     """
-    user_id = int(payload.get("sub"))
-    
-    async with uow:
-        user = await uow.usuarios.get_by_id(user_id)
-    
+    user_id_str = payload.get("sub")
+    if not user_id_str:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    result = await session.execute(
+        select(Usuario)
+        .where(Usuario.id == int(user_id_str))
+        .options(selectinload(Usuario.roles))
+    )
+    user = result.scalar_one_or_none()
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     # Check if user is soft-deleted
     if user.eliminado_en is not None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account has been deleted",
         )
-    
+
     return user
 
 
@@ -123,14 +135,9 @@ def require_role(allowed_roles: list[str]) -> Callable:
         HTTPException 403 if user's role not in allowed_roles
     """
     async def check_role(current_user: Usuario = Depends(get_current_user)) -> None:
-        """Check if current user has one of the allowed roles."""
-        if current_user.rol is None:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="User has no role assigned",
-            )
-        
-        if current_user.rol.nombre not in allowed_roles:
+        """Check if current user has one of the allowed roles (N:M)."""
+        role_names = {rol.nombre for rol in current_user.roles}
+        if not role_names.intersection(set(allowed_roles)):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Insufficient permissions. Required roles: {', '.join(allowed_roles)}",

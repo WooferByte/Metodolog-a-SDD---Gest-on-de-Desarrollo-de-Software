@@ -126,87 +126,52 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     return encoded_jwt
 
 
-def create_refresh_token() -> str:
+def create_refresh_token(user_id: int) -> str:
     """
     Create a refresh token for obtaining new access tokens.
-    
-    Refresh tokens:
-    - Live longer than access tokens (7 days vs 30 min)
-    - Are rotated on use (old token invalidated when new one issued)
-    - Can be revoked via JWT ID (jti) in token revocation list
-    
+
+    Args:
+        user_id: ID of the user this token belongs to (stored in 'sub' claim)
+
     Returns:
         str: Encoded JWT refresh token
-        
-    Example:
-        >>> refresh_token = create_refresh_token()
-        >>> decoded = verify_token(refresh_token, is_refresh=True)
-        >>> decoded["sub"]  # Contains user ID
     """
-    jti = str(uuid.uuid4())
-    
+    expire = datetime.now(UTC) + timedelta(days=settings.refresh_token_expire_days)
+
     to_encode = {
+        "sub": str(user_id),
         "type": "refresh",
-        "jti": jti,
-    }
-    
-    expire = datetime.now(UTC) + timedelta(
-        days=settings.refresh_token_expire_days
-    )
-    
-    to_encode.update({
+        "jti": str(uuid.uuid4()),
         "exp": expire,
         "iat": datetime.now(UTC),
         "nbf": datetime.now(UTC),
         "iss": "foodstore-api",
         "aud": "foodstore-client",
-    })
-    
-    encoded_jwt = jwt.encode(
-        to_encode,
-        settings.secret_key,
-        algorithm=settings.algorithm,
-    )
-    return encoded_jwt
+    }
+
+    return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
 
 
-def verify_token(token: str) -> dict[str, Any]:
+def verify_token(token: str, expected_type: str = "access") -> dict[str, Any]:
     """
-    Verify and decode a JWT token.
-    
-    Validates:
-    - Signature (using SECRET_KEY and algorithm)
-    - Expiration (exp claim)
-    - Not before time (nbf claim)
-    - Standard claims (iss, aud)
-    
+    Verify and decode a JWT token, validating its type.
+
     Args:
-        token: JWT token string from Authorization header
-        
+        token: JWT token string
+        expected_type: "access" (default) or "refresh"
+
     Returns:
-        dict: Decoded token payload with all claims
-        
+        dict: Decoded token payload
+
     Raises:
-        HTTPException: 401 Unauthorized if token is invalid, expired, or malformed
-        
-    Example:
-        >>> token = create_access_token({"sub": "user-123"})
-        >>> payload = verify_token(token)
-        >>> payload["sub"]
-        'user-123'
-        
-        >>> expired_token = "eyJ..."
-        >>> try:
-        ...     verify_token(expired_token)
-        ... except HTTPException as e:
-        ...     print(f"Token invalid: {e.detail}")  # 401 Unauthorized
+        HTTPException 401 if token is invalid, expired, or wrong type
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid authentication credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
+
     try:
         payload = jwt.decode(
             token,
@@ -222,13 +187,18 @@ def verify_token(token: str) -> dict[str, Any]:
             },
             audience="foodstore-client",
             issuer="foodstore-api",
-            # Allow 30 seconds clock skew tolerance between servers
             access_options={"leeway": 30},
         )
-        return payload
     except JWTError as e:
         print(f"JWT verification failed: {e}")
         raise credentials_exception
+
+    # Validate token type: access tokens have no "type" field; refresh tokens have type="refresh"
+    token_type = payload.get("type", "access")
+    if token_type != expected_type:
+        raise credentials_exception
+
+    return payload
 
 
 def extract_token_from_header(auth_header: str | None) -> str:
