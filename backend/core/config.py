@@ -46,10 +46,9 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
-        # Allow environment variable names to be case-insensitive
         case_sensitive = False
-        # Populate by name to allow both snake_case and UPPER_CASE
         populate_by_name = True
+        extra = "ignore"  # tolerar variables de entorno desconocidas o renombradas
 
     @field_validator("cors_origins", mode="before")
     @classmethod
