@@ -54,16 +54,17 @@ describe('MANUAL TESTS - CHANGE 8 (frontend-zustand-stores-setup)', () => {
     })
 
     it('Test 4: Login flow', () => {
-      const store = useAuthStore.getState()
+      const { updateTokens, setUser } = useAuthStore.getState()
 
-      store.updateTokens('test-access-token-123', 'test-refresh-token-456')
-      store.setUser({
+      updateTokens('test-access-token-123', 'test-refresh-token-456')
+      setUser({
         id: 'user-1',
         email: 'test@example.com',
         name: 'Test User',
         roles: ['customer']
       })
 
+      const store = useAuthStore.getState()
       expect(store.isAuthenticated).toBe(true)
       expect(store.accessToken).toBe('test-access-token-123')
       expect(store.refreshToken).toBe('test-refresh-token-456')
@@ -125,75 +126,79 @@ describe('MANUAL TESTS - CHANGE 8 (frontend-zustand-stores-setup)', () => {
     })
 
     it('Test 9: Add item to cart', () => {
-      const store = useCartStore.getState()
+      const { addItem } = useCartStore.getState()
 
-      store.addItem({
+      addItem({
         productId: 'pizza-001',
         name: 'Pepperoni Pizza',
         price: 12.99,
         quantity: 1
       })
 
+      const store = useCartStore.getState()
       expect(store.items.length).toBe(1)
       expect(store.items[0].productId).toBe('pizza-001')
       expect(store.items[0].quantity).toBe(1)
     })
 
     it('Test 10: Increment item (add duplicate)', () => {
+      const { addItem } = useCartStore.getState()
+
+      addItem({
+        productId: 'pizza-001',
+        name: 'Pepperoni Pizza',
+        price: 12.99,
+        quantity: 1
+      })
+
+      addItem({
+        productId: 'pizza-001',
+        name: 'Pepperoni Pizza',
+        price: 12.99,
+        quantity: 1
+      })
+
       const store = useCartStore.getState()
-
-      store.addItem({
-        productId: 'pizza-001',
-        name: 'Pepperoni Pizza',
-        price: 12.99,
-        quantity: 1
-      })
-
-      store.addItem({
-        productId: 'pizza-001',
-        name: 'Pepperoni Pizza',
-        price: 12.99,
-        quantity: 1
-      })
-
       expect(store.items.length).toBe(1)
       expect(store.items[0].quantity).toBe(2)
     })
 
     it('Test 11: Remove item', () => {
-      const store = useCartStore.getState()
+      const { addItem, removeItem } = useCartStore.getState()
 
-      store.addItem({
+      addItem({
         productId: 'pizza-001',
         name: 'Pepperoni Pizza',
         price: 12.99,
         quantity: 1
       })
-      store.addItem({
+      addItem({
         productId: 'burger-001',
         name: 'Cheese Burger',
         price: 8.99,
         quantity: 1
       })
 
-      store.removeItem('pizza-001')
+      removeItem('pizza-001')
 
+      const store = useCartStore.getState()
       expect(store.items.length).toBe(1)
       expect(store.items[0].productId).toBe('burger-001')
     })
 
     it('Test 12: Update quantity', () => {
-      const store = useCartStore.getState()
+      const { addItem, updateQuantity } = useCartStore.getState()
 
-      store.addItem({
+      addItem({
         productId: 'burger-001',
         name: 'Cheese Burger',
         price: 8.99,
         quantity: 1
       })
 
-      store.updateQuantity('burger-001', 3)
+      updateQuantity('burger-001', 3)
 
+      const store = useCartStore.getState()
       expect(store.items[0].quantity).toBe(3)
     })
 
@@ -291,32 +296,32 @@ describe('MANUAL TESTS - CHANGE 8 (frontend-zustand-stores-setup)', () => {
     })
 
     it('Test 18: Workflow progression', () => {
-      const store = usePaymentStore.getState()
+      const { startCheckout, updatePaymentStatus } = usePaymentStore.getState()
 
-      store.startCheckout()
-      store.updatePaymentStatus('processing')
-      expect(store.paymentStatus).toBe('processing')
+      startCheckout()
+      updatePaymentStatus('processing')
+      expect(usePaymentStore.getState().paymentStatus).toBe('processing')
 
-      store.updatePaymentStatus('completed')
-      expect(store.paymentStatus).toBe('completed')
+      updatePaymentStatus('completed')
+      expect(usePaymentStore.getState().paymentStatus).toBe('completed')
     })
 
     it('Test 19: Set preference ID', () => {
-      const store = usePaymentStore.getState()
+      const { setPreference } = usePaymentStore.getState()
 
-      store.setPreference('pref-123-456')
+      setPreference('pref-123-456')
 
-      expect(store.preferenceId).toBe('pref-123-456')
+      expect(usePaymentStore.getState().preferenceId).toBe('pref-123-456')
     })
 
     it('Test 20: Payment status updates', () => {
-      const store = usePaymentStore.getState()
+      const { updatePaymentStatus } = usePaymentStore.getState()
 
-      store.updatePaymentStatus('processing')
-      expect(store.paymentStatus).toBe('processing')
+      updatePaymentStatus('processing')
+      expect(usePaymentStore.getState().paymentStatus).toBe('processing')
 
-      store.updatePaymentStatus('failed')
-      expect(store.paymentStatus).toBe('failed')
+      updatePaymentStatus('failed')
+      expect(usePaymentStore.getState().paymentStatus).toBe('failed')
     })
 
     it('Test 21: Reset payment', () => {
@@ -350,44 +355,42 @@ describe('MANUAL TESTS - CHANGE 8 (frontend-zustand-stores-setup)', () => {
 
   describe('Section 5: UIStore Testing', () => {
     it('Test 23: Set theme', () => {
-      const store = useUIStore.getState()
+      const { setTheme } = useUIStore.getState()
 
-      store.setTheme('dark')
-      expect(store.theme).toBe('dark')
+      setTheme('dark')
+      expect(useUIStore.getState().theme).toBe('dark')
 
-      store.setTheme('light')
-      expect(store.theme).toBe('light')
+      setTheme('light')
+      expect(useUIStore.getState().theme).toBe('light')
     })
 
     it('Test 24: Sidebar toggle', () => {
-      const store = useUIStore.getState()
-
-      const initial = store.sidebarOpen
-      store.toggleSidebar()
-      const toggled = store.sidebarOpen
+      const initial = useUIStore.getState().sidebarOpen
+      useUIStore.getState().toggleSidebar()
+      const toggled = useUIStore.getState().sidebarOpen
 
       expect(toggled).not.toBe(initial)
     })
 
     it('Test 25: Add toast', () => {
-      const store = useUIStore.getState()
-      store.toasts = []
+      useUIStore.setState({ toasts: [] })
 
-      store.addToast({
+      useUIStore.getState().addToast({
         message: 'Item added to cart',
         type: 'success'
       })
 
+      const store = useUIStore.getState()
       expect(store.toasts.length).toBe(1)
       expect(store.toasts[0].message).toBe('Item added to cart')
     })
 
     it('Test 26: Remove toast', () => {
-      const store = useUIStore.getState()
+      useUIStore.setState({ toasts: [] })
 
-      store.removeToast('toast-1')
+      useUIStore.getState().removeToast('toast-1')
 
-      expect(store.toasts.length).toBe(0)
+      expect(useUIStore.getState().toasts.length).toBe(0)
     })
 
     it('Test 27: Theme persistence', () => {
