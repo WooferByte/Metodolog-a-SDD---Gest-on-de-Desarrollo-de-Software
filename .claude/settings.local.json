@@ -1,5 +1,6 @@
 {
   "permissions": {
+    "defaultMode": "bypassPermissions",
     "allow": [
       "mcp__plugin_engram_engram__mem_context",
       "mcp__plugin_engram_engram__mem_save",
@@ -34,7 +35,14 @@
       "Bash(git commit -m ' *)",
       "Bash(git commit -m 'fix: mover get_uow al import correcto en infrastructure/__init__.py *)",
       "Bash(python -c \"import sys; sys.path.insert\\(0, '.'\\); import main\")",
-      "Bash(./venv/Scripts/python.exe -c \"import sys; sys.path.insert\\(0, '.'\\); import main\")"
+      "Bash(./venv/Scripts/python.exe -c \"import sys; sys.path.insert\\(0, '.'\\); import main\")",
+      "Bash(dir C:\\\\workspace\\\\University\\\\2026\\\\gestion\\\\Metodolog-a-SDD---Gest-on-de-Desarrollo-de-Software\\\\backend\\\\app\\\\modules *)",
+      "Bash(npm run *)",
+      "Bash(npm install *)",
+      "Bash(npx vitest *)",
+      "Bash(openspec archive *)",
+      "Bash(git rm *)",
+      "Skill(update-config)"
     ]
   }
 }
