@@ -1,5 +1,5 @@
 """
-Auth service — business logic for user registration and login.
+Auth service — business logic for user registration, login, and token refresh.
 
 Pattern: Service layer owns business rules; delegates persistence to UoW/repositories.
 """
@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, UTC
 
 from fastapi import HTTPException, status
 
-from auth.schemas import LoginRequest, RegisterRequest, TokenResponse
+from auth.schemas import LoginRequest, RefreshRequest, RegisterRequest, TokenResponse
 from core.models import Usuario, UsuarioRol, RefreshToken
 from core.security import hash_password, verify_password, create_access_token, create_refresh_token
 from core.config import settings
@@ -167,4 +167,106 @@ async def login_user(data: LoginRequest, uow: UnitOfWork) -> TokenResponse:
         access_token=access_token_str,
         refresh_token=refresh_token_str,
         usuario=UsuarioResponse.model_validate(usuario),
+    )
+
+
+async def refresh_token_service(data: RefreshRequest, uow: UnitOfWork) -> TokenResponse:
+    """
+    Rotate a refresh token and return a new token pair.
+
+    Security flow:
+    1. Look up the token row by the raw JWT string.
+    2. If NOT found → counterfeit/never issued → 401.
+    3. If found but revoked_at IS NOT NULL → replay attack detected:
+       revoke ALL tokens for that user and return 401.
+    4. If found but expires_at < now() → expired → 401.
+    5. Valid path: revoke old token, create new RefreshToken, issue new pair.
+
+    Args:
+        data: RefreshRequest containing the refresh_token string.
+        uow: Unit of Work — caller must use as async context manager.
+
+    Returns:
+        TokenResponse with new access_token and refresh_token.
+
+    Raises:
+        HTTPException 401 for any validation failure.
+    """
+    now = datetime.now(UTC)
+
+    # 1. Look up the token row
+    token_record = await uow.refresh_tokens.find_by(token=data.refresh_token)
+
+    # 2. Token not in DB — counterfeit or already hard-deleted
+    if token_record is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # 3. Token is already revoked → replay attack
+    if token_record.revoked_at is not None:
+        # Revoke ALL tokens for this user (family revocation)
+        all_tokens = await uow.refresh_tokens.find_all_by(usuario_id=token_record.usuario_id)
+        for t in all_tokens:
+            if t.revoked_at is None:
+                t.revoked_at = now
+                await uow.refresh_tokens.update(t)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Replay attack detected — all sessions revoked",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # 4. Token is expired
+    # expires_at may be stored as naive UTC; normalise for comparison
+    expires_at = token_record.expires_at
+    if expires_at.tzinfo is None:
+        from datetime import timezone
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at < now:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # 5a. Revoke old token
+    token_record.revoked_at = now
+    await uow.refresh_tokens.update(token_record)
+
+    # 5b. Load user to build token payload
+    usuario = await uow.usuarios.get_by_id(token_record.usuario_id)
+    if usuario is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    roles = [r.nombre for r in usuario.roles] if usuario.roles else []
+
+    # 5c. Issue new access token (stateless JWT)
+    new_access_token = create_access_token(
+        data={
+            "sub": str(usuario.id),
+            "email": usuario.email,
+            "roles": roles,
+        }
+    )
+
+    # 5d. Create and persist new refresh token
+    new_refresh_token_str = create_refresh_token(usuario.id)
+    new_expires_at = datetime.now(UTC) + timedelta(days=settings.refresh_token_expire_days)
+    new_token_record = RefreshToken(
+        usuario_id=usuario.id,
+        token=new_refresh_token_str,
+        expires_at=new_expires_at,
+    )
+    await uow.refresh_tokens.create(new_token_record)
+
+    return TokenResponse(
+        access_token=new_access_token,
+        refresh_token=new_refresh_token_str,
     )
