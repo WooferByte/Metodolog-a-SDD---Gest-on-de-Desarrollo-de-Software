@@ -15,12 +15,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from core.config import settings
 from core.database import check_db_connection, close_db_connection
+from core.limiter import limiter
 from infrastructure.error_middleware import register_error_handlers
 
 
@@ -33,12 +32,6 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     datefmt="%Y-%m-%dT%H:%M:%S",
 )
-
-# ============================================================================
-# Rate Limiter Setup
-# ============================================================================
-
-limiter = Limiter(key_func=get_remote_address)
 
 
 # ============================================================================

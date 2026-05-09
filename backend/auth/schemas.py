@@ -41,6 +41,9 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+    usuario: Optional[object] = None
+
+    model_config = {"from_attributes": True, "arbitrary_types_allowed": True}
 
 
 class RefreshRequest(BaseModel):
