@@ -3,7 +3,7 @@ Auth service — business logic for user registration, login, and token refresh.
 
 Pattern: Service layer owns business rules; delegates persistence to UoW/repositories.
 """
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta
 
 from fastapi import HTTPException, status
 
@@ -74,7 +74,7 @@ async def register_user(data: RegisterRequest, uow: UnitOfWork) -> TokenResponse
 
     # 5. Create refresh token string and persist it
     refresh_token_str = create_refresh_token(usuario.id)
-    expires_at = datetime.now(UTC) + timedelta(days=settings.refresh_token_expire_days)
+    expires_at = datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
 
     refresh_token_record = RefreshToken(
         usuario_id=usuario.id,
@@ -127,8 +127,16 @@ async def login_user(data: LoginRequest, uow: UnitOfWork) -> TokenResponse:
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    # 1. Lookup user by email
-    usuario = await uow.usuarios.find_by(email=str(data.email))
+    # 1. Lookup user by email — use selectinload to avoid async lazy-load error on .roles
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    stmt = (
+        select(Usuario)
+        .where(Usuario.email == str(data.email))
+        .options(selectinload(Usuario.roles))
+    )
+    result = await uow.session.execute(stmt)
+    usuario = result.scalar_one_or_none()
 
     if usuario is None:
         # 2a. User not found: still run bcrypt to prevent timing attacks
@@ -139,7 +147,7 @@ async def login_user(data: LoginRequest, uow: UnitOfWork) -> TokenResponse:
     if not verify_password(data.password, usuario.hashed_password):
         raise invalid_credentials
 
-    # 3. Fetch user's roles for token payload
+    # 3. Roles already eagerly loaded by selectinload above
     roles = [r.nombre for r in usuario.roles] if usuario.roles else []
 
     # 4. Build and sign JWT access token
@@ -153,7 +161,7 @@ async def login_user(data: LoginRequest, uow: UnitOfWork) -> TokenResponse:
 
     # 5. Create refresh token and persist it
     refresh_token_str = create_refresh_token(usuario.id)
-    expires_at = datetime.now(UTC) + timedelta(days=settings.refresh_token_expire_days)
+    expires_at = datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
 
     refresh_token_record = RefreshToken(
         usuario_id=usuario.id,
@@ -168,6 +176,50 @@ async def login_user(data: LoginRequest, uow: UnitOfWork) -> TokenResponse:
         refresh_token=refresh_token_str,
         usuario=UsuarioResponse.model_validate(usuario),
     )
+
+
+async def logout_user(data: RefreshRequest, uow: UnitOfWork) -> None:
+    """
+    Revoke a refresh token, terminating the user's session server-side.
+
+    Security flow:
+    1. Look up the token row by the raw token string.
+    2. If NOT found → counterfeit/never issued → 401.
+    3. If found and revoked_at IS NOT NULL → already revoked; return None (idempotent 204).
+    4. If found and revoked_at IS NULL → set revoked_at = now() and persist.
+    5. Return None (router returns 204 No Content).
+
+    Args:
+        data: RefreshRequest containing the refresh_token string.
+        uow: Unit of Work — caller must use as async context manager.
+
+    Returns:
+        None (HTTP 204 No Content).
+
+    Raises:
+        HTTPException 401 if the token is not found in the database.
+    """
+    # 1. Look up the token row
+    token_record = await uow.refresh_tokens.find_by(token=data.refresh_token)
+
+    # 2. Token not in DB — counterfeit or never issued
+    if token_record is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # 3. Token already revoked — idempotent 204, do nothing
+    if token_record.revoked_at is not None:
+        return None
+
+    # 4. Token is active — revoke it now
+    token_record.revoked_at = datetime.utcnow()
+    await uow.refresh_tokens.update(token_record)
+
+    # 5. Return None → router returns 204 No Content
+    return None
 
 
 async def refresh_token_service(data: RefreshRequest, uow: UnitOfWork) -> TokenResponse:
@@ -192,7 +244,7 @@ async def refresh_token_service(data: RefreshRequest, uow: UnitOfWork) -> TokenR
     Raises:
         HTTPException 401 for any validation failure.
     """
-    now = datetime.now(UTC)
+    now = datetime.utcnow()
 
     # 1. Look up the token row
     token_record = await uow.refresh_tokens.find_by(token=data.refresh_token)
@@ -219,13 +271,8 @@ async def refresh_token_service(data: RefreshRequest, uow: UnitOfWork) -> TokenR
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # 4. Token is expired
-    # expires_at may be stored as naive UTC; normalise for comparison
-    expires_at = token_record.expires_at
-    if expires_at.tzinfo is None:
-        from datetime import timezone
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
-    if expires_at < now:
+    # 4. Token is expired (both expires_at and now are naive UTC)
+    if token_record.expires_at < now:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token expired",
@@ -236,8 +283,16 @@ async def refresh_token_service(data: RefreshRequest, uow: UnitOfWork) -> TokenR
     token_record.revoked_at = now
     await uow.refresh_tokens.update(token_record)
 
-    # 5b. Load user to build token payload
-    usuario = await uow.usuarios.get_by_id(token_record.usuario_id)
+    # 5b. Load user with roles eagerly to avoid async lazy-load error
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    stmt = (
+        select(Usuario)
+        .where(Usuario.id == token_record.usuario_id)
+        .options(selectinload(Usuario.roles))
+    )
+    result = await uow.session.execute(stmt)
+    usuario = result.scalar_one_or_none()
     if usuario is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -258,7 +313,7 @@ async def refresh_token_service(data: RefreshRequest, uow: UnitOfWork) -> TokenR
 
     # 5d. Create and persist new refresh token
     new_refresh_token_str = create_refresh_token(usuario.id)
-    new_expires_at = datetime.now(UTC) + timedelta(days=settings.refresh_token_expire_days)
+    new_expires_at = datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
     new_token_record = RefreshToken(
         usuario_id=usuario.id,
         token=new_refresh_token_str,

@@ -117,7 +117,7 @@ async def http_exception_handler(request: Request, exc: Exception) -> JSONRespon
             "type": "https://api.example.com/errors/conflict",
             "title": "Conflict",
         },
-        status.HTTP_422_UNPROCESSABLE_CONTENT: {
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {
             "type": "https://api.example.com/errors/validation-error",
             "title": "Validation Error",
         },

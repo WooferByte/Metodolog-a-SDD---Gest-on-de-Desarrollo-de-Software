@@ -3,6 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '@/shared/config/queryClient'
 import { ErrorBoundary } from '@/app/ErrorBoundary'
 import Router from '@/app/Router'
+import Navbar from '@/shared/components/Navbar'
 
 /**
  * Root Application Component
@@ -13,6 +14,7 @@ export default function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
+          <Navbar />
           <Router />
         </BrowserRouter>
       </QueryClientProvider>

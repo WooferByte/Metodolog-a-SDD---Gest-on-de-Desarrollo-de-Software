@@ -11,7 +11,7 @@ Security scenarios tested:
 - Valid token → 200 with new token pair, old token revoked
 - Valid token → new access token payload has correct sub, email, roles
 """
-from datetime import datetime, timedelta, UTC, timezone
+from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
@@ -37,7 +37,7 @@ def _make_refresh_token_record(
     mock.id = id
     mock.usuario_id = usuario_id
     mock.token = token
-    mock.expires_at = expires_at or (datetime.now(UTC) + timedelta(days=7))
+    mock.expires_at = expires_at or (datetime.utcnow() + timedelta(days=7))
     mock.revoked_at = revoked_at
     return mock
 
@@ -114,7 +114,7 @@ class TestRefreshTokenService:
         from auth.service import refresh_token_service
 
         revoked_record = _make_refresh_token_record(
-            revoked_at=datetime.now(UTC) - timedelta(minutes=5)
+            revoked_at=datetime.utcnow() - timedelta(minutes=5)
         )
         # One active sibling token that should get revoked
         sibling = _make_refresh_token_record(id=11, token="sibling.token", revoked_at=None)
@@ -138,7 +138,7 @@ class TestRefreshTokenService:
         from auth.service import refresh_token_service
 
         expired_record = _make_refresh_token_record(
-            expires_at=datetime.now(UTC) - timedelta(days=1),
+            expires_at=datetime.utcnow() - timedelta(days=1),
             revoked_at=None,
         )
         uow = _make_uow(token_record=expired_record)

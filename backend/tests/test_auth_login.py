@@ -11,7 +11,7 @@ Security scenarios tested:
 - RefreshToken row is created on successful login
 - Access token payload contains sub, email, roles
 """
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch, call
 import pytest
 
@@ -44,7 +44,7 @@ def _make_mock_usuario(
     mock.apellido = apellido
     mock.activo = activo
     mock.telefono = telefono
-    mock.creado_en = datetime.now(UTC)
+    mock.creado_en = datetime.utcnow()
 
     if roles is None:
         mock_rol = MagicMock()
@@ -199,8 +199,8 @@ class TestLoginUserService:
         call_args = uow.refresh_tokens.create.call_args
         rt_record = call_args[0][0]
 
-        expected_min = datetime.now(UTC) + timedelta(days=6, hours=23)
-        expected_max = datetime.now(UTC) + timedelta(days=7, hours=1)
+        expected_min = datetime.utcnow() + timedelta(days=6, hours=23)
+        expected_max = datetime.utcnow() + timedelta(days=7, hours=1)
         assert expected_min <= rt_record.expires_at <= expected_max
 
     @pytest.mark.asyncio

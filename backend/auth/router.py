@@ -9,7 +9,7 @@ Endpoints:
 from fastapi import APIRouter, Depends, Request
 
 from auth.schemas import LoginRequest, RefreshRequest, RegisterRequest, TokenResponse
-from auth.service import login_user, refresh_token_service, register_user
+from auth.service import login_user, logout_user, refresh_token_service, register_user
 from core.limiter import limiter
 from infrastructure.uow import UnitOfWork, get_uow
 
@@ -85,6 +85,42 @@ async def login(
     """
     async with uow:
         return await login_user(data, uow)
+
+
+@router.post(
+    "/logout",
+    response_model=None,
+    status_code=204,
+    summary="Logout and revoke refresh token",
+    description=(
+        "Revokes a specific refresh token, terminating the user's session server-side. "
+        "No Authorization header is required — the refresh token itself acts as proof "
+        "of session ownership. "
+        "Returns 204 No Content on success. "
+        "Calling this endpoint with an already-revoked token also returns 204 (idempotent). "
+        "Returns 401 if the token is not found in the database."
+    ),
+    responses={
+        204: {"description": "Token revoked or already revoked"},
+        401: {"description": "Token not found"},
+        422: {"description": "Validation error"},
+    },
+)
+async def logout(
+    data: RefreshRequest,
+    uow: UnitOfWork = Depends(get_uow),
+) -> None:
+    """
+    Revoke a refresh token to logout the user.
+
+    - **refresh_token**: The active refresh token issued by /register or /login
+
+    Returns 204 No Content. The refresh token is marked as revoked and can no
+    longer be used for token rotation. The associated access token (30 min JWT)
+    remains valid until natural expiry.
+    """
+    async with uow:
+        await logout_user(data, uow)
 
 
 @router.post(
