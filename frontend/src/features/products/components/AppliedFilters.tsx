@@ -56,7 +56,7 @@ export function AppliedFilters({
 
   // Get category names from IDs
   const getCategoryName = (id: string): string => {
-    const cat = categories.find((c: any) => c.id === id)
+    const cat = categories.find((c) => c.id === id)
     return cat?.nombre || id
   }
 

@@ -78,9 +78,10 @@ export function useProductsCatalog(
     gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
     
     // Retry strategy
-    retry: (failureCount, error: any) => {
+    retry: (failureCount, error: unknown) => {
       // Don't retry on 4xx errors (except timeout)
-      if (error?.response?.status && error.response.status < 500 && error.response.status !== 408) {
+      const axiosError = error as { response?: { status?: number } }
+      if (axiosError?.response?.status && axiosError.response.status < 500 && axiosError.response.status !== 408) {
         return false
       }
       // Retry up to 2 times on 5xx or network errors
