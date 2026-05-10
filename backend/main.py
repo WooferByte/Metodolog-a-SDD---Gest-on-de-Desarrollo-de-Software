@@ -14,6 +14,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 
@@ -197,8 +198,10 @@ async def root():
 # ============================================================================
 
 from auth.router import router as auth_router
+from usuarios.role_router import router as role_router
 
 app.include_router(auth_router, prefix="/api/v1")
+app.include_router(role_router)
 
 # Registrar aquí cuando cada módulo esté listo:
 # from usuarios.router import router as usuarios_router
@@ -209,6 +212,37 @@ app.include_router(auth_router, prefix="/api/v1")
 # app.include_router(productos_router, prefix="/api/v1")
 # app.include_router(pedidos_router, prefix="/api/v1")
 # app.include_router(pagos_router, prefix="/api/v1")
+
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    schema.setdefault("components", {})
+    schema["components"]["securitySchemes"] = {
+        "BearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+        }
+    }
+    # Apply BearerAuth to all routes that are not public
+    public_paths = {"/", "/health", "/docs", "/redoc", "/openapi.json",
+                    "/api/v1/auth/login", "/api/v1/auth/register",
+                    "/api/v1/auth/refresh", "/api/v1/auth/logout"}
+    for path, methods in schema.get("paths", {}).items():
+        if path not in public_paths:
+            for method in methods.values():
+                method.setdefault("security", [{"BearerAuth": []}])
+    app.openapi_schema = schema
+    return schema
+
+app.openapi = custom_openapi
 
 
 if __name__ == "__main__":

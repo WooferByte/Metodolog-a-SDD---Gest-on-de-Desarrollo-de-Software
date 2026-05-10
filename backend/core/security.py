@@ -184,10 +184,10 @@ def verify_token(token: str, expected_type: str = "access") -> dict[str, Any]:
                 "verify_nbf": True,
                 "verify_iss": True,
                 "verify_aud": True,
+                "leeway": 30,
             },
             audience="foodstore-client",
             issuer="foodstore-api",
-            access_options={"leeway": 30},
         )
     except JWTError as e:
         print(f"JWT verification failed: {e}")
