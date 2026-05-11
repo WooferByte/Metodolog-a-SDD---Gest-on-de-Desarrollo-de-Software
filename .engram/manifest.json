@@ -24,6 +24,14 @@
       "sessions": 0,
       "memories": 3,
       "prompts": 0
+    },
+    {
+      "id": "627bfe60",
+      "created_by": "santiago",
+      "created_at": "2026-05-11T12:09:30Z",
+      "sessions": 0,
+      "memories": 24,
+      "prompts": 0
     }
   ]
 }
