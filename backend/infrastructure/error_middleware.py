@@ -178,7 +178,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         })
 
     problem = ProblemDetail(
-        status=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        status=status.HTTP_422_UNPROCESSABLE_ENTITY,
         title="Validation Error",
         detail=f"Invalid request: {len(errors)} validation error(s)",
         error_type="https://api.example.com/errors/validation-error",
@@ -192,7 +192,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content=problem.to_dict(),
         media_type="application/problem+json",
     )
