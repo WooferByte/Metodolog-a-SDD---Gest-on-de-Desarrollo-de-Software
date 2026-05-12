@@ -1,5 +1,8 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '../../store/authStore'
+import { useUIStore } from '../../store/uiStore'
+import type { UIStore } from '../../store/types'
+import type { ApiError } from '../types/api'
 
 // ---------------------------------------------------------------------------
 // Pending-queue helpers (Tasks 2.1 – 2.3)
@@ -89,6 +92,51 @@ apiClient.interceptors.request.use(
 )
 
 // ---------------------------------------------------------------------------
+// Error message mapping — RFC 7807 status codes to user-friendly messages
+// Design decision D-4: prioritise `detail` from RFC 7807 response body;
+// fall back to fixed Spanish messages per status code.
+// ---------------------------------------------------------------------------
+
+type ToastType = UIStore['toasts'][0]['type']
+
+/**
+ * Maps an HTTP status code to a user-friendly message and toast severity.
+ *
+ * If the backend provided a RFC 7807 `detail` field, that message takes
+ * precedence over the fallback string — it is more contextual.
+ */
+export function getErrorMessage(
+  status: number,
+  detail?: string,
+): { message: string; type: ToastType } {
+  const messageMap: Record<number, { message: string; type: ToastType }> = {
+    400: { message: 'Datos inválidos. Revisá los campos.', type: 'warning' },
+    403: { message: 'No tenés permiso para esta acción.', type: 'error' },
+    404: { message: 'El recurso solicitado no existe.', type: 'info' },
+    422: {
+      message: 'Error de validación en los datos enviados.',
+      type: 'warning',
+    },
+    429: {
+      message: 'Demasiadas solicitudes. Esperá un momento.',
+      type: 'warning',
+    },
+    500: { message: 'Error del servidor. Intentá más tarde.', type: 'error' },
+  }
+
+  const fallback: { message: string; type: ToastType } = {
+    message: 'Ocurrió un error inesperado.',
+    type: 'error',
+  }
+
+  const mapped = messageMap[status] ?? fallback
+  return {
+    message: detail ?? mapped.message,
+    type: mapped.type,
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Response interceptor — refresh flow (Tasks 3.2 – 3.7)
 // ---------------------------------------------------------------------------
 apiClient.interceptors.response.use(
@@ -97,8 +145,13 @@ apiClient.interceptors.response.use(
 
   // Error path
   async (error: unknown) => {
-    // Only AxiosErrors with a response object carry a status code
+    // Network error or non-Axios error (no response object)
     if (!axios.isAxiosError(error) || !error.response) {
+      // Dispatch a "no connection" toast for network-level failures
+      useUIStore.getState().addToast({
+        message: 'Sin conexión. Verificá tu red.',
+        type: 'error',
+      })
       return Promise.reject(error)
     }
 
@@ -107,8 +160,11 @@ apiClient.interceptors.response.use(
       _retry?: boolean
     }
 
-    // Non-401 errors are passed through immediately (Task 3.7)
+    // Non-401 errors: map to toast and reject
     if (status !== 401) {
+      const rfcDetail = (error.response.data as Partial<ApiError>)?.detail
+      const { message, type } = getErrorMessage(status, rfcDetail)
+      useUIStore.getState().addToast({ message, type })
       return Promise.reject(error)
     }
 

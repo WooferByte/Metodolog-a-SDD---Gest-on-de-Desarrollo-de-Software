@@ -14,6 +14,9 @@ interface State {
  * Global Error Boundary component
  * Catches React component rendering errors and displays fallback UI
  * Does NOT catch: event handler errors, async errors, SSR errors
+ *
+ * In development mode: shows full stack trace for debugging
+ * In production mode: shows a friendly generic message only
  */
 export class ErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
@@ -46,71 +49,42 @@ export class ErrorBoundary extends React.Component<Props, State> {
       const isDevelopment = import.meta.env.MODE === 'development'
 
       return (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '100vh',
-            backgroundColor: '#f3f4f6',
-            padding: '2rem',
-            fontFamily: 'system-ui, sans-serif',
-          }}
-        >
-          <div
-            style={{
-              maxWidth: '600px',
-              backgroundColor: '#fff',
-              padding: '2rem',
-              borderRadius: '0.5rem',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-            }}
-          >
-            <h1 style={{ color: '#dc2626', marginBottom: '1rem' }}>
+        <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-8">
+          <div className="w-full max-w-xl rounded-lg bg-white p-8 shadow-sm">
+            <h1 className="mb-4 text-2xl font-bold text-red-600">
               ¡Algo salió mal!
             </h1>
 
             {isDevelopment ? (
               <>
-                <h2 style={{ fontSize: '1.125rem', marginTop: '1rem' }}>
+                <h2 className="mt-4 text-lg font-semibold text-gray-800">
                   {this.state.error?.toString()}
                 </h2>
-                <pre
-                  style={{
-                    backgroundColor: '#f9fafb',
-                    padding: '1rem',
-                    borderRadius: '0.375rem',
-                    overflow: 'auto',
-                    fontSize: '0.875rem',
-                    marginTop: '1rem',
-                    marginBottom: '1rem',
-                  }}
-                >
+                <pre className="mt-4 mb-4 overflow-auto rounded-md bg-gray-50 p-4 text-sm text-gray-700">
                   {this.state.errorInfo?.componentStack}
                 </pre>
               </>
             ) : (
-              <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
+              <p className="mb-4 text-gray-500">
                 Lo sentimos, ocurrió un error inesperado. Por favor, intenta
                 recargar la página.
               </p>
             )}
 
-            <button
-              onClick={this.handleReload}
-              style={{
-                backgroundColor: '#3b82f6',
-                color: '#fff',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '0.375rem',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '1rem',
-              }}
-            >
-              Recargar Página
-            </button>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={this.handleReload}
+                className="rounded-md bg-blue-500 px-6 py-3 text-base font-medium text-white transition-colors hover:bg-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              >
+                Recargar Página
+              </button>
+              <a
+                href="/"
+                className="rounded-md border border-gray-300 bg-white px-6 py-3 text-base font-medium text-gray-700 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
+              >
+                Ir al inicio
+              </a>
+            </div>
           </div>
         </div>
       )

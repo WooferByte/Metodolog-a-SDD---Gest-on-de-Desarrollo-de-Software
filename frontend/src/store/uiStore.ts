@@ -50,14 +50,17 @@ export const useUIStore = create<UIStore>()(
         })),
 
       // Action: Add toast notification
-      // Generates unique ID for toast
+      // Generates unique ID for toast using crypto.randomUUID (available in
+      // all modern browsers and jsdom test environments).
       addToast: (toast) =>
         set((state) => ({
           toasts: [
             ...state.toasts,
             {
               ...toast,
-              id: Date.now().toString(), // Simple unique ID
+              id: typeof crypto !== 'undefined' && crypto.randomUUID
+                ? crypto.randomUUID()
+                : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
             },
           ],
         })),

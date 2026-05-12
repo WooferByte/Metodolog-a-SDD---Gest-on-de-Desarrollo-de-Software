@@ -4,6 +4,7 @@ import { queryClient } from '@/shared/config/queryClient'
 import { ErrorBoundary } from '@/app/ErrorBoundary'
 import Router from '@/app/Router'
 import Navbar from '@/shared/components/Navbar'
+import { ToastContainer } from '@/shared/components/ToastContainer'
 
 /**
  * Root Application Component
@@ -16,6 +17,7 @@ export default function App() {
         <BrowserRouter>
           <Navbar />
           <Router />
+          <ToastContainer />
         </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>
