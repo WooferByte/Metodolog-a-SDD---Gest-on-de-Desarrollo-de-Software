@@ -17,6 +17,7 @@ from core.sanitize import sanitize_text
 # Request schemas
 # ---------------------------------------------------------------------------
 
+
 class DetallePedidoCreate(BaseModel):
     """Schema for a single line item in an order creation request."""
 
@@ -46,6 +47,7 @@ class PedidoCreate(BaseModel):
 # Response schemas
 # ---------------------------------------------------------------------------
 
+
 class DetallePedidoResponse(BaseModel):
     """Order line item representation (with price and name snapshots)."""
 
@@ -55,7 +57,7 @@ class DetallePedidoResponse(BaseModel):
     cantidad: int
     precio_snapshot: Decimal
     nombre_snapshot: str
-    ingredientes_excluidos: Optional[str]  # JSON array as stored string
+    ingredientes_excluidos: Optional[list[int]]  # Native INTEGER[] (RN-PE07)
     creado_en: datetime
 
     model_config = {"from_attributes": True}

@@ -22,7 +22,7 @@ class DireccionCreate(BaseModel):
     ciudad: str = Field(min_length=1, max_length=100)
     codigo_postal: str = Field(min_length=4, max_length=10)
     referencia: Optional[str] = Field(default=None, max_length=255)
-    es_principal: bool = False
+    es_predeterminada: bool = False
 
     @field_validator("alias", "linea1", "referencia", mode="before")
     @classmethod
@@ -43,7 +43,7 @@ class DireccionUpdate(BaseModel):
     ciudad: Optional[str] = Field(default=None, min_length=1, max_length=100)
     codigo_postal: Optional[str] = Field(default=None, min_length=4, max_length=10)
     referencia: Optional[str] = Field(default=None, max_length=255)
-    es_principal: Optional[bool] = None
+    es_predeterminada: Optional[bool] = None
 
     @field_validator("alias", "linea1", "referencia", mode="before")
     @classmethod
@@ -66,7 +66,7 @@ class DireccionResponse(BaseModel):
     ciudad: str
     codigo_postal: str
     referencia: Optional[str]
-    es_principal: bool
+    es_predeterminada: bool
     creado_en: datetime
     actualizado_en: datetime
 
