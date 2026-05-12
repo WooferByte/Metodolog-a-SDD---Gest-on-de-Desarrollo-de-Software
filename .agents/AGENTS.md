@@ -47,6 +47,16 @@ Todo prompt de delegación DEBE incluir obligatoriamente:
 
 El subagente NO debe comenzar a implementar hasta haber leído AGENTS.md y confirmado.
 
+### Regla obligatoria de skills — consecuencia explícita
+
+**Si un subagente entrega código sin confirmar que cargó las skills correspondientes → rechazar el output y pedirle que empiece de nuevo confirmando las skills antes de escribir código. No negociable.**
+
+El subagente debe confirmar en su primer mensaje:
+- Qué skills cargó (nombre + path exacto del archivo leído)
+- Qué secciones relevantes encontró
+
+Sin esta confirmación el orquestador NO acepta ningún artefacto de código producido.
+
 ---
 
 ## 🚀 Stack Tecnológico Real
@@ -666,6 +676,7 @@ No revertir sin aprobación explícita del usuario:
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 3.2 | 2026-05-11 | Regla obligatoria de skills con consecuencia explícita: rechazo de output si subagente no confirma skills cargadas antes de escribir código |
 | 3.1 | 2026-05-11 | Sincronización completa con estado real: dependencias reales (Zustand v5, Tailwind v4, vitest, sin TanStack Form ni SDK MP), estructura real de carpetas (refresh_tokens con underscore, tests planos, widgets/entities vacíos), skills reales con paths y archivos correctos (14 skills, 3 sin SKILL.md, dashboard-crud-page y find-skills nuevas), variables de entorno reales (MP_ACCESS_TOKEN, BCRYPT_COST discrepancia), engram recall eliminado (comando no existe), devdocs-mcp sin config, openspec config.yaml vacío, decisiones arquitectónicas extendidas con realidad del repo |
 | 3.0 | 2026-05-11 | Fusión AGENTS.md tuyo + profesor: protocolo Engram, delegación subagentes, paths skills, matriz, checklist, decisiones |
 | 2.1 | 2026-05-05 | Ubicación y acceso documentado |

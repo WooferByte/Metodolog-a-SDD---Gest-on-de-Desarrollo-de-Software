@@ -1,84 +1,64 @@
 /**
- * Navbar — top navigation bar with conditional logout button.
+ * Navbar — top navigation bar with role-based dynamic links.
  *
- * Renders a "Logout" button when the user is authenticated.
- * The button is disabled while the logout request is in flight
- * to prevent double-submission (task 5.3).
+ * Renders a different set of nav links depending on the authenticated
+ * user's role, computed by the `useNavLinks` hook.
  *
- * Uses the `useLogout` hook which:
- *  1. Calls POST /api/v1/auth/logout (best-effort server-side revocation)
- *  2. Always clears local auth state in `finally` regardless of backend outcome
+ * - Unauthenticated: public links (Catálogo, Iniciar sesión, Registrarse)
+ * - CLIENT: customer-facing links
+ * - STOCK: inventory management links
+ * - PEDIDOS: order panel link
+ * - ADMIN: full admin link set
+ *
+ * Shows the user's email + "Cerrar sesión" button when authenticated.
+ * All styles use Tailwind v4 utility classes — zero inline style props.
  */
 
 import { Link } from 'react-router-dom'
-import { useAuthStore } from '../../store/authStore'
-import { useLogout } from '../hooks/useLogout'
+import { useAuthStore } from '@/store/authStore'
+import { useLogout } from '@/shared/hooks/useLogout'
+import { useNavLinks } from '@/shared/hooks/useNavLinks'
 
 export default function Navbar() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const user = useAuthStore((state) => state.user)
   const { logout, isLoading } = useLogout()
+  const navLinks = useNavLinks()
 
   return (
-    <nav
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0.75rem 1.5rem',
-        backgroundColor: '#1f2937',
-        color: '#f9fafb',
-      }}
-    >
+    <nav className="bg-gray-900 text-white flex items-center justify-between px-6 py-3">
       {/* Brand */}
-      <Link
-        to="/"
-        style={{ color: '#f9fafb', textDecoration: 'none', fontWeight: 700, fontSize: '1.125rem' }}
-      >
+      <Link to="/" className="font-bold text-lg text-white no-underline shrink-0">
         Food Store
       </Link>
 
-      {/* Navigation links */}
-      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-        <Link to="/catalog" style={{ color: '#d1d5db', textDecoration: 'none' }}>
-          Catalog
-        </Link>
+      {/* Dynamic nav links + auth section */}
+      <div className="flex items-center gap-4 flex-wrap">
+        {navLinks.map((link) => (
+          <Link
+            key={link.to}
+            to={link.to}
+            className="text-gray-300 hover:text-white text-sm transition-colors"
+          >
+            {link.label}
+          </Link>
+        ))}
 
-        {isAuthenticated ? (
+        {isAuthenticated && (
           <>
-            <Link to="/profile" style={{ color: '#d1d5db', textDecoration: 'none' }}>
-              {user?.email ?? 'Profile'}
-            </Link>
+            <span className="text-gray-400 text-sm select-none">
+              {user?.email ?? user?.name}
+            </span>
 
-            {/* Logout button — disabled while request is in flight (task 5.3) */}
             <button
               onClick={logout}
               disabled={isLoading}
-              style={{
-                padding: '0.375rem 0.875rem',
-                backgroundColor: isLoading ? '#6b7280' : '#dc2626',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '0.375rem',
-                cursor: isLoading ? 'not-allowed' : 'pointer',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                transition: 'background-color 0.15s ease',
-              }}
+              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 disabled:bg-gray-500 disabled:cursor-not-allowed text-white text-sm font-medium rounded transition-colors"
               aria-busy={isLoading}
-              aria-label="Logout"
+              aria-label="Cerrar sesión"
             >
-              {isLoading ? 'Logging out...' : 'Logout'}
+              {isLoading ? 'Saliendo...' : 'Cerrar sesión'}
             </button>
-          </>
-        ) : (
-          <>
-            <Link to="/login" style={{ color: '#d1d5db', textDecoration: 'none' }}>
-              Login
-            </Link>
-            <Link to="/register" style={{ color: '#d1d5db', textDecoration: 'none' }}>
-              Register
-            </Link>
           </>
         )}
       </div>
