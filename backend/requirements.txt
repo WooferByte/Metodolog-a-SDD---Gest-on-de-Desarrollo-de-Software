@@ -5,18 +5,20 @@
 fastapi[standard]
 uvicorn[standard]==0.27.0
 python-dotenv==1.0.0
-pydantic==2.5.3
-pydantic-settings==2.1.0
+pydantic>=2.8.2
+pydantic-settings>=2.3.0
 
 # Database & ORM
-sqlalchemy==2.0.23
-sqlmodel==0.0.14
+sqlalchemy>=2.0.23
+sqlmodel>=0.0.18
 alembic==1.13.1
 psycopg[binary]>=3.1.0
+asyncpg>=0.31.0
 
 # Authentication & Security
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+bcrypt==3.2.2
 PyJWT==2.12.1
 cryptography==41.0.7
 

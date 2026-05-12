@@ -79,6 +79,8 @@ export const useAuthStore = create<AuthStore>()(
       // refreshToken should never be stored in localStorage if possible
       partialize: (state) => ({
         accessToken: state.accessToken,
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
         _hasHydrated: true,
       }),
       // Called when store is rehydrated from localStorage

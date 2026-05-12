@@ -4,7 +4,7 @@ Pydantic v2 request/response schemas for authentication endpoints.
 All free-text fields are sanitized against XSS via field_validator.
 Email fields use EmailStr for RFC 5322 format validation.
 """
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
@@ -41,7 +41,7 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
-    usuario: Optional[object] = None
+    usuario: Optional[Any] = None
 
     model_config = {"from_attributes": True, "arbitrary_types_allowed": True}
 

@@ -96,6 +96,7 @@ async def register_user(data: RegisterRequest, uow: UnitOfWork) -> TokenResponse
     return TokenResponse(
         access_token=access_token_str,
         refresh_token=refresh_token_str,
+        usuario=UsuarioResponse.model_validate(usuario),
     )
 
 
