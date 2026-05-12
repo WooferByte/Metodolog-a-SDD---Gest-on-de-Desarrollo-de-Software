@@ -1,6 +1,6 @@
 # AGENTS.md — Food Store E-Commerce
 > **CRÍTICO**: Este archivo DEBE estar en `.agents/AGENTS.md` (versionado en Git).
-> **Versión**: 3.3 — Tabla modelos por tarea en protocolo de delegación · 2026-05-12
+> **Versión**: 3.4 — Template ## 0. Skills obligatorio en tasks + regla opsx:propose · 2026-05-12
 
 ---
 
@@ -66,6 +66,26 @@ El subagente debe confirmar en su primer mensaje:
 - Qué secciones relevantes encontró
 
 Sin esta confirmación el orquestador NO acepta ningún artefacto de código producido.
+
+### Template obligatorio de tasks — sección ## 0. Skills
+
+Todo archivo `tasks.md` generado por `opsx:propose` DEBE comenzar con una sección `## 0. Skills` que liste las lecturas explícitas de skills **antes** de cualquier tarea de implementación.
+
+**Formato obligatorio:**
+
+```markdown
+## 0. Skills
+
+- [ ] 0.1 Leer `.agents/skills/<skill-name>/<SKILL_FILE>` — <razón breve>
+- [ ] 0.2 Leer `.agents/skills/<skill-name>/<SKILL_FILE>` — <razón breve>
+```
+
+**Reglas:**
+- Las skills se determinan consultando la **Matriz Skills vs. Changes** de este archivo
+- Cada skill de la matriz marcada ✅ para el tipo de change DEBE tener una entrada en `## 0. Skills`
+- El subagente que ejecuta `opsx:propose` genera esta sección automáticamente
+- El subagente que ejecuta `opsx:apply` ejecuta las tasks de `## 0. Skills` primero — antes de cualquier otra tarea
+- Si `## 0. Skills` está ausente en un `tasks.md` → el orquestador rechaza el apply y pide regenerar las tasks
 
 ---
 
@@ -363,6 +383,8 @@ Skills OPSX disponibles: `opsx:explore`, `opsx:propose`, `opsx:apply`, `opsx:arc
 - Config del proyecto: `openspec/config.yaml` (actualmente sin `context:` ni `rules:` — pendiente configurar)
 - **Antes de implementar cualquier feature**: verificar change activo con `openspec list --json`
 - **Source of truth**: siempre `openspec/` — `docs/CHANGES.md` es índice humano de lectura rápida
+
+> **Regla `opsx:propose`**: el subagente que genera `tasks.md` DEBE incluir `## 0. Skills` como primera sección, con una entrada por cada skill marcada ✅ en la Matriz para el tipo de change. Las skills se determinan leyendo la Matriz de este archivo antes de escribir una sola task de implementación.
 
 ### Sync de docs/CHANGES.md al archivar (OBLIGATORIO)
 
@@ -686,6 +708,7 @@ No revertir sin aprobación explícita del usuario:
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 3.4 | 2026-05-12 | Template `## 0. Skills` obligatorio en tasks.md: opsx:propose lo genera automáticamente desde la Matriz; opsx:apply lo ejecuta primero; tasks sin esta sección son rechazadas |
 | 3.3 | 2026-05-12 | Tabla de modelos por tipo de tarea en protocolo de delegación: haiku (verificar/buscar), sonnet (implementar/auditar), opus (arquitectura/decisiones complejas) |
 | 3.2 | 2026-05-11 | Regla obligatoria de skills con consecuencia explícita: rechazo de output si subagente no confirma skills cargadas antes de escribir código |
 | 3.1 | 2026-05-11 | Sincronización completa con estado real: dependencias reales (Zustand v5, Tailwind v4, vitest, sin TanStack Form ni SDK MP), estructura real de carpetas (refresh_tokens con underscore, tests planos, widgets/entities vacíos), skills reales con paths y archivos correctos (14 skills, 3 sin SKILL.md, dashboard-crud-page y find-skills nuevas), variables de entorno reales (MP_ACCESS_TOKEN, BCRYPT_COST discrepancia), engram recall eliminado (comando no existe), devdocs-mcp sin config, openspec config.yaml vacío, decisiones arquitectónicas extendidas con realidad del repo |
