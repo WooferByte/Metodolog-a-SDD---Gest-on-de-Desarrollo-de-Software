@@ -147,6 +147,18 @@ async def login_user(data: LoginRequest, uow: UnitOfWork) -> TokenResponse:
     if not verify_password(data.password, usuario.hashed_password):
         raise invalid_credentials
 
+    # 2c. Account must be active (soft-ban check — 403, not 401, to distinguish from bad creds)
+    if not usuario.activo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "type": "about:blank",
+                "title": "Forbidden",
+                "status": 403,
+                "detail": "Cuenta desactivada",
+            },
+        )
+
     # 3. Roles already eagerly loaded by selectinload above
     roles = [r.nombre for r in usuario.roles] if usuario.roles else []
 
