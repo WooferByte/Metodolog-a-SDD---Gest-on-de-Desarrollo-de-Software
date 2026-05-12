@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-12
+> **Última actualización**: 2026-05-12 (frontend-route-guards-auth archivado)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -248,11 +248,12 @@ Componente Navigation/Sidebar con menú dinámico por rol. CLIENT: Catálogo, Ca
 
 ---
 
-### ❌ `frontend-route-guards-auth`
+### ✅ `frontend-route-guards-auth`
+Archivado: `2026-05-12-frontend-route-guards-auth`
 
-HOC `withAuth(Component, requiredRoles)`. Redirigir a login si no autenticado. Pantalla 403 si rol insuficiente. Rutas públicas sin auth.
+`ProtectedRoute` como layout route (react-router-dom v6). Guard 3 niveles: `_hasHydrated` → spinner, `!isAuthenticated` → `/login`, rol insuficiente → `/403`. `ForbiddenPage` con WCAG AA. Router.tsx reescrito con grupos de rutas por rol. 25/25 tasks, 128/128 tests.
 
-**Skills**: `frontend-design`
+**Skills**: `tailwind-design-system`, `ui-design-system`
 **Dependencias**: `frontend-navigation-by-role`
 
 ---
