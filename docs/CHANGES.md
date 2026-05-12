@@ -43,17 +43,9 @@ El frontend del catálogo existe pero no tiene backend contra qué conectarse. L
 
 ---
 
-### INC-02 — `es_predeterminada` vs `es_principal` 🔧 CORRECCIÓN DE SPEC
+### ~~INC-02~~ — `es_predeterminada` vs `es_principal` ✅ RESUELTO 2026-05-11
 
-**Problema**: El spec original (US-024, RN-DI01, RN-DI02) usa el campo `es_predeterminada`. El change `addresses-crud-by-user` en versiones anteriores del mapa usaba `es_principal`.
-
-**Impacto**: Medio — si el campo en BD se creó como `es_principal` (en `backend-postgres-alembic-seed` ya archivado), hay que verificar el nombre real en la migración.
-
-**Acción requerida**:
-1. Verificar el nombre real del campo en `alembic/versions/` (buscar la migración de `DireccionEntrega`)
-2. Si dice `es_principal` → crear migración de rename: `ALTER TABLE direccion_entrega RENAME COLUMN es_principal TO es_predeterminada`
-3. Actualizar cualquier referencia en código ya archivado
-4. El change `addresses-crud-by-user` (pendiente) usará `es_predeterminada` — alineado con spec
+**Solución aplicada**: Migración `004_rename_es_principal_to_es_predeterminada.py` creada. Actualizado `core/models.py` y `direcciones/schemas.py`. Commit `4cdddcc`.
 
 ---
 
@@ -67,16 +59,9 @@ El frontend del catálogo existe pero no tiene backend contra qué conectarse. L
 
 ---
 
-### INC-04 — `INTEGER[]` para personalización no explícito en changes de pedidos 🔧
+### ~~INC-04~~ — `INTEGER[]` para `ingredientes_excluidos` ✅ RESUELTO 2026-05-11
 
-**Problema**: RN-PE07 especifica que la personalización se almacena como `INTEGER[]` (array nativo de PostgreSQL). Los changes de pedidos mencionan "array de IDs" pero no especifican el tipo PostgreSQL. La rúbrica evalúa "uso correcto de arrays de PostgreSQL".
-
-**Impacto**: Medio — si `backend-postgres-alembic-seed` ya creó la columna `personalizacion` como `TEXT` o `JSON` en lugar de `INTEGER[]`, hay que crear una migración correctiva.
-
-**Acción requerida**:
-1. Verificar tipo real de columna `personalizacion` en `alembic/versions/` o directamente en BD: `\d detalle_pedido`
-2. Si no es `INTEGER[]` → crear migración: `ALTER TABLE detalle_pedido ALTER COLUMN personalizacion TYPE INTEGER[] USING personalizacion::INTEGER[]`
-3. Documentado en el change `orders-fsm-backend` (pendiente) con el tipo correcto
+**Solución aplicada**: Campo era `VARCHAR` con JSON manual. Migración `005_ingredientes_excluidos_integer_array.py` convierte a `INTEGER[]` nativo con USING CASE. Actualizado `core/models.py` (List[int] + ARRAY(Integer)) y `pedidos/schemas.py`. Commit `4cdddcc`.
 
 ---
 
@@ -244,12 +229,11 @@ Archivado: EPIC 01
 
 ---
 
-### ❌ `route-protection-rbac`
-**→ PRÓXIMO CHANGE A IMPLEMENTAR**
+### ✅ `route-protection-rbac`
+Archivado: `2026-05-11-route-protection-rbac`
 
-Dependencia `require_role(roles: list[str])` verifica roles del JWT. Endpoints públicos: `/api/v1/auth/*`, `GET /api/v1/productos`, `GET /api/v1/categorias`. Retornar 401 sin token, 403 si rol insuficiente. Aplicar en todos los routers existentes.
+`require_role(roles: list[str])` factory en `core/dependencies.py`. Retorna dependency FastAPI que verifica rol del usuario autenticado. 401 sin token, 403 con rol insuficiente (RFC 7807). Activo check en login (403 "Cuenta desactivada"). Guards aplicados al endpoint existente `PUT /admin/users/:id/role`. Routers futuros (productos, pedidos, admin, etc.) tienen mapping documentado en `test_route_protection.py` sección 7 para aplicar al implementarlos. 13 tests pasando.
 
-**Skills**: `fastapi-python`
 **Dependencias**: `rbac-roles-management`
 
 ---
