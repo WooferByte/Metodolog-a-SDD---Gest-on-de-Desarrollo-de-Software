@@ -1,6 +1,6 @@
 # AGENTS.md — Food Store E-Commerce
 > **CRÍTICO**: Este archivo DEBE estar en `.agents/AGENTS.md` (versionado en Git).
-> **Versión**: 3.5 — Skill testing-e2e-playwright instalada y registrada · 2026-05-12
+> **Versión**: 3.6 — Skills post-change-verification + e2e-playwright en Matriz · 2026-05-12
 
 ---
 
@@ -297,6 +297,7 @@ Cargá el `SKILL.md` (o archivo equivalente) **antes** de escribir código. Múl
 | Buscar si existe una skill para X antes de crear código | `find-skills` | `.agents/skills/find-skills/SKILL.md` | SKILL.md |
 | Crear o mejorar una skill de agente | `skill-creator` | `.agents/skills/skill-creator/SKILL.md` | SKILL.md |
 | E2E con Playwright: auth JWT Zustand, guards de rutas, toasts HTTP, login/registro | `testing-e2e-playwright` | `.agents/skills/testing-e2e-playwright/SKILL.md` | SKILL.md |
+| Health check post-change: pytest, alembic, uvicorn, vitest, tsc, build | `post-change-verification` | `.agents/skills/post-change-verification/SKILL.md` | SKILL.md |
 
 > **⚠️ Nota**: 3 skills no tienen `SKILL.md` — tienen archivo alternativo marcado arriba. Leer el archivo que existe, no buscar SKILL.md en esas carpetas.
 
@@ -308,25 +309,27 @@ Cargá el `SKILL.md` (o archivo equivalente) **antes** de escribir código. Múl
 
 ## 📊 Matriz Skills vs. Changes
 
-| Tipo de Change | python-fastapi-ddd | postgres | tailwind-design-system | ui-design-system | api-design | jwt-security | zustand | web-payments | dashboard-crud-page |
-|----------------|:-----------------:|:--------:|:---------------------:|:----------------:|:----------:|:------------:|:-------:|:------------:|:------------------:|
-| backend core / setup | ✅ | ✅ | — | — | ✅ | — | — | — | — |
-| auth (login, registro, refresh, logout) | ✅ | — | — | — | ✅ | ✅ | — | — | — |
-| RBAC / route protection | ✅ | — | — | — | — | ✅ | — | — | — |
-| productos / categorías / ingredientes CRUD | ✅ | ✅ | — | — | ✅ | — | — | — | — |
-| pedidos FSM + audit trail | ✅ | ✅ | — | — | ✅ | — | — | — | — |
-| pagos MercadoPago backend | ✅ | ✅ | — | — | ✅ | — | — | ✅ | — |
-| migraciones Alembic | ✅ | ✅ | — | — | — | — | — | — | — |
-| frontend layout / componentes base | — | — | ✅ | ✅ | — | — | — | — | — |
-| frontend auth UI | — | — | ✅ | ✅ | — | ✅ | — | — | — |
-| frontend catálogo | — | — | ✅ | ✅ | — | — | — | — | — |
-| frontend carrito (Zustand) | — | — | ✅ | — | — | — | ✅ | — | — |
-| frontend checkout + pago | — | — | ✅ | ✅ | — | — | ✅ | ✅ | — |
-| admin dashboard + métricas | ✅ | ✅ | ✅ | — | — | — | — | — | ✅ |
-| admin CRUD (productos, usuarios, stock) | ✅ | — | ✅ | — | — | — | — | — | ✅ |
-| validación pre-checkout | ✅ | ✅ | ✅ | — | ✅ | — | — | — | — |
-| sistema configuración key-value | ✅ | ✅ | ✅ | — | — | — | — | — | ✅ |
-| custom hooks + optimistic updates | — | — | — | — | — | — | ✅ | — | — |
+> **`post-change-verification`**: aplica a **TODOS** los changes sin excepción. Cargarla siempre antes de `opsx:archive`.
+
+| Tipo de Change | python-fastapi-ddd | postgres | tailwind-design-system | ui-design-system | api-design | jwt-security | zustand | web-payments | dashboard-crud-page | e2e-playwright |
+|----------------|:-----------------:|:--------:|:---------------------:|:----------------:|:----------:|:------------:|:-------:|:------------:|:------------------:|:--------------:|
+| backend core / setup | ✅ | ✅ | — | — | ✅ | — | — | — | — | — |
+| auth (login, registro, refresh, logout) | ✅ | — | — | — | ✅ | ✅ | — | — | — | — |
+| RBAC / route protection | ✅ | — | — | — | — | ✅ | — | — | — | — |
+| productos / categorías / ingredientes CRUD | ✅ | ✅ | — | — | ✅ | — | — | — | — | — |
+| pedidos FSM + audit trail | ✅ | ✅ | — | — | ✅ | — | — | — | — | — |
+| pagos MercadoPago backend | ✅ | ✅ | — | — | ✅ | — | — | ✅ | — | — |
+| migraciones Alembic | ✅ | ✅ | — | — | — | — | — | — | — | — |
+| frontend layout / componentes base | — | — | ✅ | ✅ | — | — | — | — | — | ✅ |
+| frontend auth UI | — | — | ✅ | ✅ | — | ✅ | — | — | — | ✅ |
+| frontend catálogo | — | — | ✅ | ✅ | — | — | — | — | — | ✅ |
+| frontend carrito (Zustand) | — | — | ✅ | — | — | — | ✅ | — | — | ✅ |
+| frontend checkout + pago | — | — | ✅ | ✅ | — | — | ✅ | ✅ | — | ✅ |
+| admin dashboard + métricas | ✅ | ✅ | ✅ | — | — | — | — | — | ✅ | — |
+| admin CRUD (productos, usuarios, stock) | ✅ | — | ✅ | — | — | — | — | — | ✅ | — |
+| validación pre-checkout | ✅ | ✅ | ✅ | — | ✅ | — | — | — | — | ✅ |
+| sistema configuración key-value | ✅ | ✅ | ✅ | — | — | — | — | — | ✅ | — |
+| custom hooks + optimistic updates | — | — | — | — | — | — | ✅ | — | — | ✅ |
 
 ---
 
@@ -709,6 +712,7 @@ No revertir sin aprobación explícita del usuario:
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 3.6 | 2026-05-12 | Skill `post-change-verification` instalada (health check universal pre-archive) + columna e2e-playwright en Matriz |
 | 3.5 | 2026-05-12 | Skill `testing-e2e-playwright` instalada: auth Zustand, guards, toasts, login/registro, mocks FastAPI |
 | 3.4 | 2026-05-12 | Template `## 0. Skills` obligatorio en tasks.md: opsx:propose lo genera automáticamente desde la Matriz; opsx:apply lo ejecuta primero; tasks sin esta sección son rechazadas |
 | 3.3 | 2026-05-12 | Tabla de modelos por tipo de tarea en protocolo de delegación: haiku (verificar/buscar), sonnet (implementar/auditar), opus (arquitectura/decisiones complejas) |
