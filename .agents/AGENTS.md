@@ -1,453 +1,672 @@
 # AGENTS.md — Food Store E-Commerce
-
-**Food Store** es un e-commerce de alimentos con: React + FastAPI, RBAC (4 roles), integración MercadoPago, máquina de estados pedidos, ERD v5 (16 tablas), SDD con OPSX.
+> **CRÍTICO**: Este archivo DEBE estar en `.agents/AGENTS.md` (versionado en Git).
+> **Versión**: 3.1 — Sincronizado con estado real del proyecto · 2026-05-11
 
 ---
 
-## 📍 UBICACIÓN Y USO DE ESTE ARCHIVO
+## 📍 POR QUÉ ESTE ARCHIVO EXISTE AQUÍ
 
-> **CRÍTICO**: Este archivo DEBE estar en `.agents/AGENTS.md` (en el proyecto, versionado en Git).
+- ✅ **Versionado con Git**: diferente por proyecto, viaja con el repo
+- ✅ **Contexto específico Food Store**: stack real, skills reales, paths reales
+- ✅ **Accesible a todos los agentes**: inyectado en contexto principal y delegaciones
+- ✅ **Engram lo referencia**: las memorias persistentes apuntan a este archivo como fuente de verdad
 
-### ¿Por qué aquí?
-
-- ✅ **Parte del proyecto**: Versionado con Git, diferente por proyecto
-- ✅ **Contexto específico Food Store**: Stack, skills, matriz CHANGEs, patrones
-- ✅ **Accesible a todos los agentes**: Inyectado en contexto principal + delegaciones
-- ✅ **Persistencia**: Engram guarda referencias a este archivo para futuras sesiones
-
-### Cómo se usa:
-
-**Yo (Orquestador)**:
-- Leo este archivo al inicio de cada sesión
-- Cargo skills especificados en la Matriz Skills vs. Changes
-- Doy contexto a subagentes en cada delegación
-
-**Subagentes** (delegados):
-- Reciben referencia a este archivo en el prompt
-- Leen la Matriz Skills vs. Changes para saber qué skills cargar
-- Siguen los patrones documentados en "Decisiones Arquitectónicas Clave"
-- Respetan el Checklist Antes de Commitear
-
-**Si este archivo NO está aquí**:
+**Si este archivo NO está cargado al inicio de sesión:**
 - ❌ Los agentes NO tendrán contexto de proyecto
-- ❌ Los skills NO serán cargados en orden correcto
-- ❌ Los patrones NO serán seguidos uniformemente
-- ❌ Las sesiones futuras perderán contexto
+- ❌ Las skills NO serán cargadas con paths correctos
+- ❌ Los patrones arquitectónicos NO serán respetados
+- ❌ Engram y OPSX funcionarán desconectados entre sí
+- ❌ Las sesiones futuras perderán contexto acumulado
 
 ---
 
-## 🎯 Stack Tecnológico
+## 🎯 Rol del Orquestador
 
-| Capa | Tecnologías |
-|------|------------|
-| **Frontend** | React 18, TypeScript, Vite, Zustand, TanStack Query, Axios, Tailwind CSS, React Router |
-| **Backend** | FastAPI, SQLModel, Alembic, PostgreSQL, Passlib[bcrypt], python-jose, slowapi, MercadoPago SDK |
+Actúa como **Senior Tech Lead y Arquitecto de Software** con enfoque en Spec-Driven Development.
 
----
+Tu misión: garantizar que cada línea de código sea 100% fiel a la documentación técnica en `docs/`.
 
-## 📁 Estructura
+### Regla MANDATORIA: usar subagentes para todo trabajo concreto
+
+- **Orquestador** (este agente): define el plan, delega, revisa resultados, toma decisiones.
+- **Subagentes** (delegados): ejecutan el trabajo concreto — exploración intensiva, cambios multi-archivo, scripts, tests, builds, etc.
+- **Excepciones permitidas sin delegar**: preguntas de clarificación al usuario y comandos mínimos de estado (`openspec list`, `git status/diff/log`) para entender el contexto antes de delegar.
+
+### Protocolo de delegación a subagentes
+
+Todo prompt de delegación DEBE incluir obligatoriamente:
 
 ```
-backend/           ← Feature-first (auth/, usuarios/, productos/, etc.)
-frontend/          ← Feature-Sliced Design (app/, pages/, widgets/, features/, entities/, shared/)
-docs/              ← Descripcion.txt, Historias_de_usuario.txt, CHANGES.md
-openspec/          ← Changes y specs SDD
-.agents/           ← AGENTS.md (ESTE ARCHIVO) + skills/ locales
+1. Referencia explícita a `.agents/AGENTS.md` — el subagente debe leerlo y confirmar
+2. Change específico que debe implementar (nombre exacto del OPSX change)
+3. Skills a cargar según la Matriz Skills vs. Changes de este archivo
+4. Git hash del repo al momento de delegación: git log -1 --oneline
+5. Contexto: "Change anterior fue X, este es Y, siguiente será Z"
+6. Confirmación esperada del subagente: "✅ AGENTS.md leído. Listo."
+```
+
+El subagente NO debe comenzar a implementar hasta haber leído AGENTS.md y confirmado.
+
+---
+
+## 🚀 Stack Tecnológico Real
+
+> ⚠️ Esta sección refleja las dependencias REALMENTE instaladas. No asumir nada que no esté aquí.
+
+### Backend (`backend/pyproject.toml`)
+
+| Dependencia | Versión real | Notas |
+|-------------|-------------|-------|
+| fastapi | ^0.109.0 | |
+| uvicorn[standard] | ^0.27.0 | |
+| pydantic | ^2.5.3 | v2 — usar model_validator, field_validator |
+| pydantic-settings | ^2.1.0 | |
+| sqlmodel | ^0.0.14 | |
+| alembic | ^1.13.1 | |
+| psycopg[binary] | ^3.1.0 | psycopg3 — Windows compatible |
+| asyncpg | ^0.31.0 | |
+| python-jose[cryptography] | ^3.3.0 | |
+| passlib[bcrypt] | ^1.7.4 | |
+| PyJWT | ^2.8.1 | |
+| slowapi | ^0.1.9 | |
+| mercadopago | ^2.2.0 | SDK oficial Python |
+| httpx | ^0.25.2 | |
+| email-validator | ^2.1.0 | |
+
+**Dev**: pytest, pytest-asyncio, pytest-cov, black, flake8, mypy, isort
+
+### Frontend (`frontend/package.json`)
+
+| Dependencia | Versión real | Notas |
+|-------------|-------------|-------|
+| react | ^18.3.1 | |
+| react-dom | ^18.3.1 | |
+| react-router-dom | ^6.20.1 | |
+| @tanstack/react-query | ^5.28.0 | TanStack Query v5 |
+| axios | ^1.6.5 | |
+| zustand | ^5.0.8 | ⚠️ v5 — API levemente diferente a v4 |
+| recharts | ^2.10.3 | |
+| lucide-react | ^0.294.0 | iconos |
+| @tailwindcss/postcss | ^4.0.0 | ⚠️ Tailwind v4 — sintaxis diferente a v3 |
+| typescript | ^5.3.3 | strict: true |
+| vite | ^5.1.0 | |
+| vitest | ^3.2.4 | testing (NO jest) |
+| @testing-library/react | ^16.3.2 | |
+
+**⚠️ NO instalados** (mencionados en spec pero ausentes — instalar cuando llegue el change):
+- `@tanstack/react-form` — instalar al implementar formularios
+- `@mercadopago/sdk-js` — instalar al implementar checkout MercadoPago
+
+**Variables de entorno frontend** (`frontend/.env.example`):
+```
+VITE_API_BASE_URL=http://localhost:8000
+VITE_ENV=development
+VITE_MP_PUBLIC_KEY=TEST-...
+```
+
+**tsconfig paths**: `@/*` → `./src/*` — usar en todos los imports
+
+### Variables de entorno backend (`backend/.env.example`)
+
+```
+ENV=development
+APP_NAME=Food Store
+APP_VERSION=1.0.0
+DATABASE_URL=postgresql+asyncpg://...
+DATABASE_POOL_SIZE=20
+DATABASE_MAX_OVERFLOW=10
+SECRET_KEY=
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+REFRESH_TOKEN_EXPIRE_DAYS=7
+BCRYPT_COST=10                    ← ⚠️ el .env.example dice 10, spec dice ≥12 — usar 12 en código
+CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+MP_ACCESS_TOKEN=                  ← nombre real (no MERCADOPAGO_ACCESS_TOKEN)
+MERCADOPAGO_PUBLIC_KEY=
+RATE_LIMIT_LOGIN=5
+RATE_LIMIT_WINDOW=900
 ```
 
 ---
 
-## 🛠️ Skills Locales: Cuándo Usarlas
+## 📁 Estructura Real del Proyecto
 
-### 1. **python-fastapi-ddd-skill** ← SIEMPRE para backend
-Pattern: Router → Service → UoW → Repository → Model (feature-first vertical)
+```
+sdd-parcial1-gestion/
+├── backend/
+│   ├── admin/
+│   ├── alembic/
+│   │   └── versions/             # migraciones
+│   ├── auth/
+│   ├── categorias/
+│   ├── core/                     # UoW, BaseRepository[T], config, security, dependencies
+│   ├── direcciones/
+│   ├── infrastructure/
+│   │   └── repositories/
+│   ├── ingredientes/
+│   ├── pagos/
+│   ├── pedidos/
+│   ├── productos/
+│   ├── refresh_tokens/           # ⚠️ con underscore — NO refreshtokens
+│   ├── scripts/
+│   ├── tests/                    # 16 archivos planos (no sub-carpetas por módulo)
+│   └── usuarios/
+├── frontend/
+│   └── src/
+│       ├── app/
+│       ├── entities/             # vacío — pendiente implementar
+│       ├── features/
+│       │   └── products/         # único feature implementado
+│       │       ├── components/
+│       │       ├── constants/
+│       │       ├── hooks/
+│       │       └── types/
+│       ├── pages/
+│       ├── shared/
+│       │   ├── api/
+│       │   │   └── __tests__/
+│       │   ├── components/
+│       │   ├── config/
+│       │   ├── hooks/
+│       │   │   └── __tests__/
+│       │   └── routing/
+│       ├── store/
+│       │   └── __tests__/
+│       └── widgets/              # vacío — pendiente implementar
+├── docs/
+│   ├── Integrador.txt
+│   ├── Descripcion.txt
+│   ├── Historias_de_usuario.txt
+│   └── CHANGES.md                # sincronizar al archivar cada change
+├── openspec/
+│   ├── changes/
+│   ├── archive/
+│   └── config.yaml               # existe pero sin context: ni rules: configurados
+└── .agents/
+    ├── AGENTS.md                 # ESTE ARCHIVO
+    └── skills/                   # 14 skills instaladas
+```
 
-### 2. **api-design** ← Nuevo endpoint REST
-Pattern: `/api/v1/recurso`, métodos HTTP correctos, RFC 7807 errors, paginación
+---
 
-### 3. **jwt-security** ← Auth, tokens, refresh
-Pattern: Access token 30min, refresh token 7días, rotación + replay attack detection
+## 🏗️ Arquitectura Backend — Regla de Oro
 
-### 4. **rest-api-design-patterns** ← Estructura API global
-Pattern: Versionado `/api/v1`, query params para filtros, HATEOAS
+El flujo de imports es **unidireccional y NO puede invertirse bajo ninguna circunstancia:**
 
-### 5. **supabase-postgres-best-practices** ← Optimizar queries
-Pattern: Indexes en FK, SELECT FOR UPDATE para stock, CTE para jerárquico, EXPLAIN ANALYZE
+```
+Router → Service → UoW → Repository → Model
+```
 
-### 6. **tailwind-design-system** ← Componentes reutilizables
-Pattern: Design tokens (colores, espacios), dark mode, componentes atómicos
+| Capa | Archivo | Responsabilidad | Conoce a |
+|------|---------|-----------------|----------|
+| Router | `router.py` | HTTP puro: parsear request, validar schema, delegar al Service, `response_model` explícito en todos los endpoints | Service |
+| Service | `service.py` | Lógica de negocio stateless. Orquesta vía UoW. Lanza `HTTPException`. **NUNCA** hace `session.commit()` | UoW |
+| Unit of Work | `core/uow.py` | Context manager: abre sesión, expone repos, commit automático, rollback en error | Repository, Session |
+| Repository | `repository.py` | Acceso a BD sin lógica de negocio. Hereda `BaseRepository[T]`. Recibe sesión del UoW | Model, Session |
+| Model | `model.py` | SQLModel tables + relaciones. Sin imports de capas superiores | Ninguna |
 
-### 7. **ui-design-system** ← Accesibilidad + Radix/shadcn
-Pattern: Radix primitivos, ARIA labels, keyboard nav, WCAG 2.1 AA
+**Violaciones que NUNCA deben ocurrir:**
+- ❌ `router.py` con lógica de negocio
+- ❌ `service.py` con `session.commit()` directo
+- ❌ `repository.py` lanzando `HTTPException`
+- ❌ `model.py` importando capas superiores
+- ❌ Cualquier import invertido en la cadena
 
-### 8. **vercel-react-best-practices** ← Performance frontend
-Pattern: Code splitting (lazy load rutas), memoize si mide costo, TanStack Query staleTime, bundle < 200KB
+---
 
-### 9. **zustand-state-management** ← Stores cliente
-Pattern: 4 stores (authStore, cartStore, paymentStore, uiStore), slice subscription, localStorage persist
+## 🏗️ Arquitectura Frontend — Regla de Oro
 
-### 10. **web-payments** ← MercadoPago checkout
-Pattern: Tarjeta tokenizada en cliente (SDK), webhook IPN, idempotency_key, PCI DSS SAQ-A
+FSD estricto. Imports SOLO fluyen hacia abajo:
 
-### 11. **frontend-state-management** ← Eligir estado
-Pattern: Zustand (cliente) + TanStack Query (servidor), NO duplicar datos
+```
+Pages → Widgets → Features → Entities → Shared
+```
 
-### 12. **expo-tailwind-setup**
-⚫ NO usar (proyecto es web-only, habilitar si pivota mobile)
+**Path alias**: usar `@/` para todos los imports (`@/features/products/...`)
+
+**Separación de estado obligatoria:**
+- **Zustand v5**: SOLO estado cliente — carrito, sesión, proceso de pago, UI local
+- **TanStack Query v5**: SOLO estado servidor — productos, pedidos, usuarios, categorías
+- ❌ NUNCA duplicar datos del servidor en Zustand
+- ❌ NUNCA `useEffect` + `fetch` donde TanStack Query aplica
+
+**Testing**: usar **vitest** (NO jest). Los tests van en `__tests__/` dentro de cada capa.
+
+---
+
+## 🛠️ Skills Disponibles
+
+> ⚠️ Esta sección refleja las skills REALMENTE instaladas en `.agents/skills/`. Verificadas al 2026-05-11.
+
+Cargá el `SKILL.md` (o archivo equivalente) **antes** de escribir código. Múltiples skills pueden aplicar simultáneamente.
+
+| Contexto de activación | Skill | Path a leer | Archivo |
+|------------------------|-------|-------------|---------|
+| Cualquier endpoint FastAPI, service, repository, schema Pydantic, UoW | `python-fastapi-ddd-skill` | `.agents/skills/python-fastapi-ddd-skill/SKILL.md` | SKILL.md |
+| Queries SQL, migraciones Alembic, optimización PostgreSQL, índices, CTE | `supabase-postgres-best-practices` | `.agents/skills/supabase-postgres-best-practices/SKILL.md` | SKILL.md |
+| Componentes React, páginas, hooks, Tailwind v4, estilo visual | `tailwind-design-system` | `.agents/skills/tailwind-design-system/SKILL.md` | SKILL.md |
+| Accesibilidad, Radix/shadcn, WCAG, keyboard nav | `ui-design-system` | `.agents/skills/ui-design-system/SKILL.md` | SKILL.md |
+| Nuevo endpoint REST, status codes, paginación, versionado | `api-design` | `.agents/skills/api-design/SKILL.md` | SKILL.md |
+| JWT, refresh tokens, almacenamiento seguro, rotación | `jwt-security` | `.agents/skills/jwt-security/SKILL.md` | SKILL.md |
+| Zustand stores, slices, persistencia, suscripción granular | `zustand-state-management` | `.agents/skills/zustand-state-management/README.md` | README.md ⚠️ |
+| Elegir entre Zustand vs TanStack Query, evitar duplicación | `frontend-state-management` | `.agents/skills/frontend-state-management/SKILL.md` | SKILL.md |
+| Estructura API global, versionado, HATEOAS | `rest-api-design-patterns` | `.agents/skills/rest-api-design-patterns/EXAMPLES.md` | EXAMPLES.md ⚠️ |
+| MercadoPago, Stripe, webhooks, idempotencia, PCI DSS | `web-payments` | `.agents/skills/web-payments/SKILL.md` | SKILL.md |
+| Performance React, code splitting, bundle size, TanStack Query cache | `vercel-react-best-practices` | `.agents/skills/vercel-react-best-practices/AGENTS.md` | AGENTS.md ⚠️ |
+| CRUD pages para dashboard admin (tabla + formulario + filtros) | `dashboard-crud-page` | `.agents/skills/dashboard-crud-page/SKILL.md` | SKILL.md |
+| Buscar si existe una skill para X antes de crear código | `find-skills` | `.agents/skills/find-skills/SKILL.md` | SKILL.md |
+| Crear o mejorar una skill de agente | `skill-creator` | `.agents/skills/skill-creator/SKILL.md` | SKILL.md |
+
+> **⚠️ Nota**: 3 skills no tienen `SKILL.md` — tienen archivo alternativo marcado arriba. Leer el archivo que existe, no buscar SKILL.md en esas carpetas.
+
+> **Skill NO presente**: `expo-tailwind-setup` — está instalada pero no aplica a este proyecto (mobile only). No cargar.
+
+> **Regla dura**: si el contexto activa una skill y no la cargaste, **detené lo que estás haciendo y cargala primero**. El código generado sin skill activa no cumple los estándares del proyecto.
 
 ---
 
 ## 📊 Matriz Skills vs. Changes
 
-| Change | fastapi-ddd | api-design | jwt | rest-api | postgres | tailwind | ui | react-perf | zustand | payments |
-|--------|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| backend-fastapi-core | ✅ | ✅ | - | ✅ | - | - | - | - | - | - |
-| auth-login/register | ✅ | ✅ | ✅ | ✅ | - | - | - | - | - | - |
-| products-crud | ✅ | ✅ | - | ✅ | ✅ | - | - | - | - | - |
-| orders-fsm | ✅ | ✅ | - | ✅ | ✅ | - | - | - | - | - |
-| payments-mp | ✅ | ✅ | - | ✅ | ✅ | - | - | - | - | ✅ |
-| frontend-catalog | - | - | - | - | - | ✅ | ✅ | ✅ | - | - |
-| frontend-cart | - | - | - | - | - | ✅ | ✅ | - | ✅ | - |
-| frontend-checkout | - | - | - | - | - | ✅ | ✅ | ✅ | ✅ | ✅ |
-| admin-dashboard | - | - | - | - | ✅ | ✅ | - | ✅ | - | - |
+| Tipo de Change | python-fastapi-ddd | postgres | tailwind-design-system | ui-design-system | api-design | jwt-security | zustand | web-payments | dashboard-crud-page |
+|----------------|:-----------------:|:--------:|:---------------------:|:----------------:|:----------:|:------------:|:-------:|:------------:|:------------------:|
+| backend core / setup | ✅ | ✅ | — | — | ✅ | — | — | — | — |
+| auth (login, registro, refresh, logout) | ✅ | — | — | — | ✅ | ✅ | — | — | — |
+| RBAC / route protection | ✅ | — | — | — | — | ✅ | — | — | — |
+| productos / categorías / ingredientes CRUD | ✅ | ✅ | — | — | ✅ | — | — | — | — |
+| pedidos FSM + audit trail | ✅ | ✅ | — | — | ✅ | — | — | — | — |
+| pagos MercadoPago backend | ✅ | ✅ | — | — | ✅ | — | — | ✅ | — |
+| migraciones Alembic | ✅ | ✅ | — | — | — | — | — | — | — |
+| frontend layout / componentes base | — | — | ✅ | ✅ | — | — | — | — | — |
+| frontend auth UI | — | — | ✅ | ✅ | — | ✅ | — | — | — |
+| frontend catálogo | — | — | ✅ | ✅ | — | — | — | — | — |
+| frontend carrito (Zustand) | — | — | ✅ | — | — | — | ✅ | — | — |
+| frontend checkout + pago | — | — | ✅ | ✅ | — | — | ✅ | ✅ | — |
+| admin dashboard + métricas | ✅ | ✅ | ✅ | — | — | — | — | — | ✅ |
+| admin CRUD (productos, usuarios, stock) | ✅ | — | ✅ | — | — | — | — | — | ✅ |
+| validación pre-checkout | ✅ | ✅ | ✅ | — | ✅ | — | — | — | — |
+| sistema configuración key-value | ✅ | ✅ | ✅ | — | — | — | — | — | ✅ |
+| custom hooks + optimistic updates | — | — | — | — | — | — | ✅ | — | — |
 
 ---
 
-## 🚀 Guía por Escenario
+## 📋 Convenciones del Proyecto
 
-### Implementar módulo backend nuevo
-```
-1. Cargar python-fastapi-ddd-skill
-2. Crear carpeta modulo/ → model.py, schemas.py, repository.py, service.py, router.py
-3. Repository hereda BaseRepository[T]
-4. Service contiene lógica negocio
-5. Router con require_role() para autorización
-6. Cargar api-design para validar endpoints
-```
+### Backend
 
-### Implementar endpoint pagos
-```
-1. Cargar python-fastapi-ddd-skill + web-payments
-2. Modelo Pago + schema
-3. Router: POST /pagos/crear + POST /pagos/webhook
-4. UoW atómico: PENDIENTE → CONFIRMADO + decremento stock
-5. Validar webhook signature MercadoPago
-```
+- Cada módulo: `model.py · schemas.py · repository.py · service.py · router.py`
+- `router.py`: `response_model` explícito en TODOS los endpoints
+- `service.py`: lanza `HTTPException` — **nunca** el router ni el repository
+- Migraciones: en `alembic/versions/` — **nunca** modificar tablas directamente
+- Módulo refresh tokens: carpeta `refresh_tokens/` (con underscore)
+- Rate limiting con `slowapi`: login 5/15min (RATE_LIMIT_WINDOW=900), registro 3/hora, pedidos 10/usuario/hora
+- bcrypt cost factor: **12 en código** (ignorar el 10 del .env.example — spec dice ≥12)
+- Refresh tokens: en BD con `revoked_at` para invalidación
+- Campo `activo` en Usuario: validar en login (403 si `activo=false`)
+- Soft delete: `eliminado_en` — **nunca** hard delete en entidades de negocio
+- Snapshots: precio y dirección se copian al crear el pedido
+- HistorialEstadoPedido: append-only — solo INSERT, nunca UPDATE ni DELETE
+- Personalización: `INTEGER[]` (array nativo PostgreSQL, RN-PE07)
+- Tests: en `backend/tests/` plano, archivos con prefijo `test_`, runner: **pytest** con pytest-asyncio
 
-### Componente UI accesible
-```
-1. Cargar ui-design-system + tailwind-design-system
-2. Radix primitivos, Tailwind utilities, ARIA labels
-3. Validar WCAG 2.1 AA (contrast, keyboard nav)
-4. Cargar vercel-react-best-practices si needed
-```
+### Frontend
 
-### Optimizar performance
-```
-1. Profiler / Lighthouse
-2. Cargar vercel-react-best-practices
-3. Lazy load rutas (React.lazy + Suspense)
-4. TanStack Query staleTime para caching
-5. Revisar bundle size
-```
+- FSD estricto: `Pages → Widgets → Features → Entities → Shared`
+- Imports: usar siempre path alias `@/` (configurado en tsconfig)
+- Estado servidor: **TanStack Query v5** exclusivamente
+- Estado cliente: **Zustand v5** stores tipados
+- HTTP: Axios + interceptor JWT (en `@/shared/api/`)
+- Formularios: **TanStack Form** — instalar cuando llegue el change de formularios
+- Gráficos: **recharts** (ya instalado)
+- Iconos: **lucide-react** (ya instalado)
+- Pagos frontend: SDK MercadoPago — instalar `@mercadopago/sdk-js` al llegar al change de checkout
+- Tailwind: **v4** — sintaxis diferente a v3, no usar clases ni config de v3
+- Testing: **vitest** (NO jest) + @testing-library/react, tests en `__tests__/` por capa
 
-### Indexar BD
-```
-1. EXPLAIN ANALYZE query lenta
-2. Cargar supabase-postgres-best-practices
-3. Crear index en FK, WHERE, JOIN
-4. SELECT FOR UPDATE para stock decrement
-```
+### General
+
+- Commits: Conventional Commits (`feat:`, `fix:`, `chore:`, `test:`, `docs:`) — sin co-authored-by ni atribución IA
+- Variables de entorno: `.env.example` como referencia — **nunca** commitear `.env`
+- Nombre variable MP en backend: `MP_ACCESS_TOKEN` (no `MERCADOPAGO_ACCESS_TOKEN`)
+- Errores API: RFC 7807 (`{ type, title, status, detail, instance }`)
 
 ---
 
-## ✅ Checklist Antes de Commitear
-
-- [ ] ¿Requiere JWT? ¿Validado?
-- [ ] ¿Requiere rol? ¿require_role() aplicado?
-- [ ] ¿Validación Pydantic?
-- [ ] ¿Queries parametrizadas (no SQL concat)?
-- [ ] ¿.env NO commiteado? (solo .env.example)
-- [ ] ¿Passwords hasheadas bcrypt cost >= 10?
-- [ ] ¿JWT refresh rotated?
-- [ ] ¿Rate limiting en endpoints sensibles?
-- [ ] ¿UoW commit/rollback correcto?
-- [ ] ¿Tests escritos?
-
----
-
-## 🎓 Workflow SDD
+## 🔄 Flujo OPSX (Spec-Driven Development)
 
 ```
-1. Usuario solicita cambio
-   ↓
-2. Identificar skill(s) necesaria(s)
-   ↓
-3. Cargar skill() antes de escribir código
-   ↓
-4. Implementar siguiendo guidance + patrones
-   ↓
-5. Tests >= 60% (backend), >= 40% (frontend)
-   ↓
-6. Commitear + Archivar change OPSX
+opsx:explore  →  opsx:propose  →  opsx:apply  →  opsx:archive
 ```
 
----
+Skills OPSX disponibles: `opsx:explore`, `opsx:propose`, `opsx:apply`, `opsx:archive`, `openspec-design`, `openspec-spec`, `openspec-tasks`, `openspec-verify`.
 
-## 🔗 Referencia Documentación
+- Changes activos: `openspec/changes/<nombre>/`
+- Config del proyecto: `openspec/config.yaml` (actualmente sin `context:` ni `rules:` — pendiente configurar)
+- **Antes de implementar cualquier feature**: verificar change activo con `openspec list --json`
+- **Source of truth**: siempre `openspec/` — `docs/CHANGES.md` es índice humano de lectura rápida
 
-| Documento | Ubicación | Qué |
-|-----------|-----------|-----|
-| Visión + Stack + Arquitectura | `docs/Descripcion.txt` | Completo del sistema |
-| Historias de usuario + Reglas negocio | `docs/Historias_de_usuario.txt` | Todas las US, criterios aceptación |
-| Mapeo completo changes OPSX | `docs/CHANGES.md` | 30+ changes + dependencias + orden |
-| ERD v5 (16 tablas) | `docs/Descripcion.txt` § 4 | Modelo datos |
-| API REST endpoints | `docs/Descripcion.txt` § 7 | Todos los endpoints |
-
----
-
-## 🏗️ Decisiones Arquitectónicas Clave
-
-**Backend**: DDD + Onion (Router → Service → UoW → Repository → Model). UoW = context manager para transacciones ACID. Soft delete = nunca hard-delete, solo `eliminado_en = now()`.
-
-**Frontend**: FSD (rutas → pages → widgets → features → entities → shared). Zustand (cliente) + TanStack Query (servidor). NUNCA duplicar datos entre stores.
-
-**BD**: PostgreSQL 3NF, 16 tablas, 3 dominios. Snapshots para inmutabilidad (precio_snapshot, direccion_snapshot). HistorialEstadoPedido append-only (solo INSERT).
-
-**Seguridad**: RBAC 4 roles (ADMIN, STOCK, PEDIDOS, CLIENT). JWT 30min access + 7días refresh con rotación. PCI DSS SAQ-A: tarjeta tokenizada en cliente (SDK MP), nunca en servidor.
-
----
-
-# ⚡ REGLAS DE ORO PARA TODOS LOS AGENTES (SDD)
-
-> **🔴 CRÍTICO**: Estas reglas DEBEN ser leídas y aplicadas en CADA SESIÓN.
-> **⚠️ NOTA PARA FUTURAS SESIONES**: Si no ves esta confirmación al inicio, el agente NO leyó AGENTS.md. Pide que lo haga.
-
----
-
-## Regla 0: LECTURA OBLIGATORIA AL INICIO DE CADA SESIÓN
-
-**ANTES de hacer CUALQUIER cosa en un Change nuevo:**
-
-1. Lee este archivo AGENTS.md completo (especialmente las Reglas de Oro)
-2. Ejecuta `git status` para verificar estado limpio
-3. Responde con: **"✅ AGENTS.md leído. Estado limpio. Listo para continuar."**
-
-Si saltás este paso, el usuario DEBE decir: "Leé AGENTS.md" y parar todo hasta que lo hagas.
-
----
-
-## Regla 1: Verificación pre-CHANGE
-
-**ANTES de comenzar CUALQUIER CHANGE N:**
+### Sync de docs/CHANGES.md al archivar (OBLIGATORIO)
 
 ```bash
-1. git status                    # → "nothing to commit, working tree clean"
-2. git log -1 --oneline         # → verificar hash = último checkpoint
-3. openspec list                # → sin cambios activos
-```
+# 1. Archivar en OPSX
+opsx:archive <change-name>
 
-Si algo falla → **STOP**. NO continúes. Pregunta: "¿Procedo a limpiar/commitear o esperamos tu instrucción?"
+# 2. Abrir docs/CHANGES.md y:
+#    a. Actualizar "Última actualización" a fecha del día (YYYY-MM-DD)
+#    b. Localizar fila del change en su Epic
+#    c. Actualizar estado a: ✅ Hecho (archivado YYYY-MM-DD)
+#    d. Actualizar columna Evidencia: openspec/changes/archive/YYYY-MM-DD-<change-name>/
+
+# 3. Commitear juntos
+git add openspec/ docs/CHANGES.md
+git commit -m "chore: archive change <change-name>"
+```
 
 ---
 
-## Regla 2: Tests Automáticos ANTES de Archive
+## 🧠 Engram — Memoria Persistente
 
-**DESPUÉS de implementar, y ANTES de pasar a testing manual:**
+Este proyecto usa **Engram** para memoria persistente entre sesiones. Chunks en `.engram/chunks/` (4 chunks activos al 2026-05-11).
+
+> ⚠️ `engram recall` no existe como comando CLI. Para recuperar memorias usar la interfaz de Engram disponible, o consultar chunks directamente.
+
+### Qué guardar en Engram al archivar cada change
+
+```bash
+# Al archivar cualquier change:
+engram store foodstore:progress '{
+  "ultimo_change_archivado": "<nombre>",
+  "bloque_actual": "<BLOQUE N>",
+  "proximo_change": "<nombre>",
+  "fecha": "YYYY-MM-DD",
+  "git_hash": "<hash>"
+}'
+
+# Si se encontraron gaps o deuda técnica:
+engram store foodstore:deuda-tecnica '{
+  "descripcion": "<gap>",
+  "impacto": "<alto|medio|bajo>",
+  "change_afectado": "<nombre>",
+  "fecha": "YYYY-MM-DD"
+}'
+
+# Decisiones arquitectónicas de la sesión:
+engram store foodstore:decisiones '{
+  "decision": "<qué>",
+  "razon": "<por qué>",
+  "change": "<nombre>",
+  "fecha": "YYYY-MM-DD"
+}'
+
+# Auditorías e inconsistencias:
+engram store foodstore:auditoria-inc '{
+  "inc_01": {...},
+  "inc_02": {...},
+  ...
+}'
+```
+
+### Protocolo de inicio de sesión (MANDATORIO)
+
+```bash
+engram sync --import          # importar chunks del remoto
+engram sync --status          # verificar: muestra chunks locales vs remotos
+git status
+git log -1 --oneline
+openspec list --json
+```
+
+Responder al usuario con:
+```
+✅ AGENTS.md leído (v3.1).
+✅ Engram: [N chunks, último archivado: X o "sin datos"]
+✅ Git: [estado]
+✅ OPSX: [sin activos / activo: nombre]
+Listo. ¿Continuamos con [próximo change] o tenés otra instrucción?
+```
+
+### Protocolo post-pull (MANDATORIO)
+
+Cada vez que se ejecute `git pull` durante una sesión:
+```bash
+engram sync --import    # los chunks nuevos NO se cargan automáticamente
+```
+
+### Protocolo de cierre de sesión (AUTOMÁTICO)
+
+Ante trigger words: "cerrar sesión", "terminar", "done", "listo", "eso es todo", "terminamos", "hasta acá":
+
+```bash
+# 1. Guardar progreso en Engram
+engram store foodstore:progress '{...estado actualizado...}'
+
+# 2. Exportar memorias nuevas
+engram sync
+
+# 3. Stagear TODO
+git add -A
+git status
+
+# 4. Commitear
+git commit -m "chore: end session — sync engram memories and pending changes"
+
+# 5. Pushear
+git push
+```
+
+Solo después del push exitoso: cerrar sesión de Engram.
+
+### Fallback si git push falla
+
+1. Informar el error exacto al usuario
+2. NO cerrar sesión de Engram
+3. Esperar instrucciones del usuario
+
+---
+
+## ⚡ Reglas de Oro del Orquestador
+
+> 🔴 **CRÍTICO**: Se aplican en CADA sesión y CADA change.
+> Si no confirmaste haber leído AGENTS.md al inicio, el usuario dirá: **"Leé AGENTS.md"** y todo se detiene.
+
+### Regla 0: Lectura obligatoria al inicio
+
+```bash
+cat .agents/AGENTS.md
+engram sync --import && engram sync --status
+git status && git log -1 --oneline
+openspec list --json
+```
+
+Confirmar con el bloque de la sección Engram → Protocolo de inicio.
+
+### Regla 1: Verificación pre-change
+
+```bash
+git status          # → "nothing to commit, working tree clean"
+git log -1 --oneline
+openspec list --json  # → sin activos inesperados
+```
+
+Si algo falla → **STOP**. Preguntar: *"Hay [problema]. ¿Procedo a resolver o esperamos instrucción?"*
+
+### Regla 2: Tests automáticos antes de testing manual
 
 ```bash
 # Backend
-cd backend && pytest --cov=. --cov-report=term-missing
-poetry run ruff check .
-poetry run black --check .
-
-# Frontend (si aplica)
-cd frontend && npm run test
-npm run lint
-
-# Build
-cd backend && python -m pip check
-cd frontend && npm run build
-```
-
-**Si algo falla:**
-- ❌ NO generes guía de testing manual
-- ❌ NO pidas confirmación
-- ✅ CORRIGE el error
-- ✅ Corre tests de nuevo
-- ✅ Recién entonces → Regla 3
-
-**Si TODO pasa:**
-- ✅ Procede a Regla 3
-
----
-
-## Regla 3: Guía de Testing Manual (EL PASO CRÍTICO)
-
-**ESTO ES LO MÁS IMPORTANTE.** El usuario va a testear MANUALMENTE y confirmar.
-
-### Formato EXACTO que SIEMPRE debes usar:
-
----
-
-### 📋 PASOS PARA TESTEO MANUAL - CHANGE [NOMBRE]
-
-**Tu responsabilidad:** Ejecutar tests automáticos, luego generar esta guía ANTES de pedir confirmación.
-
-**Mi responsabilidad (usuario):** Seguir los pasos al pie de la letra y confirmar.
-
----
-
-#### 🔧 **PASO 1: Preparar el entorno**
-
-**Qué hacer:**
-```bash
-# Asegúrate de estar en la raíz del proyecto
-cd RepositorioBaseFoodStore-SDD
-
-# Verifica Docker
-docker ps
-# Debería listar contenedores. Si está vacío, ejecuta:
-docker-compose up -d
-
-# Verifica conexión BD
-docker exec foodstore-postgres pg_isready
-# Debería mostrar: "accepting connections"
-```
-
-**Qué observar:**
-- ✅ Docker lista PostgreSQL corriendo
-- ✅ `pg_isready` responde "accepting connections"
-
-**Si ves esto → ✅ Paso 1 OK**
-
----
-
-#### 🚀 **PASO 2: Levantar Backend**
-
-**Qué hacer:**
-```bash
 cd backend
-poetry shell
-poetry install  # Si faltan dependencias
-uvicorn main:app --reload
-```
+pytest --cov=. --cov-report=term-missing
+black --check .
+flake8 .
 
-**Qué observar:**
-- ✅ No errores en la consola
-- ✅ Ves "Application startup complete"
-- ✅ La URL local es http://localhost:8000
-
-**Prueba inmediata:**
-```bash
-# En otra terminal:
-curl http://localhost:8000/docs
-```
-
-**Qué observar:**
-- ✅ Se abre Swagger UI (documentación interactiva)
-- ✅ Ves todos los endpoints listados
-
-**Si ves esto → ✅ Paso 2 OK**
-
----
-
-#### 🎨 **PASO 3: Levantar Frontend** (si el Change es frontend)
-
-**Qué hacer:**
-```bash
+# Frontend (si el change incluye frontend)
 cd frontend
-npm install  # Si faltan dependencias
-npm run dev
+npx vitest run          # ← vitest, NO jest
+npm run lint
 ```
 
-**Qué observar:**
-- ✅ No errores en la consola
-- ✅ Ves "Local: http://localhost:5173"
-- ✅ Abre el navegador automáticamente a esa URL
+Si falla → corregir → volver a correr → recién entonces Regla 3.
 
-**Si ves esto → ✅ Paso 3 OK**
+### Regla 3: Guía de Testing Manual (formato EXACTO)
 
----
-
-#### ✔️ **PASO 4: Testing específico del Change**
-
-> [AQUÍ VA EL PASO A PASO DETALLADO PARA CADA CHANGE]
-> Ejemplo: "Click en botón X, espera respuesta Y, verifica que Z aparezca en consola"
-
-**Qué hacer:**
-[Instrucciones detalladas por feature]
-
-**Qué observar:**
-[Descripción exacta de qué debe aparecer en pantalla/consola/BD]
-
-**Checklist de validación:**
-- [ ] Observación 1 presente
-- [ ] Observación 2 presente
-- [ ] Observación 3 presente
-
-**Si TODAS las observaciones están presentes → ✅ Paso 4 OK**
+Template completo — rellenar PASO 4 con detalle específico del change:
 
 ---
 
-#### 📊 **PASO 5: Validar en Base de Datos**
+**📋 PASOS PARA TESTEO MANUAL — CHANGE [NOMBRE]**
 
-**Qué hacer:**
+**PASO 1: Entorno**
 ```bash
-docker exec -it foodstore-postgres psql -U postgres -d foodstore_db -c "[QUERY ESPECÍFICA]"
+cd sdd-parcial1-gestion
+docker ps
+docker-compose up -d          # si no está corriendo
+docker exec foodstore-postgres pg_isready
 ```
+✅ PostgreSQL corriendo y aceptando conexiones
 
-**Qué observar:**
-[Descripción de qué datos debería haber en la BD]
-
-**Si ves esto → ✅ Paso 5 OK**
-
----
-
-### ✅ **CHECKLIST FINAL**
-
-Si TODOS estos puntos son ✅, entonces el Change funciona correctamente:
-
-- [ ] Paso 1: Entorno preparado
-- [ ] Paso 2: Backend levantado sin errores
-- [ ] Paso 3: Frontend levantado (si aplica)
-- [ ] Paso 4: Feature funciona como se describió
-- [ ] Paso 5: BD tiene los datos esperados
-
----
-
-### 🎯 **CUANDO VEAS ESTO, RESPONDE:**
-
-**"✅ Todo funciona correctamente. Aprobado para archivar CHANGE [NOMBRE]"**
-
-**RECIÉN ENTONCES** yo ejecuto:
+**PASO 2: Backend**
 ```bash
-openspec archive change "[nombre-del-change]"
-git add .
-git commit -m "chore: archive CHANGE [nombre]"
+cd backend && uvicorn main:app --reload
+```
+✅ "Application startup complete" — Swagger en http://localhost:8000/docs
+
+**PASO 3: Frontend** *(omitir si el change es solo backend)*
+```bash
+cd frontend && npm run dev
+```
+✅ "Local: http://localhost:5173"
+
+**PASO 4: Testing específico**
+[COMPLETAR con pasos exactos del change: URL, datos, botones, respuestas HTTP esperadas]
+
+Checklist:
+- [ ] [Verificación 1]
+- [ ] [Verificación 2]
+- [ ] [Verificación 3]
+
+**PASO 5: Validar BD**
+```bash
+docker exec -it foodstore-postgres psql -U postgres -d foodstore_db \
+  -c "[QUERY ESPECÍFICA]"
+```
+
+**Checklist final:**
+- [ ] Paso 1 ✅ | [ ] Paso 2 ✅ | [ ] Paso 3 ✅ | [ ] Paso 4 ✅ | [ ] Paso 5 ✅
+
+**Cuando todo sea ✅, responder exactamente:**
+> **"✅ Todo funciona. Aprobado para archivar CHANGE [NOMBRE]"**
+
+---
+
+### Regla 4: Workflow completo de un change
+
+```
+1. Regla 0 (AGENTS.md + Engram sync)
+   ↓
+2. Regla 1 (verificar repo limpio)
+   ↓
+3. openspec list --json (sin activos)
+   ↓
+4. opsx:propose → opsx:apply
+   ↓
+5. Delegar a subagente (protocolo de delegación completo)
+   ↓
+6. Subagente: lee AGENTS.md + carga skills según Matriz + implementa
+   ↓
+7. Regla 2 (tests automáticos — vitest para frontend, pytest para backend)
+   ↓
+8. Regla 3 (guía testing manual)
+   ↓
+9. Usuario confirma ✅
+   ↓
+10. opsx:archive + sync docs/CHANGES.md + engram store + commit
+    ↓
+11. Si el usuario termina → protocolo de cierre Engram
 ```
 
 ---
 
-## Regla 4: Workflow Completo de un Change
+## ✅ Checklist Pre-Commit
 
-```
-1. Usuario pide nuevo Change
-   ↓
-2. Yo: Leo AGENTS.md (Regla 0) + Regla 1
-   ↓
-3. Yo: Creo Change (openspec new change)
-   ↓
-4. Yo: Cumplo Regla 2 (tests automáticos)
-   ↓
-5. Yo: Genero Regla 3 (guía testing manual)
-   ↓
-6. Usuario: Sigue pasos de Regla 3 y confirma ✅
-   ↓
-7. Yo: Ejecuto Regla 4 (archive change)
-```
+- [ ] ¿JWT validado con `get_current_user()` donde corresponde?
+- [ ] ¿`require_role([...])` aplicado en endpoints protegidos?
+- [ ] ¿Inputs con validación Pydantic v2 en `schemas.py`?
+- [ ] ¿Queries parametrizadas (sin concatenación SQL)?
+- [ ] ¿`.env` NO incluido en commit? (solo `.env.example`)
+- [ ] ¿bcrypt cost factor = **12** en código? (ignorar el 10 del .env.example)
+- [ ] ¿Refresh token con rotación + detección replay attack?
+- [ ] ¿Rate limiting con slowapi en endpoints sensibles?
+- [ ] ¿UoW sin `session.commit()` en el service?
+- [ ] ¿Tests escritos con **pytest** (backend) o **vitest** (frontend)?
+- [ ] ¿Backend ≥ 60% coverage? ¿Frontend ≥ 40%?
+- [ ] ¿Conventional Commits sin co-authored-by?
+- [ ] ¿Migración Alembic incluida si hubo cambio de modelo?
+- [ ] ¿Soft delete con `eliminado_en` (sin hard delete)?
+- [ ] ¿Snapshots precio + dirección en pedidos?
+- [ ] ¿`INTEGER[]` para personalización en DetallePedido?
+- [ ] ¿Imports frontend usando `@/` (path alias)?
+- [ ] ¿Variable de entorno MP es `MP_ACCESS_TOKEN` (no MERCADOPAGO_ACCESS_TOKEN)?
 
 ---
 
-## 📝 **Última actualización**: 5 de mayo de 2026
-## 📌 **Versión**: 2.1 — Ubicación y acceso de AGENTS.md documentado. Listo para delegaciones con contexto completo.
+## 🔌 MCPs y Herramientas
+
+| Herramienta | Config | Estado |
+|-------------|--------|--------|
+| `devdocs-mcp` | `.opencode/opencode.json` | ⚠️ archivo NO existe aún — pendiente configurar |
+| `openspec` | `openspec/config.yaml` | ✅ existe, sin context/rules configurados |
+
+---
+
+## 🏗️ Decisiones Arquitectónicas — No Negociables
+
+No revertir sin aprobación explícita del usuario:
+
+| Decisión | Razón |
+|----------|-------|
+| UoW como context manager — service NUNCA hace `session.commit()` | Atomicidad ACID en creación de pedidos y decremento de stock |
+| Soft delete con `eliminado_en` — nunca hard delete | Integridad referencial histórica |
+| HistorialEstadoPedido append-only | Audit trail inmutable |
+| Snapshots precio + dirección al crear pedido | Inmutabilidad histórica |
+| Carrito 100% client-side (Zustand + localStorage) | No existe en backend |
+| Tokenización tarjeta en cliente (SDK MP) | PCI DSS SAQ-A |
+| Refresh token en BD con `revoked_at` | Invalidación activa |
+| Campo `activo` en Usuario validado en login | Soft-ban sin borrar historial |
+| RBAC con IDs estables en seed: ADMIN(1) STOCK(2) PEDIDOS(3) CLIENT(4) | Los IDs se referencian en código |
+| Carpeta refresh tokens: `refresh_tokens/` (con underscore) | Nombre real en el repo |
+| Tests frontend con **vitest** (no jest) | Dependencia real instalada |
+| Tailwind **v4** (no v3) | Dependencia real instalada |
+| Zustand **v5** (no v4) | Dependencia real instalada |
+
+---
+
+## 📚 Documentación de Referencia
+
+| Documento | Path | Contenido |
+|-----------|------|-----------|
+| Spec técnica completa | `docs/Integrador.txt` | ERD v5, FSM, API REST, schemas Pydantic, rúbrica |
+| Descripción integral | `docs/Descripcion.txt` | 15 secciones: visión, stack, arquitectura, patrones |
+| Historias de usuario | `docs/Historias_de_usuario.txt` | 77 US, criterios de aceptación, reglas de negocio |
+| Mapa de changes | `docs/CHANGES.md` | v3.1 — estado real + inconsistencias + orden |
+
+---
+
+## 📍 Estado del Proyecto
+
+> Fuente de verdad: Engram (`engram sync --status`)
+
+- **Último change archivado**: `rbac-roles-management` (EPIC 01, 5/9)
+- **Próximo change**: `route-protection-rbac`
+- **Bloque actual**: BLOQUE 2 — Auth (parcialmente completo)
+- **Inconsistencias pendientes**: INC-01 a INC-06 (ver `docs/CHANGES.md` v3.1 sección Reparación)
+- **Deuda técnica**: `frontend-products-catalog-ui` archivado sin backend (INC-01)
+
+---
+
+## 📝 Historial de Versiones
+
+| Versión | Fecha | Cambios |
+|---------|-------|---------|
+| 3.1 | 2026-05-11 | Sincronización completa con estado real: dependencias reales (Zustand v5, Tailwind v4, vitest, sin TanStack Form ni SDK MP), estructura real de carpetas (refresh_tokens con underscore, tests planos, widgets/entities vacíos), skills reales con paths y archivos correctos (14 skills, 3 sin SKILL.md, dashboard-crud-page y find-skills nuevas), variables de entorno reales (MP_ACCESS_TOKEN, BCRYPT_COST discrepancia), engram recall eliminado (comando no existe), devdocs-mcp sin config, openspec config.yaml vacío, decisiones arquitectónicas extendidas con realidad del repo |
+| 3.0 | 2026-05-11 | Fusión AGENTS.md tuyo + profesor: protocolo Engram, delegación subagentes, paths skills, matriz, checklist, decisiones |
+| 2.1 | 2026-05-05 | Ubicación y acceso documentado |
+| 1.0 | — | Versión inicial |

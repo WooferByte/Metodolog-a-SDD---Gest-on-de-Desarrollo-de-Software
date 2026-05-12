@@ -1,1064 +1,740 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
-> **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin en el contexto de Spec-Driven Development (SDD).
-> 
-> **Última actualización**: 21 de abril de 2026
+> **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
+> **Última actualización**: 2026-05-11
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
+> **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
 ---
 
-## Introducción
+## Leyenda de estados
 
-Este documento lista **todos los changes** que necesita Food Store para completarse. Cada change está identificado por:
-- **Nombre** (kebab-case): identificador único
-- **Funcionalidad**: qué cubre
-- **Historias de usuario**: QUÉ implementa
-- **Dependencias**: de qué otros changes depende y POR QUÉ
-
-El orden sugerido respeta el flujo de dependencias: un change solo puede implementarse cuando todas sus dependencias están archivadas.
-
----
-
-## EPIC 00 — Infraestructura y Setup (Sprint 0)
-
-### ✅ change: `infrastructure-repo-setup`
-**Funcionalidad**: Inicialización del repositorio Git, estructura de carpetas monorepo, configuración de herramientas base.
-
-**Historias**: US-000
-
-**Dependencias**: Ninguna (primer change)
-
-**Descripción**: 
-- Crear estructura `/backend` con feature-first (auth/, usuarios/, productos/, categorias/, ingredientes/, pedidos/, pagos/, direcciones/, admin/, refreshtokens/)
-- Crear estructura `/frontend` con Feature-Sliced Design (app/, pages/, widgets/, features/, entities/, shared/)
-- Configurar `.gitignore`, `.env.example`, `README.md`
-- Inicializar git con commits progresivos
-- Stack: Python + React + TypeScript
+| Símbolo | Significado |
+|---------|-------------|
+| ✅ | Archivado correctamente en OPSX |
+| ❌ | Pendiente — no implementado |
+| ⚠️ | Archivado con problema — requiere auditoría y reparación antes de continuar |
+| 🔧 | Corrección aplicada al spec (no cambia código, cambia la descripción del change) |
 
 ---
 
-### ✅ change: `backend-fastapi-core-setup`
-**Funcionalidad**: Configuración del backend FastAPI, dependencias core, estructura base de carpetas.
+## 🚨 INCONSISTENCIAS DETECTADAS — Reparar antes de continuar
 
-**Historias**: US-000a
+Estas inconsistencias fueron identificadas al sincronizar el estado real del repo con el mapa v3.0 y las specs originales. El orquestador debe auditar y reparar cada una **antes** de implementar `route-protection-rbac`.
+
+### INC-01 — `frontend-products-catalog-ui` archivado sin dependencias ⚠️ CRÍTICO
+
+**Problema**: `frontend-products-catalog-ui` fue archivado el 2026-05-09 pero sus dependencias de backend NO están implementadas:
+- `products-crud-core` ❌ pendiente
+- `products-categories-association` ❌ pendiente
+- `products-ingredients-association` ❌ pendiente
+- `products-catalog-public` ❌ pendiente
+
+El frontend del catálogo existe pero no tiene backend contra qué conectarse. Las queries de TanStack Query apuntan a endpoints que no existen. El componente compilará pero fallará en runtime con 404/500.
+
+**Impacto**: Alto — cuando se implementen los changes de backend del catálogo, el frontend archivado puede tener contratos de API incorrectos (endpoints, schemas de respuesta, campos).
+
+**Acción requerida**:
+1. Auditar el código archivado en `openspec/changes/archive/2026-05-09-frontend-products-catalog-ui/`
+2. Documentar qué endpoints asume el frontend (URLs, métodos, schemas de respuesta)
+3. Al implementar `products-catalog-public`, verificar que los endpoints coincidan exactamente con lo que el frontend espera
+4. Si hay discrepancia → crear change de corrección `fix-frontend-products-catalog-api-contract`
+5. Marcar en Engram: `engram store foodstore:deuda-tecnica '{"inc": "INC-01", ...}'`
+
+---
+
+### INC-02 — `es_predeterminada` vs `es_principal` 🔧 CORRECCIÓN DE SPEC
+
+**Problema**: El spec original (US-024, RN-DI01, RN-DI02) usa el campo `es_predeterminada`. El change `addresses-crud-by-user` en versiones anteriores del mapa usaba `es_principal`.
+
+**Impacto**: Medio — si el campo en BD se creó como `es_principal` (en `backend-postgres-alembic-seed` ya archivado), hay que verificar el nombre real en la migración.
+
+**Acción requerida**:
+1. Verificar el nombre real del campo en `alembic/versions/` (buscar la migración de `DireccionEntrega`)
+2. Si dice `es_principal` → crear migración de rename: `ALTER TABLE direccion_entrega RENAME COLUMN es_principal TO es_predeterminada`
+3. Actualizar cualquier referencia en código ya archivado
+4. El change `addresses-crud-by-user` (pendiente) usará `es_predeterminada` — alineado con spec
+
+---
+
+### INC-03 — `backend-dev-infrastructure` marcado ⏳ en CHANGES.md pero archivado ✅ en OPSX 🔧
+
+**Problema**: El archivo `docs/CHANGES.md` tiene `backend-dev-infrastructure` como ⏳ pendiente pero OPSX lo tiene archivado como `2026-04-24-backend-dev-infrastructure`. El mapa estaba stale.
+
+**Impacto**: Bajo — solo es inconsistencia documental, el código existe.
+
+**Acción requerida**: Corregido en este mapa v3.1 (marcado ✅). No requiere acción de código.
+
+---
+
+### INC-04 — `INTEGER[]` para personalización no explícito en changes de pedidos 🔧
+
+**Problema**: RN-PE07 especifica que la personalización se almacena como `INTEGER[]` (array nativo de PostgreSQL). Los changes de pedidos mencionan "array de IDs" pero no especifican el tipo PostgreSQL. La rúbrica evalúa "uso correcto de arrays de PostgreSQL".
+
+**Impacto**: Medio — si `backend-postgres-alembic-seed` ya creó la columna `personalizacion` como `TEXT` o `JSON` en lugar de `INTEGER[]`, hay que crear una migración correctiva.
+
+**Acción requerida**:
+1. Verificar tipo real de columna `personalizacion` en `alembic/versions/` o directamente en BD: `\d detalle_pedido`
+2. Si no es `INTEGER[]` → crear migración: `ALTER TABLE detalle_pedido ALTER COLUMN personalizacion TYPE INTEGER[] USING personalizacion::INTEGER[]`
+3. Documentado en el change `orders-fsm-backend` (pendiente) con el tipo correcto
+
+---
+
+### INC-05 — `backend-fastapi-core-setup` archivado con nombre diferente 🔧
+
+**Problema**: El change está en OPSX como `2026-04-24-backend-setup` pero en el mapa figura como `backend-fastapi-core-setup`.
+
+**Impacto**: Bajo — solo naming. No afecta código.
+
+**Acción requerida**: Documentado aquí. Al hacer `openspec list`, usar el nombre real del archivo. No requiere acción de código.
+
+---
+
+### INC-06 — `backend-postgres-alembic-seed` archivado dos veces 🔧
+
+**Problema**: Aparece archivado en `2026-05-06` y `2026-05-08`. Posible re-run o corrección aplicada fuera de un change formal.
+
+**Impacto**: Bajo-medio — verificar si la segunda corrección introdujo cambios no documentados (por ejemplo, si ahí se agregó el campo `activo` en Usuario).
+
+**Acción requerida**:
+1. Comparar diff entre ambos archives
+2. Documentar en Engram qué cambió entre el primer y segundo run
+3. Verificar que el campo `activo BOOLEAN DEFAULT TRUE` existe en la migración actual
+
+---
+
+## EPIC 00 — Infraestructura y Setup
+
+### ✅ `infrastructure-repo-setup`
+Archivado: `2026-04-24-infrastructure-repo-setup`
+
+Monorepo Git inicializado. Estructura `/backend` (feature-first) + `/frontend` (FSD). `.gitignore`, `.env.example`, `README.md`.
+
+**Dependencias**: Ninguna
+
+---
+
+### ✅ `backend-fastapi-core-setup`
+Archivado: `2026-04-24-backend-setup` *(nombre en OPSX difiere — ver INC-05)*
+
+FastAPI + uvicorn configurado. Dependencias core instaladas. `main.py` con CORS + rate limiting. `core/config.py`, `core/database.py`, `core/security.py`. Swagger en `/docs`.
 
 **Dependencias**: `infrastructure-repo-setup`
 
-**Descripción**:
-- Setup FastAPI con uvicorn
-- Instalar dependencias: FastAPI, SQLModel, Alembic, Passlib[bcrypt], python-jose, slowapi, mercadopago, httpx, pydantic[email-validator]
-- Crear `main.py` con CORS middleware y rate limiting
-- Crear `core/config.py` (lectura de variables de entorno)
-- Crear `core/database.py` (engine y session factory SQLAlchemy)
-- Crear `core/security.py` (hashing JWT)
-- Swagger UI en `/docs`, ReDoc en `/redoc`
-
 ---
 
-### ⏳ change: `backend-dev-infrastructure`
-**Funcionalidad**: Infraestructura de desarrollo (Docker Compose, driver psycopg compatible, seed idempotente).
+### ✅ `backend-dev-infrastructure`
+Archivado: `2026-04-24-backend-dev-infrastructure` *(CHANGES.md anterior lo marcaba ⏳ — corregido en INC-03)*
 
-**Historias**: US-000f
+Docker Compose con PostgreSQL 16 Alpine. `psycopg[binary]==3.1.17`. Seed idempotente. README actualizado.
 
 **Dependencias**: `backend-fastapi-core-setup`
 
-**Descripción**:
-- Crear `docker-compose.yml` con PostgreSQL 16 Alpine, health checks, volumen persistente
-- Actualizar `requirements.txt`: reemplazar `asyncpg + psycopg2-binary` con `psycopg[binary]==3.1.17` (Windows compatible)
-- Crear `backend/scripts/seed.py` idempotente: 4 Roles, 6 EstadoPedido, 3 FormaPago, 1 admin user
-- Actualizar `.env.example` con nuevas variables: DATABASE_URL, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
-- Actualizar README.md con instrucciones: "Getting Started" (Docker option + native PostgreSQL option)
-
 ---
 
-### ✅ change: `backend-postgres-alembic-seed`
-**Funcionalidad**: Base de datos PostgreSQL, migraciones Alembic, seed data obligatorio.
+### ✅ `backend-postgres-alembic-seed`
+Archivado: `2026-05-06` y `2026-05-08` *(doble run — ver INC-06)*
 
-**Historias**: US-000b
+16 tablas ERD v5 creadas con Alembic. Campo `activo BOOLEAN DEFAULT TRUE` en Usuario *(verificar — INC-06)*. Seed: 4 Roles, 6 EstadoPedido, 3 FormaPago, 1 admin. Soft delete con `eliminado_en`. Campos auditoría.
+
+**🔧 Verificar**: campo `personalizacion` como `INTEGER[]` en `DetallePedido` (INC-04). Campo `es_predeterminada` en `DireccionEntrega` (INC-02).
 
 **Dependencias**: `backend-fastapi-core-setup`
 
-**Descripción**:
-- Conectar PostgreSQL con `DATABASE_URL`
-- Crear migrations Alembic para todas las tablas ERD v5:
-  - Dominio 1: Usuario, Rol, UsuarioRol, RefreshToken, DireccionEntrega
-  - Dominio 2: Categoria, Producto, Ingrediente, ProductoCategoria, ProductoIngrediente, FormaPago
-  - Dominio 3: EstadoPedido, Pedido, DetallePedido, HistorialEstadoPedido, Pago
-- Implementar soft-delete (`eliminado_en` para entidades, `revoked_at` para RefreshToken)
-- Crear script seed idempotente:
-  - 4 Roles: ADMIN, STOCK, PEDIDOS, CLIENT
-  - 6 EstadoPedido: PENDIENTE, CONFIRMADO, EN_PREPARACIÓN, EN_CAMINO, ENTREGADO, CANCELADO
-  - 3 FormaPago: MERCADOPAGO, EFECTIVO, TRANSFERENCIA
-  - 1 Usuario admin@foodstore.com con rol ADMIN
-- Campos de auditoría: `creado_en`, `actualizado_en` en todas las tablas principales
-
 ---
 
-### ✅ change: `backend-patterns-base-repository-uow`
-**Funcionalidad**: Implementación de patrones de infraestructura: BaseRepository genérico, Unit of Work, dependencias FastAPI.
+### ✅ `backend-patterns-base-repository-uow`
+Archivado: `2026-05-06`
 
-**Historias**: US-000d
+`BaseRepository[T]` genérico con `get_by_id`, `list_all`, `count`, `create`, `update`, `soft_delete`, `hard_delete`. `UnitOfWork` como context manager async. `get_current_user()`. `require_role()`. Middleware RFC 7807.
 
 **Dependencias**: `backend-postgres-alembic-seed`
 
-**Descripción**:
-- Implementar `BaseRepository[T]` genérico con métodos: `get_by_id()`, `list_all()`, `count()`, `create()`, `update()`, `soft_delete()`, `hard_delete()`
-- Excluir soft-delete por defecto en listados
-- Implementar `UnitOfWork` como context manager async:
-  - Abre sesión SQLAlchemy en `__aenter__`
-  - Expone repositorios como atributos
-  - Hace `commit()` al salir sin excepciones
-  - Ejecuta `rollback()` automáticamente si hay error
-- Implementar dependencia `get_current_user()` (extrae JWT, valida, retorna Usuario)
-- Implementar factory `require_role(roles: list[str])` (verifica roles, lanza 403 si no tiene)
-- Middleware global de errores RFC 7807
-
 ---
 
-### ✅ change: `frontend-react-vite-setup`
-**Funcionalidad**: Setup del frontend React, TypeScript, Vite, dependencias core.
+### ✅ `frontend-react-vite-setup`
+Archivado: `2026-05-06`
 
-**Historias**: US-000c
+React 18 + TypeScript + Vite. Dependencias instaladas. TypeScript strict mode. Tailwind + PostCSS. Axios con base URL. Routing base. QueryClient configurado.
 
 **Dependencias**: `infrastructure-repo-setup`
 
-**Descripción**:
-- Crear proyecto React + TypeScript + Vite
-- Instalar dependencias: react-router-dom, @tanstack/react-query, @tanstack/react-form, zustand, axios, recharts, tailwindcss, @mercadopago/sdk-js
-- Configurar TypeScript en modo estricto (`strict: true`)
-- Configurar Tailwind CSS + PostCSS
-- Configurar Axios con base URL desde `VITE_API_BASE_URL`
-- Crear routing base con React Router (público y privado)
-- Configurar QueryClient con TanStack Query en App root
-- Crear `.env.example` con variables necesarias
-
 ---
 
-### ✅ change: `frontend-zustand-stores-setup`
-**Funcionalidad**: Implementación de 4 stores Zustand con persistencia selectiva.
+### ✅ `frontend-zustand-stores-setup`
+Archivado: `2026-05-08`
 
-**Historias**: US-000e
+4 stores Zustand: `authStore` (tokens, persistencia), `cartStore` (items, persistencia completa), `paymentStore` (sin persistencia), `uiStore` (theme persistido). Suscripción por slice.
 
 **Dependencias**: `frontend-react-vite-setup`
 
-**Descripción**:
-- Implementar `authStore`: tokens, usuario, isAuthenticated. Acciones: login(), logout(), updateTokens(). Persistencia: solo accessToken. Métodos helper: hasRole(role)
-- Implementar `cartStore`: items (CartItem[]), acciones: addItem(), removeItem(), updateQuantity(), clearCart(). Selectores: totalItems(), totalPrice(). Persistencia: items completos
-- Implementar `paymentStore`: checkoutStep, preferenceId, paymentStatus. Acciones: startCheckout(), setPreference(), updatePaymentStatus(), resetPayment(). SIN persistencia
-- Implementar `uiStore`: theme, sidebarOpen, toasts. Persistencia selectiva: solo theme
-- Todos usan suscripción por slice
-
 ---
 
-### ✅ change: `backend-axios-jwt-interceptor`
-**Funcionalidad**: Configuración de Axios con interceptor JWT para frontend.
+### ✅ `backend-axios-jwt-interceptor`
+Archivado: `2026-05-08`
 
-**Historias**: US-066
+Instancia Axios centralizada en `shared/api/axios.ts`. Interceptor de request (adjunta Bearer token). Interceptor de response (detecta 401, refresca, reintenta, cola de requests). Fallback a login si refresh falla.
 
 **Dependencias**: `frontend-zustand-stores-setup`
 
-**Descripción**:
-- Crear instancia centralizada de Axios en `shared/api/axios.ts`
-- Interceptor de request: adjunta `Authorization: Bearer <token>` del authStore
-- Interceptor de response: detecta 401 (token expirado)
-  - Intenta refresh con refreshToken
-  - Actualiza authStore con nuevos tokens
-  - Reintenta request original
-  - Cola de requests para evitar múltiples refresh simultáneos
-- Fallback: si refresh falla, redirige al login
-
 ---
 
-### ✅ change: `backend-error-handling-rfc7807`
-**Funcionalidad**: Manejo de errores estandarizado con RFC 7807.
+### ✅ `backend-error-handling-rfc7807`
+Archivado: `2026-05-08`
 
-**Historias**: US-068
+Middleware global RFC 7807 (`type`, `title`, `status`, `detail`, `instance`). Errores de validación con detalle por campo. Sin stack traces en producción.
 
 **Dependencias**: `backend-fastapi-core-setup`
 
-**Descripción**:
-- Crear middleware global que captura excepciones y las formatea como RFC 7807
-- Estructura: `{ type, title, status, detail, instance }`
-- Errores de validación incluyen detalles por campo
-- No exponer stack traces en producción
-- Loguear errores 500 con stack trace en servidor
-
 ---
 
-### ✅ change: `backend-input-validation-sanitization`
-**Funcionalidad**: Validación y sanitización de inputs.
+### ✅ `backend-input-validation-sanitization`
+Archivado: `2026-05-08`
 
-**Historias**: US-074
+Schemas Pydantic v2. Validaciones: emails, longitudes, rangos. Queries parametrizadas. Sanitización XSS.
 
 **Dependencias**: `backend-fastapi-core-setup`
-
-**Descripción**:
-- Schemas Pydantic v2 para todos los requests
-- Validaciones: emails, longitudes, rangos numéricos
-- Queries parametrizadas (SQLModel previene SQL injection)
-- Sanitización contra XSS en campos de texto
 
 ---
 
 ## EPIC 01 — Autenticación y Autorización
 
-### ✅ change: `auth-registration`
-**Funcionalidad**: Registro de nuevos clientes.
+### ✅ `auth-registration`
+Archivado: EPIC 01
 
-**Historias**: US-001
+`POST /api/v1/auth/register`. Email único, bcrypt cost ≥ 12, rol CLIENT automático. Access token 30min + refresh token 7días. Rate limiting: 3 registros/IP/hora (RN-AU06, US-073).
 
 **Dependencias**: `backend-patterns-base-repository-uow`
 
-**Descripción**:
-- Endpoint `POST /api/v1/auth/register` con schema RegisterRequest
-- Validar email único, contraseña mínimo 8 caracteres, nombre mínimo 2 caracteres
-- Hashear contraseña con bcrypt (cost factor >= 10)
-- Asignar rol CLIENT automáticamente (NO viene del request)
-- Retornar access token (30 min) + refresh token (7 días) + datos usuario
-- Campos de auditoría: creado_en, actualizado_en
-
 ---
 
-### ✅ change: `auth-login`
-**Funcionalidad**: Login de usuario con JWT y rate limiting.
+### ✅ `auth-login`
+Archivado: EPIC 01
 
-**Historias**: US-002, US-073
+`POST /api/v1/auth/login`. Rate limiting: 5 intentos fallidos/IP/15min. Verifica `activo=true` (403 si desactivado, US-055). No diferencia email/password incorrecto (RN-AU08). JWT access + refresh UUID en BD. Headers `X-RateLimit-*`.
 
 **Dependencias**: `auth-registration`
 
-**Descripción**:
-- Endpoint `POST /api/v1/auth/login` con schema LoginRequest
-- Rate limiting: máximo 5 intentos fallidos por IP en 15 minutos (slowapi)
-- Verificar credenciales contra BD (bcrypt)
-- NO diferenciar "email no existe" vs "contraseña incorrecta"
-- Generar JWT access token (30 min, payload: userId, email, roles, HS256)
-- Generar refresh token UUID, almacenar en tabla RefreshToken con expires_at (7 días)
-- Retornar TokenResponse: access_token, refresh_token, token_type="Bearer", usuario
-
 ---
 
-### ✅ change: `auth-token-refresh`
-**Funcionalidad**: Renovación automática de tokens JWT.
+### ✅ `auth-token-refresh`
+Archivado: EPIC 01
 
-**Historias**: US-003
+`POST /api/v1/auth/refresh`. Rotación de refresh token (RN-AU04). Detección replay attack → revoca todos los tokens del usuario (RN-AU05).
 
 **Dependencias**: `auth-login`
 
-**Descripción**:
-- Endpoint `POST /api/v1/auth/refresh` con refresh token
-- Validar que el token existe en BD, no esté expirado, no esté revocado
-- Implementar rotación: marcar refresh token anterior como revocado (revoked_at = now)
-- Emitir nuevo par access + refresh token
-- Detectar replay attack: si se usa un token ya revocado, revocar TODOS los tokens del usuario
-- Retornar TokenResponse con nuevos tokens
-
 ---
 
-### ✅ change: `auth-logout`
-**Funcionalidad**: Cierre de sesión.
+### ✅ `auth-logout`
+Archivado: EPIC 01
 
-**Historias**: US-004
+`POST /api/v1/auth/logout`. Revoca refresh token (`revoked_at = now()`). Frontend limpia authStore. Retorna 204.
 
 **Dependencias**: `auth-login`
 
-**Descripción**:
-- Endpoint `POST /api/v1/auth/logout` con refresh token
-- Marcar refresh token como revocado (revoked_at = now)
-- Frontend limpia authStore + localStorage
-- Retornar 204 No Content
-
 ---
 
-### ✅ change: `rbac-roles-management`
-**Funcionalidad**: Gestión de roles RBAC (Role-Based Access Control).
+### ✅ `rbac-roles-management`
+Archivado: EPIC 01
 
-**Historias**: US-005
+4 roles fijos con IDs estables: ADMIN(1), STOCK(2), PEDIDOS(3), CLIENT(4). Tabla UsuarioRol N:M con UNIQUE compuesta. `PUT /api/admin/users/:id/role` (solo ADMIN). Validación: no quitarse ADMIN si último admin (RN-RB04). Al cambiar rol → invalidar todos los refresh tokens del usuario (US-054).
 
 **Dependencias**: `auth-registration`
 
-**Descripción**:
-- Implementar 4 roles fijos: ADMIN, STOCK, PEDIDOS, CLIENT
-- Almacenar en tabla Rol con PK semántica
-- Relación N:M Usuario-Rol con restricción UNIQUE compuesta
-- Endpoint `PUT /api/admin/users/:id/role` para asignar roles (solo ADMIN)
-- Validar: ADMIN no puede quitarse el rol ADMIN a sí mismo si es el último admin
-- Asignar CLIENT automáticamente en registro
-
 ---
 
-### ✅ change: `route-protection-rbac`
-**Funcionalidad**: Middleware de protección de rutas por rol.
+### ❌ `route-protection-rbac`
+**→ PRÓXIMO CHANGE A IMPLEMENTAR**
 
-**Historias**: US-006
+Dependencia `require_role(roles: list[str])` verifica roles del JWT. Endpoints públicos: `/api/v1/auth/*`, `GET /api/v1/productos`, `GET /api/v1/categorias`. Retornar 401 sin token, 403 si rol insuficiente. Aplicar en todos los routers existentes.
 
+**Skills**: `fastapi-python`
 **Dependencias**: `rbac-roles-management`
 
-**Descripción**:
-- Dependencia `require_role(roles: list[str])` que verifica roles del JWT
-- Endpoints públicos: /api/v1/auth/*, /api/v1/productos (GET), /api/v1/categorias (GET)
-- Endpoints protegidos por rol: ADMIN, STOCK, PEDIDOS, CLIENT
-- Retornar 401 sin token válido, 403 si rol insuficiente
-- Incluir en todos los routers
-
 ---
 
-### ✅ change: `frontend-navigation-by-role`
-**Funcionalidad**: Menú de navegación adaptado al rol del usuario.
+### ❌ `frontend-navigation-by-role`
 
-**Historias**: US-075
+Componente Navigation/Sidebar con menú dinámico por rol. CLIENT: Catálogo, Carrito, Mis Pedidos, Mi Perfil, Mis Direcciones. STOCK: Productos, Categorías, Ingredientes. PEDIDOS: Panel Pedidos. ADMIN: todo + Usuarios + Métricas + Configuración. No autenticado: Catálogo, Login, Registrarse.
 
+**Skills**: `frontend-design`, `tailwind-design-system`
 **Dependencias**: `rbac-roles-management`
 
-**Descripción**:
-- Componente Navigation/Sidebar con menú dinámico
-- CLIENT ve: Catálogo, Mi Carrito, Mis Pedidos, Mi Perfil, Mis Direcciones
-- STOCK ve: Productos, Categorías, Ingredientes, Stock
-- PEDIDOS ve: Panel de Pedidos
-- ADMIN ve: todas las opciones + Usuarios + Métricas + Configuración
-- No autenticado: Catálogo, Login, Registrarse
-- Guard de rutas en frontend basado en rol del JWT
-
 ---
 
-### ✅ change: `frontend-route-guards-auth`
-**Funcionalidad**: Guards de navegación por autenticación y rol en frontend.
+### ❌ `frontend-route-guards-auth`
 
-**Historias**: US-076
+HOC `withAuth(Component, requiredRoles)`. Redirigir a login si no autenticado. Pantalla 403 si rol insuficiente. Rutas públicas sin auth.
 
+**Skills**: `frontend-design`
 **Dependencias**: `frontend-navigation-by-role`
 
-**Descripción**:
-- HOC `withAuth(Component, requiredRoles)` que protege rutas
-- Redirigir a login si no autenticado
-- Mostrar pantalla 403 si rol insuficiente
-- Rutas públicas (catálogo, login, registro) accesibles sin auth
-- Usar authStore como source of truth
-
 ---
 
-### ✅ change: `frontend-error-handling-global`
-**Funcionalidad**: Manejo centralizado de errores HTTP en frontend.
+### ❌ `frontend-error-handling-global`
 
-**Historias**: US-067
+Error boundary global. Interceptor Axios que mapea status codes a mensajes (400/403/404/429/500). Sistema de toasts para errores.
 
+**Skills**: `frontend-design`
 **Dependencias**: `backend-error-handling-rfc7807`
 
-**Descripción**:
-- Error boundary global en React
-- Interceptor Axios que mapea HTTP status codes a mensajes
-  - 400: "Verifica tus datos"
-  - 403: "No tienes permisos"
-  - 404: "Recurso no encontrado"
-  - 429: "Demasiadas solicitudes, espera un momento"
-  - 500: "Error interno, intenta más tarde"
-- Sistema de toasts para notificaciones de error
-
 ---
 
-## EPIC 02 — Navegación y Layout Base
+## EPIC 02 — Layout Base
 
-### ✅ change: `frontend-layout-components-shared`
-**Funcionalidad**: Componentes base compartidos (Navbar, Sidebar, Footer, Buttons, Inputs, Modals, etc.).
+### ❌ `frontend-layout-components-shared`
 
-**Historias**: (soporte para todas las historias de UI)
+Layout con Navbar, Sidebar, main, Footer. Componentes atómicos: Button, Input, Card, Modal, Toast, Skeleton, Badge. Sistema de iconos. Variables Tailwind. Responsive mobile-first.
 
+**Skills**: `frontend-design`, `tailwind-design-system`
 **Dependencias**: `frontend-route-guards-auth`
 
-**Descripción**:
-- Componente Layout con Navbar, Sidebar, main content, Footer
-- Componentes atómicos: Button, Input, Card, Modal, Toast, Skeleton, Badge
-- Sistema de iconos (lucide-react)
-- Variables Tailwind (colores, espacios, tipografía)
-- Responsive design mobile-first
-
 ---
 
-## EPIC 03 — Gestión de Categorías
+## EPIC 03 — Categorías
 
-### ✅ change: `categories-crud-hierarchical`
-**Funcionalidad**: CRUD de categorías con jerarquía recursiva.
+### ❌ `categories-crud-hierarchical`
 
-**Historias**: US-007, US-008, US-009, US-010
+Modelo `Categoria` con `padre_id` autoreferencial. `POST/GET/PUT/DELETE /api/v1/categorias`. Árbol anidado con CTE recursivo. No crear ciclos. No eliminar con productos activos. Soft delete.
 
+**Skills**: `fastapi-python`, `postgres`
 **Dependencias**: `route-protection-rbac`
 
-**Descripción**:
-- Modelo Categoria con `padre_id` (FK autoreferencial)
-- Endpoints:
-  - `POST /api/v1/categorias` (STOCK, ADMIN)
-  - `GET /api/v1/categorias` (público, retorna árbol anidado)
-  - `PUT /api/v1/categorias/:id` (STOCK, ADMIN)
-  - `DELETE /api/v1/categorias/:id` (soft delete, STOCK, ADMIN)
-- Validación: no crear ciclos (CTE recursivo)
-- No eliminar categorías con productos activos asociados
-- Soft delete con `eliminado_en`
-
 ---
 
-## EPIC 04 — Gestión de Ingredientes y Alergenos
+## EPIC 04 — Ingredientes
 
-### ✅ change: `ingredients-crud-allergens`
-**Funcionalidad**: CRUD de ingredientes con flag de alérgeno.
+### ❌ `ingredients-crud-allergens`
 
-**Historias**: US-011, US-012, US-013, US-014
+Modelo `Ingrediente` con `es_alergeno`. `POST/GET/PUT/DELETE /api/v1/ingredientes`. UNIQUE en nombre. Soft delete.
 
+**Skills**: `fastapi-python`, `postgres`
 **Dependencias**: `route-protection-rbac`
 
-**Descripción**:
-- Modelo Ingrediente con campos: id, nombre (UNIQUE), es_alergeno (booleano)
-- Endpoints:
-  - `POST /api/v1/ingredientes` (STOCK, ADMIN)
-  - `GET /api/v1/ingredientes?esAlergeno=true` (STOCK, ADMIN, paginado)
-  - `PUT /api/v1/ingredientes/:id` (STOCK, ADMIN)
-  - `DELETE /api/v1/ingredientes/:id` (soft delete, STOCK, ADMIN)
-- Validar unicidad de nombre
-
 ---
 
-## EPIC 05 — Gestión de Productos y Catálogo
+## EPIC 05 — Productos y Catálogo
 
-### ✅ change: `products-crud-core`
-**Funcionalidad**: CRUD básico de productos.
+### ❌ `products-crud-core`
 
-**Historias**: US-015, US-020, US-021, US-022
+Modelo `Producto`. `POST/GET/PUT/PATCH/DELETE /api/v1/productos`. Precio NUMERIC(10,2). Stock INTEGER ≥ 0. Soft delete. `?incluir_eliminados=true` para admin (RN-CA10).
 
+**Skills**: `fastapi-python`, `postgres`
 **Dependencias**: `route-protection-rbac`
 
-**Descripción**:
-- Modelo Producto con: id, nombre, descripcion, precio_base (NUMERIC(10,2)), stock_cantidad (INTEGER), disponible (BOOLEAN), imagen_url, creado_en, actualizado_en, eliminado_en
-- Endpoints:
-  - `POST /api/v1/productos` (STOCK, ADMIN)
-  - `GET /api/v1/productos` (público, paginado, filtros)
-  - `GET /api/v1/productos/:id` (público)
-  - `PUT /api/v1/productos/:id` (STOCK, ADMIN)
-  - `PATCH /api/v1/productos/:id/stock` (STOCK, ADMIN, UoW)
-  - `DELETE /api/v1/productos/:id` (soft delete, STOCK, ADMIN)
-- Validaciones: precio > 0, stock >= 0, disponible es booleano
-- Soft delete con `eliminado_en`
-
 ---
 
-### ✅ change: `products-categories-association`
-**Funcionalidad**: Asociación N:M de productos a categorías.
+### ❌ `products-categories-association`
 
-**Historias**: US-016
+Tabla pivote `ProductoCategoria`. `PUT/DELETE /api/v1/productos/:id/categorias`.
 
+**Skills**: `fastapi-python`, `postgres`
 **Dependencias**: `products-crud-core`, `categories-crud-hierarchical`
 
-**Descripción**:
-- Tabla pivote ProductoCategoria (producto_id, categoria_id) con PK compuesta
-- Endpoints:
-  - `PUT /api/v1/productos/:id/categorias` (STOCK, ADMIN) — body: array de categoryIds
-  - `DELETE /api/v1/productos/:id/categorias/:cat_id` (STOCK, ADMIN)
-- Un producto puede pertenecer a múltiples categorías
-
 ---
 
-### ✅ change: `products-ingredients-association`
-**Funcionalidad**: Asociación N:M de productos a ingredientes.
+### ❌ `products-ingredients-association`
 
-**Historias**: US-017, US-023
+Tabla pivote `ProductoIngrediente` con `es_removible`. `PUT/DELETE /api/v1/productos/:id/ingredientes`. Filtro `?excluirAlergenos=1,3,7`.
 
+**Skills**: `fastapi-python`, `postgres`
 **Dependencias**: `products-crud-core`, `ingredients-crud-allergens`
 
-**Descripción**:
-- Tabla pivote ProductoIngrediente (producto_id, ingrediente_id) con es_removible (booleano)
-- Endpoints:
-  - `PUT /api/v1/productos/:id/ingredientes` (STOCK, ADMIN) — body: array de ingredientIds
-  - `DELETE /api/v1/productos/:id/ingredientes/:ing_id` (STOCK, ADMIN)
-- Los ingredientes marcados como es_alergeno se destacan en el frontend
-- Filtro en catálogo: `GET /api/v1/productos?excluirAlergenos=1,3,7`
-
 ---
 
-### ✅ change: `products-catalog-public`
-**Funcionalidad**: Catálogo público de productos con filtros y búsqueda.
+### ❌ `products-catalog-public`
 
-**Historias**: US-018, US-019
+`GET /api/v1/productos` público con paginación, búsqueda ILIKE, filtro por categoría, exclusión de alergenos. `GET /api/v1/productos/:id` con categorías e ingredientes.
 
+**Skills**: `fastapi-python`, `postgres`
 **Dependencias**: `products-categories-association`, `products-ingredients-association`
 
-**Descripción**:
-- Endpoint `GET /api/v1/productos` (público, sin auth)
-  - Parámetros: `?categoria=5&busqueda=pizza&page=1&limit=20&excluirAlergenos=1,3`
-  - Filtra: disponible=true, eliminado_en IS NULL
-  - Soporta paginación con total
-  - Soporta búsqueda por nombre (ILIKE)
-  - Soporta filtro por categoría
-  - Soporta exclusión de alergenos
-- Endpoint `GET /api/v1/productos/:id` (público)
-  - Retorna: nombre, descripcion, precio, imagen, stock > 0 (sin cantidad exacta), categorias, ingredientes con es_alergeno
+---
+
+### ⚠️ `frontend-products-catalog-ui`
+Archivado: `2026-05-09` — **ARCHIVADO SIN DEPENDENCIAS DE BACKEND (INC-01)**
+
+Página Catalog con grid, ProductCard, filtros, paginación, skeletons, "Agregar al carrito".
+
+**⚠️ ACCIÓN REQUERIDA al implementar `products-catalog-public`**:
+- Auditar `openspec/changes/archive/2026-05-09-frontend-products-catalog-ui/`
+- Verificar contratos de API: URLs, métodos, schemas de respuesta esperados
+- Si hay discrepancia con los endpoints reales → crear `fix-frontend-products-catalog-api-contract`
+
+**Skills**: `frontend-design`, `tailwind-design-system`
+**Dependencias originales no cumplidas**: `products-catalog-public` ❌
 
 ---
 
-### ✅ change: `frontend-products-catalog-ui`
-**Funcionalidad**: Interfaz de usuario del catálogo de productos.
+## EPIC 06 — Perfil de Cliente
 
-**Historias**: US-018, US-019
+### ❌ `backend-user-profile-endpoints`
 
-**Dependencias**: `products-catalog-public`, `frontend-layout-components-shared`
+`GET/PUT /api/v1/perfil`. `POST /api/v1/perfil/cambiar-password` — valida password actual, hashea nueva, **revoca todos los refresh tokens activos** (US-063, RN-AU04).
 
-**Descripción**:
-- Página Catalog con grid de productos
-- Componentes: ProductCard (imagen, nombre, precio, disponible), ProductDetail modal
-- Filtros: por categoría, búsqueda con debounce, exclusión de alergenos
-- Paginación
-- Skeleton loaders durante carga
-- Botón "Agregar al carrito" en cada producto
-
----
-
-## EPIC 06 — Gestión de Direcciones de Entrega
-
-### ✅ change: `addresses-crud-by-user`
-**Funcionalidad**: CRUD de direcciones de entrega por usuario.
-
-**Historias**: US-024, US-025, US-026, US-027, US-028
-
+**Skills**: `fastapi-python`
 **Dependencias**: `route-protection-rbac`
 
-**Descripción**:
-- Modelo DireccionEntrega: id, usuario_id, alias, linea1, piso, departamento, ciudad, codigo_postal, referencia, es_principal (BOOLEAN), creado_en, actualizado_en, eliminado_en
-- Endpoints (protegidos por CLIENT):
-  - `POST /api/v1/direcciones` (crear)
-  - `GET /api/v1/direcciones` (listar propias)
-  - `GET /api/v1/direcciones/:id` (detalle propia)
-  - `PUT /api/v1/direcciones/:id` (actualizar propia)
-  - `PATCH /api/v1/direcciones/:id/principal` (marcar como principal)
-  - `DELETE /api/v1/direcciones/:id` (soft delete)
-- Validaciones: solo un usuario puede ver/editar sus propias direcciones (RN-RB05)
-- La primera dirección se marca como principal automáticamente
-- Solo una dirección principal por usuario en cada momento
+---
+
+### ❌ `frontend-user-profile-ui`
+
+Página MyProfile. Form editar nombre/teléfono. Cambio de contraseña. Última sesión.
+
+**Skills**: `frontend-design`, `tailwind-design-system`
+**Dependencias**: `backend-user-profile-endpoints`, `frontend-layout-components-shared`
 
 ---
 
-### ✅ change: `frontend-addresses-ui`
-**Funcionalidad**: Interfaz de gestión de direcciones.
+## EPIC 07 — Direcciones de Entrega
 
-**Historias**: US-024, US-025, US-026, US-027, US-028
+### ❌ `addresses-crud-by-user`
 
+Modelo `DireccionEntrega` con campo `es_predeterminada` *(🔧 verificar INC-02 — puede estar como `es_principal` en BD)*. `POST/GET/PUT/PATCH/DELETE /api/v1/direcciones`. Primera dirección → predeterminada automática (RN-DI01). Solo una predeterminada por usuario (RN-DI02). Ownership por userId JWT (RN-DI03).
+
+**Skills**: `fastapi-python`, `postgres`
+**Dependencias**: `route-protection-rbac`
+
+---
+
+### ❌ `frontend-addresses-ui`
+
+Página MyAddresses. AddressCard con editar/eliminar/predeterminada. Form AddressForm.
+
+**Skills**: `frontend-design`, `tailwind-design-system`
 **Dependencias**: `addresses-crud-by-user`, `frontend-layout-components-shared`
 
-**Descripción**:
-- Página MyAddresses con listado de direcciones
-- Componente AddressCard con opciones: editar, eliminar, marcar como principal
-- Form AddressForm para crear/editar
-- Integración con cartStore: mostrar dirección principal en checkout
-
 ---
 
-## EPIC 07 — Carrito de Compras (Client-Side)
+## EPIC 08 — Carrito de Compras
 
-### ✅ change: `frontend-shopping-cart-zustand`
-**Funcionalidad**: Carrito de compras con persistencia en localStorage.
+### ❌ `frontend-shopping-cart-zustand`
 
-**Historias**: US-029, US-030, US-031, US-032, US-033, US-034
+Completar `cartStore`: `addItem`, `removeItem`, `updateQuantity`, `clearCart`, selectores, persistencia localStorage. Personalización como array de IDs de ingredientes a excluir (RN-CR04, RN-CR05). Incrementar cantidad si producto ya en carrito (RN-CR03).
 
+**Skills**: `frontend-design`
 **Dependencias**: `frontend-zustand-stores-setup`
 
-**Descripción**:
-- cartStore ya existe (US-000e), aquí se completa la lógica:
-  - addItem(producto, cantidad, personalizacion)
-  - removeItem(productoId)
-  - updateQuantity(productoId, cantidad)
-  - clearCart()
-  - Selectores: totalItems(), totalPrice(), getItem(productoId)
-  - Persistencia: localStorage con clave "food-store-cart"
-- Personalización: almacenar array de IDs de ingredientes a excluir
-- Si producto ya está en carrito, incrementar cantidad (no duplicar)
-- Carrito sobrevive: cierre navegador, refresh de página, logout/login
-
 ---
 
-### ✅ change: `frontend-shopping-cart-ui`
-**Funcionalidad**: Interfaz del carrito de compras.
+### ❌ `frontend-shopping-cart-ui`
 
-**Historias**: US-029, US-030, US-031, US-032, US-033, US-034
+CartDrawer con items, +/-, eliminar, vaciar, total, botón checkout. CartIcon en Navbar con contador. Estado vacío.
 
+**Skills**: `frontend-design`, `tailwind-design-system`
 **Dependencias**: `frontend-shopping-cart-zustand`, `frontend-layout-components-shared`
 
-**Descripción**:
-- Componente CartDrawer (sidebar):
-  - Listar items con nombre, precio, cantidad, subtotal
-  - Botones: +/-, eliminar, vaciar carrito
-  - Mostrar total + costo envío + total final
-  - Botón "Ir a Checkout"
-- Componente CartIcon en Navbar con contador de items
-- Personalización UI: mostrar ingredientes excluidos
-- Estado vacío: "Tu carrito está vacío"
+---
+
+## EPIC 09 — Validaciones Pre-Checkout *(NUEVO en v3.0)*
+
+### ❌ `checkout-pre-validation`
+
+`POST /api/v1/pedidos/validar` (CLIENT). Verifica disponibilidad y stock. Compara precios actuales vs carrito. Response: `stockInsuficiente`, `productosInvalidos`, `cambiosDePrecio`. Frontend: llamar al entrar al Checkout, mostrar alertas/modal de confirmación.
+
+**Skills**: `fastapi-python`, `postgres`, `frontend-design`
+**Dependencias**: `products-crud-core`, `frontend-shopping-cart-zustand`
 
 ---
 
-## EPIC 08 — Perfil de Cliente
+## EPIC 10 — Pedidos
 
-### ✅ change: `frontend-user-profile-ui`
-**Funcionalidad**: Visualización y edición del perfil del cliente.
+### ❌ `orders-fsm-backend`
 
-**Historias**: US-061, US-062, US-063, US-064, US-065
+FSM 6 estados: PENDIENTE→CONFIRMADO→EN_PREPARACIÓN→EN_CAMINO→ENTREGADO + CANCELADO. `HistorialEstadoPedido` append-only. Snapshot precio + dirección. UoW atómico. Personalización como `INTEGER[]` (RN-PE07). `SELECT FOR UPDATE` para stock (RN-PE04). Rate limiting creación: 10/usuario/hora (US-073). PENDIENTE→CONFIRMADO solo por Sistema/webhook (RN-FS02).
 
-**Dependencias**: `route-protection-rbac`, `frontend-layout-components-shared`
-
-**Descripción**:
-- Página MyProfile con datos: nombre, email, teléfono, fecha de registro
-- Form para editar nombre y teléfono
-- Endpoint backend `GET /api/v1/perfil` y `PUT /api/v1/perfil`
-- Cambio de contraseña: endpoint `POST /api/v1/perfil/cambiar-password`
-- Validar contraseña anterior antes de permitir cambio
-- Mostrar última vez logueo
-- Botón para descargar datos personales (GDPR compliance)
-
----
-
-### ✅ change: `backend-user-profile-endpoints`
-**Funcionalidad**: Endpoints de gestión del perfil del usuario.
-
-**Historias**: US-061, US-062, US-063, US-064, US-065
-
-**Dependencias**: `route-protection-rbac`
-
-**Descripción**:
-- `GET /api/v1/perfil` (CLIENT) — retorna UserResponse completo
-- `PUT /api/v1/perfil` (CLIENT) — actualiza nombre, teléfono
-- `POST /api/v1/perfil/cambiar-password` (CLIENT) — cambiar contraseña
-  - Validar contraseña actual
-  - Nueva contraseña debe cumplir requisitos (8+ caracteres)
-  - Hashear con bcrypt
-- Campos no modificables: email, rol, fechas de creación
-
----
-
-## EPIC 09 — Pedidos (Creación y Estados)
-
-### ✅ change: `orders-fsm-backend`
-**Funcionalidad**: Máquina de estados de pedidos (FSM) en backend.
-
-**Historias**: US-035, US-036, US-037, US-038, US-039, US-040, US-041, US-042, US-043, US-044
-
+**Skills**: `fastapi-python`, `postgres`
 **Dependencias**: `backend-patterns-base-repository-uow`, `addresses-crud-by-user`, `products-crud-core`
 
-**Descripción**:
-- Modelos: Pedido, DetallePedido, HistorialEstadoPedido, EstadoPedido (catálogo)
-- Estados: PENDIENTE → CONFIRMADO → EN_PREPARACIÓN → EN_CAMINO → ENTREGADO (con CANCELADO desde cualquier estado pre-terminal)
-- Tabla HistorialEstadoPedido append-only (solo INSERT, nunca UPDATE/DELETE)
-- Snapshot pattern: guardar precio, nombre, dirección al crear pedido
-- Servicio de creación de pedido (UoW atómico):
-  - Validar usuario, dirección, forma de pago, productos (stock suficiente)
-  - Crear snapshots de precios y dirección
-  - Crear Pedido con estado PENDIENTE
-  - Crear DetallePedido para cada item
-  - Crear HistorialEstadoPedido inicial (estado_desde=NULL)
-  - Rollback si falla en cualquier paso
-- Servicio de avance de estado:
-  - Validar transición contra máquina de estados
-  - Si PENDIENTE → CONFIRMADO: decrementar stock atómicamente
-  - Crear registro en HistorialEstadoPedido
-  - Validar permisos por rol
-- Servicio de cancelación:
-  - Si CONFIRMADO: restaurar stock
-  - Si EN_PREPARACIÓN: solo ADMIN
-  - Crear HistorialEstadoPedido con observación
-
 ---
 
-### ✅ change: `orders-api-endpoints`
-**Funcionalidad**: Endpoints REST para gestión de pedidos.
+### ❌ `orders-api-endpoints`
 
-**Historias**: US-035, US-036, US-039, US-040, US-041, US-042, US-043, US-044
+`POST /api/v1/pedidos`, `GET /api/v1/pedidos`, `GET /api/v1/pedidos/:id`, `PATCH /api/v1/pedidos/:id/avanzar`, `GET /api/v1/pedidos/:id/historial`, `DELETE /api/v1/pedidos/:id` (cancelar). Permisos por rol.
 
+**Skills**: `fastapi-python`, `postgres`
 **Dependencias**: `orders-fsm-backend`
 
-**Descripción**:
-- `POST /api/v1/pedidos` (CLIENT) — crear pedido
-  - Body: CrearPedidoRequest (items, forma_pago_id, direccion_id)
-  - Respuesta: PedidoRead (201)
-  - UoW atómico
-- `GET /api/v1/pedidos` (CLIENT/ADMIN/PEDIDOS) — listar
-  - CLIENT: solo propios
-  - ADMIN/PEDIDOS: todos
-  - Filtros: estado, fecha, paginación
-- `GET /api/v1/pedidos/:id` (propietario/ADMIN) — detalle completo
-  - Retorna: PedidoDetail con items, historial, pagos, snapshots
-- `PATCH /api/v1/pedidos/:id/avanzar` (ADMIN/PEDIDOS) — avanzar estado
-  - Body: AvanzarEstadoRequest (observación opcional)
-- `GET /api/v1/pedidos/:id/historial` (propietario/ADMIN) — audit trail
-  - Retorna array de transiciones ordenado por fecha
-- `DELETE /api/v1/pedidos/:id` (CLIENT propietario) — cancelar
-  - Solo si PENDIENTE o CONFIRMADO
-  - Restaura stock si CONFIRMADO
-
 ---
 
-### ✅ change: `frontend-orders-listing-ui`
-**Funcionalidad**: Interfaz de listado de pedidos del cliente.
+### ❌ `frontend-orders-listing-ui`
 
-**Historias**: US-049, US-050, US-051
+Página MyOrders (CLIENT). Página OrdersPanel (ADMIN/PEDIDOS). OrderCard con estado badge. Paginación, filtros, skeletons.
 
+**Skills**: `frontend-design`, `tailwind-design-system`
 **Dependencias**: `orders-api-endpoints`, `frontend-layout-components-shared`
 
-**Descripción**:
-- Página MyOrders para CLIENT: lista sus propios pedidos
-- Página OrdersPanel para ADMIN/PEDIDOS: lista todos los pedidos
-- Componente OrderCard: id, fecha, estado (badge de color), total, acción: ver detalles
-- Paginación
-- Filtros: por estado, por fecha
-- Skeleton loaders
-
 ---
 
-### ✅ change: `frontend-orders-detail-ui`
-**Funcionalidad**: Interfaz de detalle de pedido con trazabilidad.
+### ❌ `frontend-orders-detail-ui`
 
-**Historias**: US-052, US-053
+Página OrderDetail. Items con snapshots. Timeline de estados (HistorialEstadoPedido). Botones de acción por estado y rol. Cancelar con confirmación.
 
+**Skills**: `frontend-design`, `tailwind-design-system`
 **Dependencias**: `orders-api-endpoints`, `frontend-layout-components-shared`
 
-**Descripción**:
-- Página OrderDetail
-- Mostrar: id, estado actual, fecha de creación, total, detalles de items (nombre, cantidad, precio snapshot, personalizacion)
-- Mostrar dirección de entrega (snapshot)
-- Mostrar forma de pago
-- Timeline de estados (HistorialEstadoPedido):
-  - Para cada transición: fecha, estado anterior → nuevo, usuario responsable (o "Sistema"), observación
-  - Botones de acción según estado y rol:
-    - CONFIRMADO (ADMIN/PEDIDOS): avanzar a EN_PREPARACIÓN
-    - EN_PREPARACIÓN (ADMIN/PEDIDOS): avanzar a EN_CAMINO
-    - EN_CAMINO (ADMIN/PEDIDOS): avanzar a ENTREGADO
-    - PENDIENTE/CONFIRMADO (CLIENT): cancelar con confirmación
-
 ---
 
-### ✅ change: `frontend-orders-management-admin`
-**Funcionalidad**: Panel de administración de pedidos.
+### ❌ `frontend-orders-management-admin`
 
-**Historias**: US-071, US-072
+Tabla admin con filtros, bulk actions. Componente `OrderConfirmation` post-creación (US-071). Páginas `PaymentSuccess`, `PaymentFailure`, `PaymentPending` para callbacks MP (US-072).
 
+**Skills**: `frontend-design`, `tailwind-design-system`
 **Dependencias**: `frontend-orders-listing-ui`, `frontend-orders-detail-ui`
 
-**Descripción**:
-- Página OrdersManagement (ADMIN/PEDIDOS only)
-- Tabla con columnas: id, cliente, fecha, estado, total, acciones
-- Filtros: por estado, por fecha, por cliente
-- Acciones: ver detalle, avanzar estado, cancelar (solo si ADMIN en EN_PREPARACIÓN)
-- Bulk actions: cambiar estado múltiples órdenes
-- Búsqueda por ID de pedido
-
 ---
 
-## EPIC 10 — Pagos (MercadoPago)
+## EPIC 11 — Pagos
 
-### ✅ change: `payments-mercadopago-integration-backend`
-**Funcionalidad**: Integración backend con MercadoPago Checkout API.
+### ❌ `payments-mercadopago-integration-backend`
 
-**Historias**: US-045, US-046, US-047, US-048
+Modelo `Pago` con `idempotency_key`. `POST /api/v1/pagos/crear`. Webhook `POST /api/v1/pagos/webhook` — validar firma, consultar API MP, idempotencia (RN-PA02), approved→PENDIENTE→CONFIRMADO+stock (RN-PA05). `GET /api/v1/pagos/:pedido_id`.
 
+**Skills**: `fastapi-python`, `postgres`
 **Dependencias**: `orders-fsm-backend`
 
-**Descripción**:
-- Modelo Pago: id, pedido_id, mp_payment_id (UNIQUE, NULL), mp_status, external_reference (UUID del pedido), idempotency_key (UUID), creado_en, actualizado_en
-- Servicio de creación de pago:
-  - Endpoint `POST /api/v1/pagos/crear` (CLIENT)
-  - Body: { pedido_id, card_token (tokenizado por SDK MP) }
-  - Generar idempotency_key UUID
-  - Llamar API MercadoPago con card_token y external_reference
-  - Registrar Pago con mp_payment_id y mp_status
-  - Retornar estado
-- Webhook IPN:
-  - Endpoint `POST /api/v1/pagos/webhook` (público, validar firma MP)
-  - Procesar topic=payment
-  - Consultar MercadoPago API con mp_payment_id para obtener estado actual
-  - Actualizar tabla Pago
-  - Si approved: ejecutar transición PENDIENTE → CONFIRMADO (UoW) + decremento de stock
-  - Responder HTTP 200 inmediatamente para evitar reintentos
-- Consulta de pagos:
-  - Endpoint `GET /api/v1/pagos/:pedido_id` (propietario/ADMIN)
-  - Retorna array de intentos de pago
+---
+
+### ❌ `frontend-payment-checkout-ui`
+
+Checkout en pasos. Llama a `POST /api/v1/pedidos/validar` al entrar. CardPayment SDK MP (tokenización cliente). Estados: procesando/aprobado/rechazado/pendiente. Integración paymentStore.
+
+**Skills**: `frontend-design`, `tailwind-design-system`
+**Dependencias**: `payments-mercadopago-integration-backend`, `addresses-crud-by-user`, `frontend-shopping-cart-zustand`, `checkout-pre-validation`
 
 ---
 
-### ✅ change: `frontend-payment-checkout-ui`
-**Funcionalidad**: Interfaz de checkout con pago MercadoPago.
+### ❌ `frontend-payment-status-polling`
 
-**Historias**: US-045, US-046, US-047, US-048
+Polling cada 30s a `GET /api/v1/pagos/:pedido_id` mientras estado PENDIENTE. Detener cuando no sea PENDIENTE.
 
-**Dependencias**: `payments-mercadopago-integration-backend`, `addresses-crud-by-user`, `frontend-shopping-cart-zustand`
-
-**Descripción**:
-- Página Checkout con pasos:
-  1. Resumen del carrito (items, precios)
-  2. Seleccionar dirección de entrega
-  3. Seleccionar forma de pago (MERCADOPAGO, EFECTIVO, TRANSFERENCIA)
-  4. Confirmar pedido → crear en backend
-  5. Si MercadoPago: renderizar CardPayment del SDK
-- Componente CardPayment (SDK MercadoPago):
-  - Campos: número tarjeta, vencimiento, CVV, titular
-  - SDK tokeniza a card_token (nunca pasa por servidor)
-  - Botón "Pagar" llama POST /api/v1/pagos/crear
-- Estados de pago:
-  - "Procesando..." durante request
-  - "Pago aprobado" → redirigir a OrderDetail
-  - "Pago rechazado" → mostrar error con opción de reintentar
-  - "Pago pendiente" → redirigir a OrderDetail (estado PENDIENTE)
-- Integración paymentStore: setPaymentStatus(), updatePaymentStatus()
-
----
-
-### ✅ change: `frontend-payment-status-polling`
-**Funcionalidad**: Polling de estado de pago en frontend.
-
-**Historias**: US-046, US-047
-
+**Skills**: `frontend-design`
 **Dependencias**: `frontend-payment-checkout-ui`
 
-**Descripción**:
-- En OrderDetail, si estado PENDIENTE: polling cada 30 segundos a `GET /api/v1/pagos/:pedido_id`
-- Verificar mp_status:
-  - Si approved → actualizar estado a CONFIRMADO
-  - Si rejected → mostrar error
-  - Si pending/in_process → seguir esperando
-- Detectar cambios de estado mediante cambio de timestamp en tabla Pago
-- Detener polling cuando estado no sea PENDIENTE
+---
+
+## EPIC 12 — Panel de Administración
+
+### ❌ `backend-admin-users-endpoints` *(NUEVO en v3.0 — gap INC anterior)*
+
+`GET /api/v1/admin/usuarios` — paginación, búsqueda, filtro por rol. `PUT /api/v1/admin/usuarios/:id` — editar nombre/roles, invalida refresh tokens al cambiar rol. `PATCH /api/v1/admin/usuarios/:id/estado` — campo `activo`, al desactivar revoca tokens.
+
+**Skills**: `fastapi-python`, `postgres`
+**Dependencias**: `rbac-roles-management`
 
 ---
 
-## EPIC 11 — Panel de Administración
+### ❌ `admin-dashboard-metrics`
 
-### ✅ change: `admin-dashboard-metrics`
-**Funcionalidad**: Dashboard de métricas de negocio.
+`GET /api/v1/admin/metricas/resumen` con filtro fecha. `GET /api/v1/admin/metricas/ventas?granularidad=dia|semana|mes` (DATE_TRUNC). `GET /api/v1/admin/metricas/productos-top`. `GET /api/v1/admin/metricas/pedidos-por-estado`.
 
-**Historias**: US-57, US-58, US-59, US-60
-
+**Skills**: `fastapi-python`, `postgres`
 **Dependencias**: `orders-fsm-backend`, `products-crud-core`
 
-**Descripción**:
-- Endpoint `GET /api/v1/admin/metricas` (ADMIN only)
-  - Total de pedidos (todos, completados, cancelados, pendientes)
-  - Ingresos totales (suma de totales de pedidos ENTREGADO/CONFIRMADO)
-  - Productos más vendidos (top 10)
-  - Clientes más activos (top 10)
-  - Pedidos por estado (conteos)
-  - Ingresos por mes (últimos 12 meses)
-  - Stock bajo (productos con stock < 5)
-- Caching opcional: invalidar cuando hay cambios en pedidos/stock
-
 ---
 
-### ✅ change: `frontend-admin-dashboard-ui`
-**Funcionalidad**: Interfaz visual del dashboard de administración.
+### ❌ `frontend-admin-dashboard-ui`
 
-**Historias**: US-57, US-58, US-59, US-60
+KPI cards. Selector rango fechas. LineChart ventas, BarChart top productos, PieChart estados, tabla stock bajo. Refresh cada 5min.
 
+**Skills**: `frontend-design`, `tailwind-design-system`, `postgres`
 **Dependencias**: `admin-dashboard-metrics`, `frontend-layout-components-shared`
 
-**Descripción**:
-- Página AdminDashboard (ADMIN only)
-- KPI cards: total pedidos, ingresos, productos, clientes
-- Gráficos (recharts):
-  - Línea: ingresos por mes
-  - Barra: pedidos por estado
-  - Pastel: top 10 productos más vendidos
-  - Tabla: alertas de stock bajo
-- Responsive: adaptar gráficos a mobile
-- Refresh automático cada 5 minutos (o manual con botón)
-
 ---
 
-### ✅ change: `admin-categories-management-ui`
-**Funcionalidad**: CRUD de categorías desde panel admin.
-
-**Historias**: (complemento a US-007, US-008, US-009, US-010)
-
+### ❌ `admin-categories-management-ui`
+**Skills**: `frontend-design`, `tailwind-design-system`
 **Dependencias**: `categories-crud-hierarchical`, `frontend-layout-components-shared`
 
-**Descripción**:
-- Página AdminCategories (ADMIN, STOCK only)
-- Tabla con columnas: id, nombre, padre, acciones
-- Formulario crear/editar categoría
-- Relación padre-hijo mediante select de categorías
-- Validación: no crear ciclos (backend valida)
-- Soft delete con confirmación
-- Dragable reordenar jerarquía (opcional)
-
 ---
 
-### ✅ change: `admin-products-management-ui`
-**Funcionalidad**: CRUD de productos desde panel admin.
-
-**Historias**: (complemento a US-015, US-016, US-017, US-020, US-021, US-022)
-
+### ❌ `admin-products-management-ui`
+**Skills**: `frontend-design`, `tailwind-design-system`
 **Dependencias**: `products-crud-core`, `products-categories-association`, `products-ingredients-association`, `frontend-layout-components-shared`
 
-**Descripción**:
-- Página AdminProducts (ADMIN, STOCK only)
-- Tabla con columnas: id, nombre, precio, stock_cantidad, disponible, acciones
-- Formulario crear/editar producto con:
-  - Campos básicos: nombre, descripción, precio, stock, imagen (upload)
-  - Asociación de categorías (multi-select)
-  - Asociación de ingredientes (multi-select con toggle es_removible)
-  - Toggle disponible
-- Filtros: por categoría, por nombre
-- Bulk actions: cambiar disponibilidad, cambiar precio
-- Soft delete con confirmación
-- Preview de cambios antes de guardar
-
 ---
 
-### ✅ change: `admin-stock-management-ui`
-**Funcionalidad**: Gestión de stock desde panel admin.
-
-**Historias**: US-021 (complemento)
-
+### ❌ `admin-stock-management-ui`
+**Skills**: `frontend-design`, `tailwind-design-system`
 **Dependencias**: `admin-products-management-ui`
 
-**Descripción**:
-- Página AdminStock (ADMIN, STOCK only)
-- Tabla con columnas: id, nombre, stock_cantidad, disponible, last_updated, acciones
-- Campos editables inline: stock_cantidad
-- Acciones: incrementar/decrementar, marcar disponible/no disponible
-- Filtros: por nivel de stock (bajo < 5, crítico < 2, etc.)
-- Historial de cambios de stock (opcional, auditoría)
-- Alertas visuales para stock bajo/crítico
+---
+
+### ❌ `admin-users-management-ui`
+
+Tabla usuarios con badge `activo`. Acciones: editar, activar/desactivar, cambiar roles. Filtro por rol/estado.
+
+**Skills**: `frontend-design`, `tailwind-design-system`
+**Dependencias**: `backend-admin-users-endpoints`, `frontend-layout-components-shared`
 
 ---
 
-### ✅ change: `admin-users-management-ui`
-**Funcionalidad**: Gestión de usuarios desde panel admin.
-
-**Historias**: US-005, US-054, US-055
-
-**Dependencias**: `rbac-roles-management`, `frontend-layout-components-shared`
-
-**Descripción**:
-- Página AdminUsers (ADMIN only)
-- Tabla con columnas: id, nombre, email, roles, creado_en, acciones
-- Formulario crear/editar usuario:
-  - Email, nombre, teléfono
-  - Asignación de roles (checkboxes, múltiples)
-- Acciones: editar, soft delete (desactivar), cambiar contraseña (generar temporal)
-- Filtros: por rol
-- Búsqueda por nombre/email
-- Validación ADMIN: no puede quitarse ADMIN a sí mismo si es último admin
-
----
-
-### ✅ change: `admin-ingredients-management-ui`
-**Funcionalidad**: Gestión de ingredientes desde panel admin.
-
-**Historias**: (complemento a US-011, US-012, US-013, US-014)
-
+### ❌ `admin-ingredients-management-ui`
+**Skills**: `frontend-design`, `tailwind-design-system`
 **Dependencias**: `ingredients-crud-allergens`, `frontend-layout-components-shared`
 
-**Descripción**:
-- Página AdminIngredients (ADMIN, STOCK only)
-- Tabla con columnas: id, nombre, es_alergeno (toggle), productos (count), acciones
-- Formulario crear/editar ingrediente
-- Toggle es_alergeno
-- Soft delete con confirmación
-- Mostrar en qué productos está usado (informativo)
+---
+
+## EPIC 13 — Patrones Frontend *(NUEVO en v3.1)*
+
+### ❌ `frontend-widgets-layer`
+
+Capa `widgets/` FSD. Componentes compuestos: `CartSidebar` (drawer completo), `OrderTimeline` (historial estados), `ProductGrid` (grid + filtros + paginación), `DashboardLayout`. Estos widgets componen features y entities en bloques reutilizables.
+
+**Skills**: `frontend-design`, `tailwind-design-system`
+**Dependencias**: `frontend-layout-components-shared`, `frontend-shopping-cart-ui`
 
 ---
 
-## EPIC 12 — Completude y Validaciones
+### ❌ `frontend-patterns-hooks-optimistic`
 
-### ✅ change: `backend-comprehensive-testing`
-**Funcionalidad**: Suite de tests unitarios e integración.
+Custom hooks evaluados en rúbrica: `useProductos(filtros)` (TanStack Query + paginación + debounce), `usePedidos(filtros)`, `useCarrito()` (wrapper cartStore + validaciones), `useAuth()`. Optimistic updates en mutaciones del carrito con `onMutate/onError/onSettled`.
 
-**Historias**: (bonus +10 pts según rúbrica)
-
-**Dependencias**: (todos los changes anteriores)
-
-**Descripción**:
-- Tests pytest con cobertura > 60%:
-  - test_auth.py: login, registro, refresh, logout, rate limiting
-  - test_orders.py: creación, FSM, cancelación, stock
-  - test_payments.py: webhook IPN, idempotency_key
-  - test_categories.py: CRUD, jerarquía, ciclos
-  - test_products.py: CRUD, stock, soft delete
-- Fixtures para usuario, pedido, producto
-- Mocking de MercadoPago SDK
-- Tests de integración con BD real (test database)
+**Skills**: `frontend-design`
+**Dependencias**: `frontend-shopping-cart-zustand`, `frontend-orders-listing-ui`
 
 ---
 
-### ✅ change: `documentation-openapi-complete`
-**Funcionalidad**: Documentación automática OpenAPI completa.
+## EPIC 14 — Configuración del Sistema *(NUEVO en v3.0)*
 
-**Historias**: (entrega CE-08)
+### ❌ `system-configuration-backend`
 
-**Dependencias**: (todos los routers implementados)
+Modelo `Configuracion` (clave UNIQUE, valor, descripcion, actualizado_por FK Usuario, actualizado_en). Seed inicial. `GET/PUT /api/v1/admin/configuracion`. Cambios sin reiniciar. Auditoría de quién modificó.
 
-**Descripción**:
-- Swagger UI en `/docs` con todos los endpoints documentados
-- ReDoc en `/redoc`
-- Describir request/response bodies con ejemplos
-- Describir códigos de error esperados
-- Documentar autenticación (bearer token)
-- Documentar rate limiting
+**Skills**: `fastapi-python`, `postgres`
+**Dependencias**: `route-protection-rbac`
 
 ---
 
-### ✅ change: `repository-setup-final-checklist`
-**Funcionalidad**: Verificación final de entrega.
+### ❌ `frontend-system-configuration-ui`
 
-**Historias**: (entrega CE-01 a CE-14)
+Página AdminConfig. Tabla/form clave-valor editable inline. Toast al guardar. Muestra último modificador y fecha.
 
-**Dependencias**: (todos los changes anteriores)
-
-**Descripción**:
-- README.md completo con instrucciones de setup
-- `.env.example` con todas las variables documentadas
-- `.gitignore` correcto (excluyendo `.env`, `__pycache__`, `node_modules`, etc.)
-- Repositorio público en GitHub
-- Commits con conventional commits
-- Screenshots de al menos 10 pantallas
-- Video de demostración (5-10 min)
-- Verificar que el proyecto funciona en máquina limpia
+**Skills**: `frontend-design`, `tailwind-design-system`
+**Dependencias**: `system-configuration-backend`, `frontend-layout-components-shared`
 
 ---
 
-## Orden de Implementación Recomendado
+## EPIC 15 — Entrega Final
+
+### ❌ `backend-comprehensive-testing`
+
+pytest cobertura > 60%. Tests: auth (login, registro, refresh, replay attack, bloqueo inactivo), pedidos (FSM, cancelación, stock), pagos (webhook, idempotencia), categorías (CRUD, ciclos), productos, usuarios (activar/desactivar, cambio rol). Mocking MP SDK.
+
+**Dependencias**: todos los changes backend
+
+---
+
+### ❌ `documentation-openapi-complete`
+
+Swagger `/docs` con todos los endpoints. Ejemplos request/response. Errores documentados. Auth bearer. Rate limiting documentado.
+
+**Dependencias**: todos los routers
+
+---
+
+### ❌ `deploy-production` *(NUEVO en v3.1 — +10 pts rúbrica)*
+
+Deploy backend en Railway/Render/Fly.io. Frontend en Vercel/Netlify. Variables de entorno de producción en `.env.example`. URL accesible en README. MercadoPago Sandbox configurado en producción.
+
+**Skills**: `documentation-writer`
+**Dependencias**: todos los changes anteriores
+
+---
+
+### ❌ `repository-setup-final-checklist`
+
+README completo. `.env.example` con todas las variables. `.gitignore` correcto. Repo público GitHub. Screenshots ≥ 10 pantallas. Video demostración 5-10 min. Verificar funcionamiento en máquina limpia.
+
+**Dependencias**: todos los changes anteriores
+
+---
+
+## Orden de Implementación
 
 ```
-BLOQUE 1 (Infraestructura)
-├─ infrastructure-repo-setup
-├─ backend-fastapi-core-setup
-├─ backend-dev-infrastructure
-├─ backend-postgres-alembic-seed
-├─ backend-patterns-base-repository-uow
-├─ frontend-react-vite-setup
-├─ frontend-zustand-stores-setup
-├─ backend-axios-jwt-interceptor
-├─ backend-error-handling-rfc7807
-└─ backend-input-validation-sanitization
+BLOQUE 0 — REPARACIÓN (hacer ANTES de continuar)
+├─ Auditar INC-01: frontend-products-catalog-ui archivado sin backend
+├─ Verificar INC-02: es_predeterminada vs es_principal en BD
+├─ Verificar INC-04: INTEGER[] en personalizacion en BD
+└─ Verificar INC-06: diff entre doble run de backend-postgres-alembic-seed
+
+BLOQUE 1 — Infraestructura ✅ COMPLETO
+(todos archivados — ver sección EPIC 00)
+
+BLOQUE 2 — Auth (parcialmente completo)
+├─ ✅ auth-registration
+├─ ✅ auth-login
+├─ ✅ auth-token-refresh
+├─ ✅ auth-logout
+├─ ✅ rbac-roles-management
+├─ ❌ route-protection-rbac          ← PRÓXIMO
+├─ ❌ frontend-navigation-by-role
+├─ ❌ frontend-route-guards-auth
+└─ ❌ frontend-error-handling-global
+
+BLOQUE 3 — Layout + Catálogo
+├─ ❌ frontend-layout-components-shared
+├─ ❌ categories-crud-hierarchical
+├─ ❌ ingredients-crud-allergens
+├─ ❌ products-crud-core
+├─ ❌ products-categories-association
+├─ ❌ products-ingredients-association
+├─ ❌ products-catalog-public
+└─ ⚠️  frontend-products-catalog-ui  ← AUDITAR al llegar aquí (INC-01)
+
+BLOQUE 4 — Perfil + Direcciones + Carrito
+├─ ❌ backend-user-profile-endpoints
+├─ ❌ frontend-user-profile-ui
+├─ ❌ addresses-crud-by-user         ← verificar INC-02
+├─ ❌ frontend-addresses-ui
+├─ ❌ frontend-shopping-cart-zustand
+└─ ❌ frontend-shopping-cart-ui
+
+BLOQUE 5 — Pre-checkout + Pedidos
+├─ ❌ checkout-pre-validation
+├─ ❌ orders-fsm-backend             ← verificar INC-04 (INTEGER[])
+├─ ❌ orders-api-endpoints
+├─ ❌ frontend-orders-listing-ui
+├─ ❌ frontend-orders-detail-ui
+└─ ❌ frontend-orders-management-admin
+
+BLOQUE 6 — Pagos
+├─ ❌ payments-mercadopago-integration-backend
+├─ ❌ frontend-payment-checkout-ui
+└─ ❌ frontend-payment-status-polling
+
+BLOQUE 7 — Admin
+├─ ❌ backend-admin-users-endpoints
+├─ ❌ admin-dashboard-metrics
+├─ ❌ frontend-admin-dashboard-ui
+├─ ❌ admin-categories-management-ui
+├─ ❌ admin-products-management-ui
+├─ ❌ admin-stock-management-ui
+├─ ❌ admin-users-management-ui
+└─ ❌ admin-ingredients-management-ui
+
+BLOQUE 8 — Patrones + Configuración
+├─ ❌ frontend-widgets-layer
+├─ ❌ frontend-patterns-hooks-optimistic
+├─ ❌ system-configuration-backend
+└─ ❌ frontend-system-configuration-ui
+
+BLOQUE 9 — Entrega Final
+├─ ❌ backend-comprehensive-testing
+├─ ❌ documentation-openapi-complete
+├─ ❌ deploy-production
+└─ ❌ repository-setup-final-checklist
 ```
 
 ---
 
-## Notas Importantes
+## Historial de versiones
 
-1. **Un change = un commit (o varios commits atómicos)**: Nunca mezcles dos changes en un mismo commit.
-2. **Order importa**: Si el change B necesita código del change A, A debe estar archivado antes de proponer B.
-3. **Historial de cambios**: Una vez archivado un change, sus specs quedan disponibles para los cambios futuros en `openspec/specs/`.
-4. **Patrones base**: Los changes de BLOQUE 1 son fundamentales — el resto depende de ellos. No saltear.
-5. **Testing**: El testing (BLOQUE 10) NO es opcional, es obligatorio según la rúbrica.
-6. **Dependencias externas**: MercadoPago requiere credenciales en `.env` (variables MP_ACCESS_TOKEN, MP_PUBLIC_KEY).
-
----
-
-## Historial de Cambios
-
-| Versión | Fecha      | Cambios                                         |
-|---------|------------|-----------------------------------------------|
-| 2.0     | 24/04/2026 | Agregado CHANGE 2.5 (backend-dev-infrastructure) — Docker, psycopg[binary], seed idempotente |
-| 1.0     | 21/04/2026 | Documento inicial con mapeo completo de changes |
-
----
-
-## Referencia Rápida
-
-- **Backend entrypoint**: `app/main.py`
-- **Frontend entrypoint**: `src/App.tsx`
-- **Base de datos**: PostgreSQL (CONNECTION STRING en `.env`)
-- **ORM**: SQLModel
-- **API Framework**: FastAPI
-- **UI Framework**: React + TypeScript + Tailwind
-- **Documentación API**: `/docs` (Swagger UI)
+| Versión | Fecha | Cambios |
+|---------|-------|---------|
+| 3.1 | 2026-05-11 | Estado real sincronizado con OPSX archive. 6 inconsistencias documentadas (INC-01 a INC-06). BLOQUE 0 de reparación agregado. Nuevos changes: `frontend-widgets-layer`, `frontend-patterns-hooks-optimistic`, `deploy-production`. Corrección naming `es_predeterminada`. `INTEGER[]` explicitado en pedidos. `frontend-products-catalog-ui` marcado ⚠️. |
+| 3.0 | 2026-05-11 | Análisis de gaps completo. Changes nuevos: checkout-pre-validation, backend-admin-users-endpoints, system-configuration-backend, frontend-system-configuration-ui. |
+| 2.0 | 2026-04-24 | backend-dev-infrastructure agregado |
+| 1.0 | 2026-04-21 | Documento inicial |
