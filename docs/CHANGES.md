@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-12 (frontend-error-handling-global archivado)
+> **Última actualización**: 2026-05-12 (frontend-layout-components-shared archivado)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -270,11 +270,12 @@ ErrorBoundary refactored a Tailwind v4 + botón "Ir al inicio". ToastContainer c
 
 ## EPIC 02 — Layout Base
 
-### ❌ `frontend-layout-components-shared`
+### ✅ `frontend-layout-components-shared`
+Archivado: `2026-05-12-frontend-layout-components-shared`
 
-Layout con Navbar, Sidebar, main, Footer. Componentes atómicos: Button, Input, Card, Modal, Toast, Skeleton, Badge. Sistema de iconos. Variables Tailwind. Responsive mobile-first.
+AppLayout + Sidebar (mobile overlay / desktop persistente) + Footer. Tokens @theme OKLCH + dark mode vía uiStore. Primitivas UI: Button (5 variantes), Input, Card (compound), Modal (native dialog), Badge, Skeleton. cn() utility (clsx + tailwind-merge). Navbar extendido con hamburger + theme toggle. 209/209 tests.
 
-**Skills**: `frontend-design`, `tailwind-design-system`
+**Skills**: `tailwind-design-system`, `ui-design-system`, `vercel-react-best-practices`, `zustand-state-management`
 **Dependencias**: `frontend-route-guards-auth`
 
 ---
