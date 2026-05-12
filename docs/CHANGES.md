@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-11
+> **Última actualización**: 2026-05-12
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -238,9 +238,10 @@ Archivado: `2026-05-11-route-protection-rbac`
 
 ---
 
-### ❌ `frontend-navigation-by-role`
+### ✅ `frontend-navigation-by-role`
+Archivado: `2026-05-12-frontend-navigation-by-role`
 
-Componente Navigation/Sidebar con menú dinámico por rol. CLIENT: Catálogo, Carrito, Mis Pedidos, Mi Perfil, Mis Direcciones. STOCK: Productos, Categorías, Ingredientes. PEDIDOS: Panel Pedidos. ADMIN: todo + Usuarios + Métricas + Configuración. No autenticado: Catálogo, Login, Registrarse.
+Componente Navigation/Sidebar con menú dinámico por rol. CLIENT: Catálogo, Carrito, Mis Pedidos, Mi Perfil, Mis Direcciones. STOCK: Productos, Categorías, Ingredientes. PEDIDOS: Panel Pedidos. ADMIN: todo + Usuarios + Métricas + Configuración. No autenticado: Catálogo, Login, Registrarse. `useNavLinks()` hook con `_hasHydrated` guard. 123/123 tests pasando.
 
 **Skills**: `frontend-design`, `tailwind-design-system`
 **Dependencias**: `rbac-roles-management`
@@ -653,9 +654,9 @@ BLOQUE 2 — Auth (parcialmente completo)
 ├─ ✅ auth-token-refresh
 ├─ ✅ auth-logout
 ├─ ✅ rbac-roles-management
-├─ ❌ route-protection-rbac          ← PRÓXIMO
-├─ ❌ frontend-navigation-by-role
-├─ ❌ frontend-route-guards-auth
+├─ ✅ route-protection-rbac
+├─ ✅ frontend-navigation-by-role
+├─ ❌ frontend-route-guards-auth     ← PRÓXIMO
 └─ ❌ frontend-error-handling-global
 
 BLOQUE 3 — Layout + Catálogo
