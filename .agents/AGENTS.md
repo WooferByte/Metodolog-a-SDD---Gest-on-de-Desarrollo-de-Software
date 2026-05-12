@@ -1,6 +1,6 @@
 # AGENTS.md — Food Store E-Commerce
 > **CRÍTICO**: Este archivo DEBE estar en `.agents/AGENTS.md` (versionado en Git).
-> **Versión**: 3.4 — Template ## 0. Skills obligatorio en tasks + regla opsx:propose · 2026-05-12
+> **Versión**: 3.5 — Skill testing-e2e-playwright instalada y registrada · 2026-05-12
 
 ---
 
@@ -296,6 +296,7 @@ Cargá el `SKILL.md` (o archivo equivalente) **antes** de escribir código. Múl
 | CRUD pages para dashboard admin (tabla + formulario + filtros) | `dashboard-crud-page` | `.agents/skills/dashboard-crud-page/SKILL.md` | SKILL.md |
 | Buscar si existe una skill para X antes de crear código | `find-skills` | `.agents/skills/find-skills/SKILL.md` | SKILL.md |
 | Crear o mejorar una skill de agente | `skill-creator` | `.agents/skills/skill-creator/SKILL.md` | SKILL.md |
+| E2E con Playwright: auth JWT Zustand, guards de rutas, toasts HTTP, login/registro | `testing-e2e-playwright` | `.agents/skills/testing-e2e-playwright/SKILL.md` | SKILL.md |
 
 > **⚠️ Nota**: 3 skills no tienen `SKILL.md` — tienen archivo alternativo marcado arriba. Leer el archivo que existe, no buscar SKILL.md en esas carpetas.
 
@@ -708,6 +709,7 @@ No revertir sin aprobación explícita del usuario:
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 3.5 | 2026-05-12 | Skill `testing-e2e-playwright` instalada: auth Zustand, guards, toasts, login/registro, mocks FastAPI |
 | 3.4 | 2026-05-12 | Template `## 0. Skills` obligatorio en tasks.md: opsx:propose lo genera automáticamente desde la Matriz; opsx:apply lo ejecuta primero; tasks sin esta sección son rechazadas |
 | 3.3 | 2026-05-12 | Tabla de modelos por tipo de tarea en protocolo de delegación: haiku (verificar/buscar), sonnet (implementar/auditar), opus (arquitectura/decisiones complejas) |
 | 3.2 | 2026-05-11 | Regla obligatoria de skills con consecuencia explícita: rechazo de output si subagente no confirma skills cargadas antes de escribir código |
