@@ -111,7 +111,7 @@ export function Pagination({
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-6">
       {/* Items Count Display */}
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-muted-foreground">
         Showing <span className="font-semibold">{startItem}</span> to{' '}
         <span className="font-semibold">{endItem}</span> of{' '}
         <span className="font-semibold">{totalItems}</span> products
@@ -126,7 +126,7 @@ export function Pagination({
         <button
           onClick={handlePreviousPage}
           disabled={currentPage === 1 || isLoading}
-          className="inline-flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="inline-flex items-center gap-1 px-3 py-2 border border-border rounded-lg hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           aria-label="Previous page"
           aria-disabled={currentPage === 1}
         >
@@ -138,7 +138,7 @@ export function Pagination({
         <div className="flex gap-1">
           {pages.map((page, index) => (
             page === '...' ? (
-              <span key={`dots-${index}`} className="px-2 py-2 text-gray-400">
+              <span key={`dots-${index}`} className="px-2 py-2 text-muted-foreground">
                 ...
               </span>
             ) : (
@@ -149,7 +149,7 @@ export function Pagination({
                 className={`px-3 py-2 rounded-lg font-medium transition-colors ${
                   page === currentPage
                     ? 'bg-blue-600 text-white'
-                    : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                    : 'border border-border text-foreground hover:bg-muted/50'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
                 aria-label={`Go to page ${page}`}
                 aria-current={page === currentPage ? 'page' : undefined}
@@ -164,7 +164,7 @@ export function Pagination({
         <button
           onClick={handleNextPage}
           disabled={currentPage === totalPages || isLoading}
-          className="inline-flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="inline-flex items-center gap-1 px-3 py-2 border border-border rounded-lg hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           aria-label="Next page"
           aria-disabled={currentPage === totalPages}
         >
@@ -174,7 +174,7 @@ export function Pagination({
       </nav>
 
       {/* Page Info */}
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-muted-foreground">
         Page <span className="font-semibold">{currentPage}</span> of{' '}
         <span className="font-semibold">{totalPages}</span>
       </p>

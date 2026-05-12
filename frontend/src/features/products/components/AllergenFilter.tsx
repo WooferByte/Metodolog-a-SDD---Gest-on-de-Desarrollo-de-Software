@@ -46,12 +46,12 @@ export function AllergenFilter({
   if (isLoading) {
     return (
       <div className="space-y-2">
-        <div className="h-4 bg-gray-200 rounded animate-pulse" />
+        <div className="h-4 bg-muted rounded animate-pulse" />
         <div className="space-y-2">
           {Array(3)
             .fill(0)
             .map((_, i) => (
-              <div key={i} className="h-6 bg-gray-200 rounded animate-pulse" />
+              <div key={i} className="h-6 bg-muted rounded animate-pulse" />
             ))}
         </div>
       </div>
@@ -61,10 +61,10 @@ export function AllergenFilter({
   if (allergens.length === 0) {
     return (
       <div className="space-y-2">
-        <label className="block text-sm font-semibold text-gray-700">
+        <label className="block text-sm font-semibold text-foreground">
           Allergen Exclusions
         </label>
-        <p className="text-sm text-gray-500">No allergens found in current products</p>
+        <p className="text-sm text-muted-foreground">No allergens found in current products</p>
       </div>
     )
   }
@@ -72,24 +72,24 @@ export function AllergenFilter({
   return (
     <div className="space-y-2">
       <fieldset>
-        <legend className="text-sm font-semibold text-gray-700 mb-2">
+        <legend className="text-sm font-semibold text-foreground mb-2">
           Exclude Allergens
         </legend>
         <div className="space-y-2 max-h-48 overflow-y-auto">
           {allergens.map((allergen) => (
             <label
               key={allergen.id}
-              className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors"
+              className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1 rounded transition-colors"
             >
               <input
                 type="checkbox"
                 checked={selectedIds.includes(allergen.id)}
                 onChange={() => handleToggle(allergen.id)}
-                className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-2 focus:ring-red-500"
+                className="w-4 h-4 rounded border-border text-red-600 focus:ring-2 focus:ring-red-500"
                 aria-label={`Exclude ${allergen.nombre} (found in ${allergen.count} product${allergen.count !== 1 ? 's' : ''})`}
               />
-              <span className="text-sm text-gray-700 flex-1">{allergen.nombre}</span>
-              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+              <span className="text-sm text-foreground flex-1">{allergen.nombre}</span>
+              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
                 {allergen.count}
               </span>
             </label>

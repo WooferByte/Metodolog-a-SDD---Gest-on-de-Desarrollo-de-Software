@@ -28,15 +28,15 @@ interface ProductGridProps {
  */
 function SkeletonCard() {
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="bg-gray-200 h-48 animate-pulse" />
+    <div className="bg-card rounded-lg shadow-md overflow-hidden">
+      <div className="bg-muted h-48 animate-pulse" />
       <div className="p-4 space-y-3">
-        <div className="h-4 bg-gray-200 rounded animate-pulse" />
-        <div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse" />
-        <div className="h-6 bg-gray-200 rounded w-1/3 animate-pulse" />
+        <div className="h-4 bg-muted rounded animate-pulse" />
+        <div className="h-4 bg-muted rounded w-2/3 animate-pulse" />
+        <div className="h-6 bg-muted rounded w-1/3 animate-pulse" />
         <div className="flex gap-2">
-          <div className="flex-1 h-10 bg-gray-200 rounded animate-pulse" />
-          <div className="flex-1 h-10 bg-gray-200 rounded animate-pulse" />
+          <div className="flex-1 h-10 bg-muted rounded animate-pulse" />
+          <div className="flex-1 h-10 bg-muted rounded animate-pulse" />
         </div>
       </div>
     </div>
@@ -104,8 +104,8 @@ export function ProductGrid({
     return (
       <div className="py-12 text-center">
         <div className="inline-block p-4">
-          <p className="text-gray-600 text-lg font-medium mb-2">No products found</p>
-          <p className="text-gray-500 text-sm">
+          <p className="text-muted-foreground text-lg font-medium mb-2">No products found</p>
+          <p className="text-muted-foreground text-sm">
             Try adjusting your filters or search term
           </p>
         </div>

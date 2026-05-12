@@ -46,15 +46,15 @@ export function CategoryFilter({
   if (isPending) {
     return (
       <div className="space-y-2">
-        <div className="h-4 bg-gray-200 rounded animate-pulse" />
-        <div className="h-8 bg-gray-200 rounded animate-pulse" />
+        <div className="h-4 bg-muted rounded animate-pulse" />
+        <div className="h-8 bg-muted rounded animate-pulse" />
       </div>
     )
   }
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-semibold text-gray-700">
+      <label className="block text-sm font-semibold text-foreground">
         Categories
       </label>
 
@@ -68,10 +68,10 @@ export function CategoryFilter({
                 type="checkbox"
                 checked={selectedIds.includes(parent.id)}
                 onChange={() => handleToggle(parent.id)}
-                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                className="w-4 h-4 rounded border-border text-blue-600 focus:ring-2 focus:ring-blue-500"
                 aria-label={`Filter by category: ${parent.nombre}`}
               />
-              <span className="font-medium text-gray-700">{parent.nombre}</span>
+              <span className="font-medium text-foreground">{parent.nombre}</span>
             </label>
 
             {/* Child Categories */}
@@ -81,10 +81,10 @@ export function CategoryFilter({
                   type="checkbox"
                   checked={selectedIds.includes(child.id)}
                   onChange={() => handleToggle(child.id)}
-                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                  className="w-4 h-4 rounded border-border text-blue-600 focus:ring-2 focus:ring-blue-500"
                   aria-label={`Filter by subcategory: ${child.nombre}`}
                 />
-                <span className="text-sm text-gray-600">{child.nombre}</span>
+                <span className="text-sm text-muted-foreground">{child.nombre}</span>
               </label>
             ))}
           </div>
@@ -95,7 +95,7 @@ export function CategoryFilter({
       <div className="md:hidden relative">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-left flex items-center justify-between hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-border rounded-lg bg-card text-left flex items-center justify-between hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
           aria-haspopup="listbox"
           aria-expanded={isOpen}
         >
@@ -106,28 +106,28 @@ export function CategoryFilter({
         </button>
 
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
+          <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
             {hierarchy.parents.map((parent) => (
               <div key={parent.id}>
-                <label className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer">
+                <label className="flex items-center gap-2 px-3 py-2 hover:bg-muted/50 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selectedIds.includes(parent.id)}
                     onChange={() => handleToggle(parent.id)}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600"
+                    className="w-4 h-4 rounded border-border text-blue-600"
                   />
-                  <span className="font-medium text-gray-700 text-sm">{parent.nombre}</span>
+                  <span className="font-medium text-foreground text-sm">{parent.nombre}</span>
                 </label>
 
                 {hierarchy.getChildren(parent.id).map((child) => (
-                  <label key={child.id} className="flex items-center gap-2 px-6 py-2 hover:bg-gray-50 cursor-pointer">
+                  <label key={child.id} className="flex items-center gap-2 px-6 py-2 hover:bg-muted/50 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={selectedIds.includes(child.id)}
                       onChange={() => handleToggle(child.id)}
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600"
+                      className="w-4 h-4 rounded border-border text-blue-600"
                     />
-                    <span className="text-gray-600 text-sm">{child.nombre}</span>
+                    <span className="text-muted-foreground text-sm">{child.nombre}</span>
                   </label>
                 ))}
               </div>

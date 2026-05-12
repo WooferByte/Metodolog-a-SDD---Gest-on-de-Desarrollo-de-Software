@@ -76,7 +76,7 @@ export function FilterBar({
       <aside
         className={`${
           isOpen ? 'block' : 'hidden'
-        } md:block md:w-64 bg-white rounded-lg shadow-md p-4 space-y-6 mb-4 md:mb-0`}
+        } md:block md:w-64 bg-card rounded-lg shadow-md p-4 space-y-6 mb-4 md:mb-0`}
         role="complementary"
         aria-label="Product filters"
       >
@@ -108,7 +108,7 @@ export function FilterBar({
         {(search || categoryIds.length > 0 || excludeAllergens.length > 0) && (
           <button
             onClick={handleClearAll}
-            className="w-full px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+            className="w-full px-4 py-2 border-2 border-border text-foreground rounded-lg hover:bg-muted/50 font-medium transition-colors"
             aria-label="Clear all filters"
           >
             Clear All Filters

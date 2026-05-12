@@ -156,12 +156,12 @@ export function ProductDetail({
         aria-modal="true"
         aria-labelledby="modal-title"
       >
-        <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full my-8">
+        <div className="bg-card rounded-lg shadow-xl max-w-2xl w-full my-8">
           {/* Close Button */}
           <button
             ref={closeButtonRef}
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors z-10"
+            className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors z-10"
             aria-label="Close product details"
             title="Press Escape to close"
           >
@@ -171,7 +171,7 @@ export function ProductDetail({
           {/* Content */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
             {/* Image */}
-            <div className="flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden">
+            <div className="flex items-center justify-center bg-muted rounded-lg overflow-hidden">
               <img
                 src={product.imagen_url}
                 alt={product.nombre}
@@ -183,7 +183,7 @@ export function ProductDetail({
             {/* Details */}
             <div className="flex flex-col">
               {/* Title */}
-              <h2 id="modal-title" className="text-3xl font-bold text-gray-900 mb-2">
+              <h2 id="modal-title" className="text-3xl font-bold text-foreground mb-2">
                 {product.nombre}
               </h2>
 
@@ -193,14 +193,14 @@ export function ProductDetail({
               </p>
 
               {/* Description */}
-              <p className="text-gray-700 mb-4 flex-1">
+              <p className="text-foreground mb-4 flex-1">
                 {product.descripcion}
               </p>
 
               {/* Categories */}
               {product.categorias.length > 0 && (
                 <div className="mb-4">
-                  <p className="text-sm font-semibold text-gray-700 mb-2">Categories:</p>
+                  <p className="text-sm font-semibold text-foreground mb-2">Categories:</p>
                   <div className="flex flex-wrap gap-2">
                     {product.categorias.map((cat) => (
                       <span
@@ -229,7 +229,7 @@ export function ProductDetail({
 
               {/* Ingredients */}
               <div className="mb-6">
-                <p className="text-sm font-semibold text-gray-700 mb-2">Ingredients:</p>
+                <p className="text-sm font-semibold text-foreground mb-2">Ingredients:</p>
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                   {product.ingredientes.length > 0 ? (
                     product.ingredientes.map((ingredient) => (
@@ -238,7 +238,7 @@ export function ProductDetail({
                         className={`text-sm p-2 rounded ${
                           ingredient.is_alergeno
                             ? 'bg-red-50 text-red-900 border border-red-200'
-                            : 'text-gray-700'
+                            : 'text-foreground'
                         }`}
                       >
                         {ingredient.is_alergeno && (
@@ -248,21 +248,21 @@ export function ProductDetail({
                       </div>
                     ))
                   ) : (
-                    <p className="text-gray-500 text-sm">No ingredients listed</p>
+                    <p className="text-muted-foreground text-sm">No ingredients listed</p>
                   )}
                 </div>
               </div>
 
               {/* Quantity Selector */}
               <div className="mb-4">
-                <label htmlFor="quantity" className="text-sm font-semibold text-gray-700 block mb-2">
+                <label htmlFor="quantity" className="text-sm font-semibold text-foreground block mb-2">
                   Quantity:
                 </label>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={decrementQuantity}
                     disabled={quantity <= MIN_QUANTITY}
-                    className="p-2 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 rounded-lg transition-colors"
+                    className="p-2 bg-muted hover:bg-gray-300 disabled:bg-muted rounded-lg transition-colors"
                     aria-label="Decrease quantity"
                   >
                     <Minus size={20} />
@@ -277,12 +277,12 @@ export function ProductDetail({
                       const val = parseInt(e.currentTarget.value) || MIN_QUANTITY
                       setQuantity(Math.min(Math.max(val, MIN_QUANTITY), MAX_QUANTITY))
                     }}
-                    className="w-16 px-2 py-2 border border-gray-300 rounded-lg text-center font-semibold"
+                    className="w-16 px-2 py-2 border border-border rounded-lg text-center font-semibold"
                   />
                   <button
                     onClick={incrementQuantity}
                     disabled={quantity >= MAX_QUANTITY}
-                    className="p-2 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 rounded-lg transition-colors"
+                    className="p-2 bg-muted hover:bg-gray-300 disabled:bg-muted rounded-lg transition-colors"
                     aria-label="Increase quantity"
                   >
                     <Plus size={20} />

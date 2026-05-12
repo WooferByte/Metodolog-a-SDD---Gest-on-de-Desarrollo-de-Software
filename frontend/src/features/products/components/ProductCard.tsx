@@ -54,12 +54,12 @@ export function ProductCard({
 
   return (
     <article
-      className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow overflow-hidden flex flex-col"
+      className="bg-card rounded-lg shadow-md hover:shadow-xl transition-shadow overflow-hidden flex flex-col"
       role="article"
       aria-label={`Product: ${product.nombre}`}
     >
       {/* Image Container */}
-      <div className="relative overflow-hidden bg-gray-100 h-48">
+      <div className="relative overflow-hidden bg-muted h-48">
         <img
           src={product.imagen_url}
           alt={product.nombre}
@@ -98,12 +98,12 @@ export function ProductCard({
       {/* Content */}
       <div className="p-4 flex-1 flex flex-col">
         {/* Name */}
-        <h3 className="font-semibold text-lg text-gray-900 mb-2 line-clamp-2">
+        <h3 className="font-semibold text-lg text-foreground mb-2 line-clamp-2">
           {product.nombre}
         </h3>
 
         {/* Description */}
-        <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
           {product.descripcion}
         </p>
 

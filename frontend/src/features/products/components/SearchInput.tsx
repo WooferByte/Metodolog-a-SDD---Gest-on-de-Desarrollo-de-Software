@@ -59,7 +59,7 @@ export function SearchInput({
       <div className="relative">
         <Search
           size={20}
-          className="absolute left-3 top-3 text-gray-400 pointer-events-none"
+          className="absolute left-3 top-3 text-muted-foreground pointer-events-none"
           aria-hidden="true"
         />
         <input
@@ -68,14 +68,14 @@ export function SearchInput({
           value={localValue}
           onChange={(e) => setLocalValue(e.currentTarget.value)}
           placeholder={placeholder}
-          className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full pl-10 pr-10 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           aria-label="Search products by name or description"
           aria-describedby="search-debounce-info"
         />
         {localValue && (
           <button
             onClick={handleClear}
-            className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors"
+            className="absolute right-3 top-3 text-muted-foreground hover:text-muted-foreground transition-colors"
             aria-label="Clear search"
             title="Clear search"
           >

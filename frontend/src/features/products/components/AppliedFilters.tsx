@@ -68,7 +68,7 @@ export function AppliedFilters({
   return (
     <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-sm font-semibold text-gray-700">Applied Filters:</p>
+        <p className="text-sm font-semibold text-foreground">Applied Filters:</p>
         <button
           onClick={onClearAll}
           className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
@@ -82,14 +82,14 @@ export function AppliedFilters({
         {/* Search Filter */}
         {search && (
           <div
-            className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-blue-300 rounded-full text-sm"
+            className="inline-flex items-center gap-1 px-3 py-1 bg-card border border-blue-300 rounded-full text-sm"
             role="status"
             aria-label={`Search filter: ${search}`}
           >
             <span>Search: {search}</span>
             <button
               onClick={onClearSearch}
-              className="ml-1 text-gray-500 hover:text-gray-700 transition-colors"
+              className="ml-1 text-muted-foreground hover:text-foreground transition-colors"
               aria-label={`Remove search filter: ${search}`}
             >
               <X size={14} />
@@ -101,13 +101,13 @@ export function AppliedFilters({
         {categoryIds.map((id) => (
           <div
             key={`cat-${id}`}
-            className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-blue-300 rounded-full text-sm"
+            className="inline-flex items-center gap-1 px-3 py-1 bg-card border border-blue-300 rounded-full text-sm"
             role="status"
           >
             <span>Category: {getCategoryName(id)}</span>
             <button
               onClick={() => onRemoveCategory(id)}
-              className="ml-1 text-gray-500 hover:text-gray-700 transition-colors"
+              className="ml-1 text-muted-foreground hover:text-foreground transition-colors"
               aria-label={`Remove category filter: ${getCategoryName(id)}`}
             >
               <X size={14} />
