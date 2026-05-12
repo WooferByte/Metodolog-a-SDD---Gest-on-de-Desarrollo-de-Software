@@ -1,6 +1,6 @@
 # AGENTS.md — Food Store E-Commerce
 > **CRÍTICO**: Este archivo DEBE estar en `.agents/AGENTS.md` (versionado en Git).
-> **Versión**: 3.1 — Sincronizado con estado real del proyecto · 2026-05-11
+> **Versión**: 3.3 — Tabla modelos por tarea en protocolo de delegación · 2026-05-12
 
 ---
 
@@ -46,6 +46,16 @@ Todo prompt de delegación DEBE incluir obligatoriamente:
 ```
 
 El subagente NO debe comenzar a implementar hasta haber leído AGENTS.md y confirmado.
+
+### Modelo por tipo de tarea
+
+El orquestador especifica el modelo en cada prompt de delegación con: `Use model: <model-string>`
+
+| Tarea | Modelo |
+|-------|--------|
+| Verificar, buscar, confirmar (grep, ls, queries BD) | `claude-haiku-4-5-20251001` |
+| Implementar código, auditar, escribir tests | `claude-sonnet-4-6` |
+| Diseñar arquitectura, decidir approach complejo | `claude-opus-4-6` |
 
 ### Regla obligatoria de skills — consecuencia explícita
 
@@ -676,6 +686,7 @@ No revertir sin aprobación explícita del usuario:
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 3.3 | 2026-05-12 | Tabla de modelos por tipo de tarea en protocolo de delegación: haiku (verificar/buscar), sonnet (implementar/auditar), opus (arquitectura/decisiones complejas) |
 | 3.2 | 2026-05-11 | Regla obligatoria de skills con consecuencia explícita: rechazo de output si subagente no confirma skills cargadas antes de escribir código |
 | 3.1 | 2026-05-11 | Sincronización completa con estado real: dependencias reales (Zustand v5, Tailwind v4, vitest, sin TanStack Form ni SDK MP), estructura real de carpetas (refresh_tokens con underscore, tests planos, widgets/entities vacíos), skills reales con paths y archivos correctos (14 skills, 3 sin SKILL.md, dashboard-crud-page y find-skills nuevas), variables de entorno reales (MP_ACCESS_TOKEN, BCRYPT_COST discrepancia), engram recall eliminado (comando no existe), devdocs-mcp sin config, openspec config.yaml vacío, decisiones arquitectónicas extendidas con realidad del repo |
 | 3.0 | 2026-05-11 | Fusión AGENTS.md tuyo + profesor: protocolo Engram, delegación subagentes, paths skills, matriz, checklist, decisiones |
