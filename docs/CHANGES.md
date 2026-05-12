@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-12 (frontend-route-guards-auth archivado)
+> **Última actualización**: 2026-05-12 (frontend-error-handling-global archivado)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -258,11 +258,12 @@ Archivado: `2026-05-12-frontend-route-guards-auth`
 
 ---
 
-### ❌ `frontend-error-handling-global`
+### ✅ `frontend-error-handling-global`
+Archivado: `2026-05-12-frontend-error-handling-global`
 
-Error boundary global. Interceptor Axios que mapea status codes a mensajes (400/403/404/429/500). Sistema de toasts para errores.
+ErrorBoundary refactored a Tailwind v4 + botón "Ir al inicio". ToastContainer con auto-dismiss (4/5/6s), cierre manual, íconos lucide-react, límite 5 toasts. Interceptor Axios mapea 400/403/404/422/429/500 + red a mensajes en español vía uiStore. 159/159 tests.
 
-**Skills**: `frontend-design`
+**Skills**: `tailwind-design-system`, `ui-design-system`, `vercel-react-best-practices`, `frontend-state-management`
 **Dependencias**: `backend-error-handling-rfc7807`
 
 ---
