@@ -59,7 +59,8 @@ const ADMIN_LINKS: NavLink[] = [
  */
 export function useNavLinks(): NavLink[] {
   const _hasHydrated = useAuthStore((s) => s._hasHydrated)
-  const roles = useAuthStore((s) => s.user?.roles ?? [])
+  const userRoles = useAuthStore((s) => s.user?.roles)
+  const roles = userRoles ?? []
 
   // Show public links until hydration completes
   if (!_hasHydrated) return PUBLIC_LINKS
