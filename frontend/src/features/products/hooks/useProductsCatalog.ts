@@ -21,27 +21,19 @@ import { ITEMS_PER_PAGE, API_ENDPOINTS, QUERY_KEYS, API_TIMEOUT } from '@/featur
 /**
  * Build query parameters for products API
  */
-function buildProductsQueryParams(filters: CatalogFilters, limit: number): URLSearchParams {
+function buildProductsQueryParams(filters: CatalogFilters, size: number): URLSearchParams {
   const params = new URLSearchParams()
 
-  // Add category IDs (comma-separated if multiple)
   if (filters.categoryIds.length > 0) {
-    params.append('categoria', filters.categoryIds.join(','))
+    params.append('categoria_id', filters.categoryIds[0])
   }
 
-  // Add search term
   if (filters.search.trim()) {
-    params.append('busqueda', filters.search.trim())
+    params.append('q', filters.search.trim())
   }
 
-  // Add allergen exclusions (comma-separated if multiple)
-  if (filters.excludeAllergens.length > 0) {
-    params.append('excluirAlergenos', filters.excludeAllergens.join(','))
-  }
-
-  // Add pagination
   params.append('page', String(filters.currentPage))
-  params.append('limit', String(limit))
+  params.append('size', String(size))
 
   return params
 }
@@ -60,9 +52,9 @@ function buildProductsQueryParams(filters: CatalogFilters, limit: number): URLSe
  */
 export function useProductsCatalog(
   filters: CatalogFilters,
-  limit: number = ITEMS_PER_PAGE,
+  size: number = ITEMS_PER_PAGE,
 ) {
-  const queryParams = buildProductsQueryParams(filters, limit)
+  const queryParams = buildProductsQueryParams(filters, size)
   const queryUrl = `${API_ENDPOINTS.PRODUCTS}?${queryParams.toString()}`
 
   return useQuery<ProductsApiResponse>({
