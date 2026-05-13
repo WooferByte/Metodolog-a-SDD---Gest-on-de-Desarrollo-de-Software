@@ -200,10 +200,12 @@ async def root():
 from auth.router import router as auth_router
 from usuarios.role_router import router as role_router
 from categorias.router import router as categorias_router
+from ingredientes.router import router as ingredientes_router
 
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(role_router)
 app.include_router(categorias_router, prefix="/api/v1")
+app.include_router(ingredientes_router, prefix="/api/v1")
 
 # Registrar aquí cuando cada módulo esté listo:
 # from usuarios.router import router as usuarios_router
