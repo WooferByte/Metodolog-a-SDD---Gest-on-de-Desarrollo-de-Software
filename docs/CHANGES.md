@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-13 (products-catalog-public archivado — EPIC 05 completo)
+> **Última actualización**: 2026-05-13 (frontend-refactor-apply-skills + frontend-nav-responsive-fix archivados)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -277,6 +277,22 @@ AppLayout + Sidebar (mobile overlay / desktop persistente) + Footer. Tokens @the
 
 **Skills**: `tailwind-design-system`, `ui-design-system`, `vercel-react-best-practices`, `zustand-state-management`
 **Dependencias**: `frontend-route-guards-auth`
+
+### ✅ `frontend-refactor-apply-skills`
+Archivado: `2026-05-13-frontend-refactor-apply-skills`
+
+Aplicación retroactiva de skills a 4 changes ejecutados sin ellas. Router.tsx: `React.lazy` + `Suspense` (8 page chunks). authStore + cartStore: `devtools(persist())` middleware. `withAuth` HOC deprecated eliminado, `ProtectedRoute.tsx` separado. `Spinner.tsx` extraído. Tokens semánticos en todos los componentes de `products/components/`. ARIA: `role="list"`, `aria-modal`, `aria-live`, `aria-label`. `placeholderData: keepPreviousData` en `useProductsCatalog`. Setup Playwright: `playwright.config.ts` + `e2e/helpers/auth.ts` + `e2e/route-guards.spec.ts` (4 tests de guards). `vitest.config.ts`: exclude `e2e/**`. 209/209 tests.
+
+**Skills**: `tailwind-design-system`, `ui-design-system`, `vercel-react-best-practices`, `frontend-state-management`, `zustand-state-management`, `testing-e2e-playwright`
+**Evidencia**: `openspec/changes/archive/2026-05-13-frontend-refactor-apply-skills/`
+
+### ✅ `frontend-nav-responsive-fix`
+Archivado: `2026-05-13-frontend-nav-responsive-fix`
+
+Corrección de doble navegación señalada por el profesor: el Navbar duplicaba los links del Sidebar en todos los breakpoints. Fix: eliminados `useNavLinks` import, hook call, y bloque `navLinks.map()` del Navbar. El Navbar queda exclusivamente con hamburger + brand + user info + theme toggle. `bg-red-600` migrado a token `bg-destructive`. El Sidebar es el único punto de navegación en todos los breakpoints. 209/209 tests.
+
+**Skills**: `tailwind-design-system`, `ui-design-system`
+**Evidencia**: `openspec/changes/archive/2026-05-13-frontend-nav-responsive-fix/`
 
 ---
 
