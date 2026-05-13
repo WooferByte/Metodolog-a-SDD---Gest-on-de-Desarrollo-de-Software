@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-12 (categories-crud-hierarchical archivado)
+> **Última actualización**: 2026-05-13 (ingredients-crud-allergens archivado)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -294,11 +294,12 @@ Archivado: `2026-05-12-categories-crud-hierarchical`
 
 ## EPIC 04 — Ingredientes
 
-### ❌ `ingredients-crud-allergens`
+### ✅ `ingredients-crud-allergens`
+Archivado: `2026-05-13-ingredients-crud-allergens`
 
-Modelo `Ingrediente` con `es_alergeno`. `POST/GET/PUT/DELETE /api/v1/ingredientes`. UNIQUE en nombre. Soft delete.
+CRUD ingredientes con `es_alergeno`. Filtro `?es_alergeno=true/false`. Guard productos activos en DELETE. Nombre UNIQUE con 409. Soft delete. Migración 007: índice parcial. 18/18 tests.
 
-**Skills**: `fastapi-python`, `postgres`
+**Skills**: `python-fastapi-ddd-skill`, `supabase-postgres-best-practices`, `api-design`, `post-change-verification`
 **Dependencias**: `route-protection-rbac`
 
 ---
