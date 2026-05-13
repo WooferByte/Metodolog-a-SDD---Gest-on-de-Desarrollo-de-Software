@@ -6,7 +6,7 @@ Adds:
 - list_by_alergeno(es_alergeno, skip, limit): filtered list ordered by nombre
 """
 
-from sqlalchemy import text
+from sqlalchemy import select, text
 
 from core.models import Ingrediente
 from infrastructure.repositories.base_repository import BaseRepository
@@ -53,35 +53,14 @@ class IngredienteRepository(BaseRepository[Ingrediente]):
     async def list_by_alergeno(
         self, es_alergeno: bool, skip: int = 0, limit: int = 100
     ) -> list[Ingrediente]:
-        """
-        Return a paginated list of active ingredients filtered by es_alergeno flag.
-
-        Excludes soft-deleted records (eliminado_en IS NULL).
-        Results are ordered alphabetically by nombre.
-
-        Args:
-            es_alergeno: Filter value for the es_alergeno boolean column.
-            skip: Pagination offset.
-            limit: Maximum records to return (capped at 1000).
-
-        Returns:
-            List of Ingrediente instances matching the filter.
-        """
-        limit = min(limit, 1000)
-        sql = text(
-            """
-            SELECT id, nombre, es_alergeno, creado_en, eliminado_en
-            FROM ingredientes
-            WHERE eliminado_en IS NULL
-              AND es_alergeno = :es_alergeno
-            ORDER BY nombre
-            OFFSET :skip
-            LIMIT :limit
-            """
+        """Return paginated active ingredients filtered by es_alergeno, ordered by nombre."""
+        stmt = (
+            select(Ingrediente)
+            .where(Ingrediente.eliminado_en == None)  # noqa: E711
+            .where(Ingrediente.es_alergeno == es_alergeno)
+            .order_by(Ingrediente.nombre)
+            .offset(skip)
+            .limit(min(limit, 1000))
         )
-        result = await self.session.execute(
-            sql,
-            {"es_alergeno": es_alergeno, "skip": skip, "limit": limit},
-        )
-        rows = result.mappings().all()
-        return [Ingrediente(**dict(row)) for row in rows]
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())

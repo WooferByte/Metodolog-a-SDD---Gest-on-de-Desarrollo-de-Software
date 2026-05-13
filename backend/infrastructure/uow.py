@@ -19,6 +19,7 @@ from core.models import (
     EstadoPedido, FormaPago, Pedido, DetallePedido, HistorialEstadoPedido, Pago
 )
 from categorias.repository import CategoriaRepository
+from ingredientes.repository import IngredienteRepository
 from core.database import get_db
 
 
@@ -95,10 +96,10 @@ class UnitOfWork:
         return self._repositories["productos"]
 
     @property
-    def ingredientes(self) -> BaseRepository[Ingrediente]:
+    def ingredientes(self) -> IngredienteRepository:
         """Repository for Ingrediente entity."""
         if "ingredientes" not in self._repositories:
-            self._repositories["ingredientes"] = BaseRepository(self.session, Ingrediente)
+            self._repositories["ingredientes"] = IngredienteRepository(self.session)
         return self._repositories["ingredientes"]
 
     @property
