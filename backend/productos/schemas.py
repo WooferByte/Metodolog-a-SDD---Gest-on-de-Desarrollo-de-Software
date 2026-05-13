@@ -6,7 +6,7 @@ Sanitizes nombre and descripcion against XSS.
 """
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -57,6 +57,31 @@ class ProductoStockUpdate(BaseModel):
     stock_cantidad: int = Field(ge=0)
 
 
+class CategoriaCompacta(BaseModel):
+    """Compact category representation for product responses."""
+
+    id: int
+    nombre: str
+    padre_id: Optional[int]
+
+    model_config = {"from_attributes": True}
+
+
+class ProductoCategoriaSetRequest(BaseModel):
+    """Request body for PUT /productos/{id}/categorias — full replacement."""
+
+    categoria_ids: List[int] = Field(
+        default_factory=list,
+        description="List of category IDs to associate. Empty list removes all associations.",
+    )
+
+    @field_validator("categoria_ids")
+    @classmethod
+    def validate_categoria_ids(cls, v: List[int]) -> List[int]:
+        """Accept any list including empty (empty = remove all associations)."""
+        return v
+
+
 class ProductoResponse(BaseModel):
     """Public product representation."""
 
@@ -68,5 +93,6 @@ class ProductoResponse(BaseModel):
     disponible: bool
     imagen_url: Optional[str]
     creado_en: datetime
+    categorias: List[CategoriaCompacta] = []
 
     model_config = {"from_attributes": True}

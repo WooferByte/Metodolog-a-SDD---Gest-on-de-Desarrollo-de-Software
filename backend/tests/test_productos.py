@@ -63,6 +63,11 @@ def _make_uow(repo: MagicMock | None = None) -> MagicMock:
         repo = MagicMock()
     uow.productos = repo
 
+    # producto_categorias repo — needed since get_producto_by_id now enriches with categories
+    pc_repo = MagicMock()
+    pc_repo.get_categorias = AsyncMock(return_value=[])
+    uow.producto_categorias = pc_repo
+
     # Async context manager wiring
     uow.__aenter__ = AsyncMock(return_value=uow)
     uow.__aexit__ = AsyncMock(return_value=False)
@@ -170,8 +175,9 @@ class TestGetProductoById:
 
     @pytest.mark.asyncio
     async def test_get_producto_by_id_found(self):
-        """Service returns product when repo finds it."""
+        """Service returns ProductoResponse (enriched with categorias) when repo finds it."""
         from productos.service import get_producto_by_id
+        from productos.schemas import ProductoResponse
 
         product = _make_producto(5, "Found")
         repo = MagicMock()
@@ -180,7 +186,11 @@ class TestGetProductoById:
 
         result = await get_producto_by_id(uow, 5)
 
-        assert result is product
+        # get_producto_by_id now returns ProductoResponse (enriched with categorias=[])
+        assert isinstance(result, ProductoResponse)
+        assert result.id == 5
+        assert result.nombre == "Found"
+        assert result.categorias == []
 
 
 class TestCreateProducto:
