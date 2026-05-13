@@ -9,7 +9,16 @@ interface LoginResponse {
   access_token: string
   refresh_token: string
   token_type: string
-  user: { id: number; email: string; nombre: string; roles: string[] }
+  usuario: { id: number; email: string; nombre: string; apellido?: string | null; telefono?: string | null; activo: boolean }
+}
+
+function rolesFromToken(token: string): string[] {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return Array.isArray(payload.roles) ? payload.roles : []
+  } catch {
+    return []
+  }
 }
 
 async function loginUser(email: string, password: string): Promise<LoginResponse> {
@@ -39,10 +48,10 @@ export default function Login() {
     onSuccess: (data) => {
       updateTokens(data.access_token, data.refresh_token)
       setUser({
-        id: String(data.user.id),
-        email: data.user.email,
-        name: data.user.nombre,
-        roles: data.user.roles,
+        id: String(data.usuario.id),
+        email: data.usuario.email,
+        name: data.usuario.nombre,
+        roles: rolesFromToken(data.access_token),
       })
       navigate(from, { replace: true })
     },

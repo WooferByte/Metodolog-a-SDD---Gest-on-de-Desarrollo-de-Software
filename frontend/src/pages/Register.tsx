@@ -9,11 +9,20 @@ interface RegisterResponse {
   access_token: string
   refresh_token: string
   token_type: string
-  user: { id: number; email: string; nombre: string; roles: string[] }
+  usuario: { id: number; email: string; nombre: string }
+}
+
+function rolesFromToken(token: string): string[] {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return Array.isArray(payload.roles) ? payload.roles : []
+  } catch {
+    return []
+  }
 }
 
 async function registerUser(nombre: string, email: string, password: string): Promise<RegisterResponse> {
-  const { data } = await apiClient.post<RegisterResponse>('/api/v1/auth/registro', { nombre, email, password })
+  const { data } = await apiClient.post<RegisterResponse>('/api/v1/auth/register', { nombre, email, password })
   return data
 }
 
@@ -39,10 +48,10 @@ export default function Register() {
     onSuccess: (data) => {
       updateTokens(data.access_token, data.refresh_token)
       setUser({
-        id: String(data.user.id),
-        email: data.user.email,
-        name: data.user.nombre,
-        roles: data.user.roles,
+        id: String(data.usuario.id),
+        email: data.usuario.email,
+        name: data.usuario.nombre,
+        roles: rolesFromToken(data.access_token),
       })
       addToast({ message: '¡Cuenta creada! Bienvenido/a.', type: 'success' })
       navigate('/', { replace: true })
