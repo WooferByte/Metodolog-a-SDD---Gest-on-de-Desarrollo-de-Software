@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-12 (frontend-layout-components-shared archivado)
+> **Última actualización**: 2026-05-12 (categories-crud-hierarchical archivado)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -282,11 +282,12 @@ AppLayout + Sidebar (mobile overlay / desktop persistente) + Footer. Tokens @the
 
 ## EPIC 03 — Categorías
 
-### ❌ `categories-crud-hierarchical`
+### ✅ `categories-crud-hierarchical`
+Archivado: `2026-05-12-categories-crud-hierarchical`
 
-Modelo `Categoria` con `padre_id` autoreferencial. `POST/GET/PUT/DELETE /api/v1/categorias`. Árbol anidado con CTE recursivo. No crear ciclos. No eliminar con productos activos. Soft delete.
+7 endpoints REST. CTE recursivo PostgreSQL para árbol con `depth`. Anti-ciclo iterativo en PUT. Guard productos activos en DELETE. Migración 006: índice parcial `idx_categorias_padre_id WHERE eliminado_en IS NULL`. 20/20 tests.
 
-**Skills**: `fastapi-python`, `postgres`
+**Skills**: `python-fastapi-ddd-skill`, `supabase-postgres-best-practices`, `api-design`, `post-change-verification`
 **Dependencias**: `route-protection-rbac`
 
 ---
