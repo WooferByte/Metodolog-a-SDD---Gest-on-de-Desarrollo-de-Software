@@ -26,3 +26,5 @@ export type { BadgeProps } from './Badge'
 
 export { Skeleton } from './Skeleton'
 export type { SkeletonProps } from './Skeleton'
+
+export { Spinner } from './Spinner'

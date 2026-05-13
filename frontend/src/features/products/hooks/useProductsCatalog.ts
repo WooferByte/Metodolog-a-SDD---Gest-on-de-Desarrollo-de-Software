@@ -13,7 +13,7 @@
  * ```
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { axiosInstance } from '@/shared/api/axios'
 import type { ProductsApiResponse, CatalogFilters } from '@/features/products/types'
 import { ITEMS_PER_PAGE, API_ENDPOINTS, QUERY_KEYS, API_TIMEOUT } from '@/features/products/constants'
@@ -80,5 +80,8 @@ export function useProductsCatalog(
       return failureCount < 2
     },
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+
+    // Keep previous data visible while fetching new page — avoids grid flicker on pagination
+    placeholderData: keepPreviousData,
   })
 }

@@ -73,8 +73,8 @@ export function ProductCard({
           <span
             className={`px-3 py-1 rounded-full text-xs font-semibold ${
               isAvailable
-                ? 'bg-green-100 text-green-800'
-                : 'bg-red-100 text-red-800'
+                ? 'bg-success/10 text-success'
+                : 'bg-destructive/10 text-destructive'
             }`}
             role="status"
           >
@@ -108,7 +108,7 @@ export function ProductCard({
         </p>
 
         {/* Price */}
-        <p className="text-xl font-bold text-blue-600 mb-4">
+        <p className="text-xl font-bold text-primary mb-4">
           {priceFormatted}
         </p>
 
@@ -117,7 +117,7 @@ export function ProductCard({
           {/* View Details Button */}
           <button
             onClick={() => onViewDetails(product)}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground rounded-lg font-medium transition-colors"
             aria-label={`View details for ${product.nombre}`}
           >
             <Eye size={16} />
@@ -128,7 +128,7 @@ export function ProductCard({
           <button
             onClick={() => onAddToCart(product)}
             disabled={!isAvailable}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-success hover:bg-success/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
             aria-label={`Add ${product.nombre} to cart${!isAvailable ? ' (unavailable)' : ''}`}
           >
             <ShoppingCart size={16} />

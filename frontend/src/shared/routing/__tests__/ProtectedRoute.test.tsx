@@ -19,7 +19,7 @@ import '@testing-library/jest-dom'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
-import { ProtectedRoute } from '../withAuth'
+import { ProtectedRoute } from '../ProtectedRoute'
 
 // ── Mock useAuthStore ─────────────────────────────────────────────────────────
 // We mock the entire module and control the return value per test via mockReturnValue.

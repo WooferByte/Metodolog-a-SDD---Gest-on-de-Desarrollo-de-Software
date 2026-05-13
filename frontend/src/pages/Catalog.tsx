@@ -59,7 +59,7 @@ export default function CatalogPage() {
   const addToast = useUIStore((state) => state.addToast)
 
   // Fetch products with current filters
-  const { data: catalogData, isPending, isError, error, refetch } = useProductsCatalog(
+  const { data: catalogData, isPending, isFetching, isError, error, refetch } = useProductsCatalog(
     filters,
     ITEMS_PER_PAGE,
   )
@@ -220,9 +220,20 @@ export default function CatalogPage() {
 
           {/* Products Grid */}
           <div className="md:col-span-3">
+            {/* Result count — aria-live so screen readers announce filter changes */}
+            {catalogData && !isError && (
+              <p
+                className="text-sm text-muted-foreground mb-3"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                {isFetching && !isPending ? 'Actualizando...' : `${catalogData.total} productos encontrados`}
+              </p>
+            )}
             <ProductGrid
               products={catalogData?.items}
               isLoading={isPending}
+              isFetching={isFetching}
               isError={isError}
               error={error}
               onRetry={refetch}

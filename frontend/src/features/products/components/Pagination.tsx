@@ -148,7 +148,7 @@ export function Pagination({
                 disabled={page === currentPage || isLoading}
                 className={`px-3 py-2 rounded-lg font-medium transition-colors ${
                   page === currentPage
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-primary text-primary-foreground'
                     : 'border border-border text-foreground hover:bg-muted/50'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
                 aria-label={`Go to page ${page}`}

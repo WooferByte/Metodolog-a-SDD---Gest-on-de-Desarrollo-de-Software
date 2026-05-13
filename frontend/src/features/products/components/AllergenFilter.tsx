@@ -101,7 +101,7 @@ export function AllergenFilter({
       {selectedIds.length > 0 && (
         <button
           onClick={handleClearAll}
-          className="w-full text-sm text-red-600 hover:text-red-700 font-medium py-1 transition-colors"
+          className="w-full text-sm text-destructive hover:text-destructive/80 font-medium py-1 transition-colors"
           aria-label="Clear all allergen filters"
         >
           Clear All

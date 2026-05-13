@@ -68,7 +68,7 @@ export function CategoryFilter({
                 type="checkbox"
                 checked={selectedIds.includes(parent.id)}
                 onChange={() => handleToggle(parent.id)}
-                className="w-4 h-4 rounded border-border text-blue-600 focus:ring-2 focus:ring-blue-500"
+                className="w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-ring"
                 aria-label={`Filter by category: ${parent.nombre}`}
               />
               <span className="font-medium text-foreground">{parent.nombre}</span>
@@ -81,7 +81,7 @@ export function CategoryFilter({
                   type="checkbox"
                   checked={selectedIds.includes(child.id)}
                   onChange={() => handleToggle(child.id)}
-                  className="w-4 h-4 rounded border-border text-blue-600 focus:ring-2 focus:ring-blue-500"
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-ring"
                   aria-label={`Filter by subcategory: ${child.nombre}`}
                 />
                 <span className="text-sm text-muted-foreground">{child.nombre}</span>
@@ -95,7 +95,7 @@ export function CategoryFilter({
       <div className="md:hidden relative">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full px-3 py-2 border border-border rounded-lg bg-card text-left flex items-center justify-between hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-border rounded-lg bg-card text-left flex items-center justify-between hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-ring"
           aria-haspopup="listbox"
           aria-expanded={isOpen}
         >
@@ -114,7 +114,7 @@ export function CategoryFilter({
                     type="checkbox"
                     checked={selectedIds.includes(parent.id)}
                     onChange={() => handleToggle(parent.id)}
-                    className="w-4 h-4 rounded border-border text-blue-600"
+                    className="w-4 h-4 rounded border-border text-primary"
                   />
                   <span className="font-medium text-foreground text-sm">{parent.nombre}</span>
                 </label>
@@ -125,7 +125,7 @@ export function CategoryFilter({
                       type="checkbox"
                       checked={selectedIds.includes(child.id)}
                       onChange={() => handleToggle(child.id)}
-                      className="w-4 h-4 rounded border-border text-blue-600"
+                      className="w-4 h-4 rounded border-border text-primary"
                     />
                     <span className="text-muted-foreground text-sm">{child.nombre}</span>
                   </label>
@@ -140,7 +140,7 @@ export function CategoryFilter({
       {selectedIds.length > 0 && (
         <button
           onClick={handleClearAll}
-          className="w-full text-sm text-blue-600 hover:text-blue-700 font-medium py-1 transition-colors"
+          className="w-full text-sm text-primary hover:text-primary/80 font-medium py-1 transition-colors"
           aria-label="Clear all category filters"
         >
           Clear All

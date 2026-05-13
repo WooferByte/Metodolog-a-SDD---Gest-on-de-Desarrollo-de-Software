@@ -66,12 +66,12 @@ export function AppliedFilters({
   }
 
   return (
-    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+    <div className="mb-4 p-3 bg-accent/20 border border-border rounded-lg">
       <div className="flex items-center justify-between mb-2">
         <p className="text-sm font-semibold text-foreground">Applied Filters:</p>
         <button
           onClick={onClearAll}
-          className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+          className="text-sm text-primary hover:text-primary/80 font-medium transition-colors"
           aria-label="Clear all filters"
         >
           Clear All
@@ -82,7 +82,7 @@ export function AppliedFilters({
         {/* Search Filter */}
         {search && (
           <div
-            className="inline-flex items-center gap-1 px-3 py-1 bg-card border border-blue-300 rounded-full text-sm"
+            className="inline-flex items-center gap-1 px-3 py-1 bg-card border border-border rounded-full text-sm"
             role="status"
             aria-label={`Search filter: ${search}`}
           >
@@ -101,7 +101,7 @@ export function AppliedFilters({
         {categoryIds.map((id) => (
           <div
             key={`cat-${id}`}
-            className="inline-flex items-center gap-1 px-3 py-1 bg-card border border-blue-300 rounded-full text-sm"
+            className="inline-flex items-center gap-1 px-3 py-1 bg-card border border-border rounded-full text-sm"
             role="status"
           >
             <span>Category: {getCategoryName(id)}</span>
@@ -119,13 +119,13 @@ export function AppliedFilters({
         {excludeAllergens.map((id) => (
           <div
             key={`allergen-${id}`}
-            className="inline-flex items-center gap-1 px-3 py-1 bg-red-50 border border-red-300 rounded-full text-sm"
+            className="inline-flex items-center gap-1 px-3 py-1 bg-destructive/10 border border-destructive/20 rounded-full text-sm"
             role="status"
           >
             <span>Excluding: {getAllergenName(id)}</span>
             <button
               onClick={() => onRemoveAllergen(id)}
-              className="ml-1 text-red-600 hover:text-red-800 transition-colors"
+              className="ml-1 text-destructive hover:text-destructive/80 transition-colors"
               aria-label={`Remove allergen filter: ${getAllergenName(id)}`}
             >
               <X size={14} />

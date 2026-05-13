@@ -16,6 +16,7 @@ import type { Product } from '@/features/products/types'
 interface ProductGridProps {
   products: Product[] | undefined
   isLoading: boolean
+  isFetching?: boolean
   isError: boolean
   error?: Error | null
   onRetry?: () => void
@@ -57,6 +58,7 @@ function SkeletonCard() {
 export function ProductGrid({
   products,
   isLoading,
+  isFetching = false,
   isError,
   error,
   onRetry,
@@ -80,15 +82,15 @@ export function ProductGrid({
   if (isError) {
     return (
       <div className="py-12 text-center">
-        <div className="inline-block p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-800 font-semibold mb-2">
+        <div className="inline-block p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <p className="text-destructive font-semibold mb-2">
             {error?.message || 'Failed to load products'}
           </p>
-          <p className="text-red-700 text-sm mb-4">Please try again later</p>
+          <p className="text-destructive/80 text-sm mb-4">Please try again later</p>
           {onRetry && (
             <button
               onClick={onRetry}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+              className="px-4 py-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg font-medium transition-colors"
               aria-label="Retry loading products"
             >
               Retry
@@ -115,14 +117,19 @@ export function ProductGrid({
 
   // Products grid
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+      role="list"
+      aria-busy={isFetching}
+    >
       {products.map((product) => (
-        <ProductCard
-          key={product.id}
-          product={product}
-          onViewDetails={onViewDetails}
-          onAddToCart={onAddToCart}
-        />
+        <div key={product.id} role="listitem">
+          <ProductCard
+            product={product}
+            onViewDetails={onViewDetails}
+            onAddToCart={onAddToCart}
+          />
+        </div>
       ))}
     </div>
   )

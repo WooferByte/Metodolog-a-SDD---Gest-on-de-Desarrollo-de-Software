@@ -71,3 +71,7 @@ logs/
 tmp/
 temp/
 *.tmp
+
+# Playwright E2E artifacts (test files are tracked; reports and results are not)
+frontend/test-results/
+frontend/playwright-report/

@@ -162,7 +162,7 @@ export function ProductDetail({
             ref={closeButtonRef}
             onClick={onClose}
             className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors z-10"
-            aria-label="Close product details"
+            aria-label="Cerrar"
             title="Press Escape to close"
           >
             <X size={24} />
@@ -188,7 +188,7 @@ export function ProductDetail({
               </h2>
 
               {/* Price */}
-              <p className="text-2xl font-bold text-blue-600 mb-4">
+              <p className="text-2xl font-bold text-primary mb-4">
                 {priceFormatted}
               </p>
 
@@ -205,7 +205,7 @@ export function ProductDetail({
                     {product.categorias.map((cat) => (
                       <span
                         key={cat.id}
-                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                        className="px-3 py-1 bg-accent text-accent-foreground rounded-full text-sm"
                       >
                         {cat.nombre}
                       </span>
@@ -216,11 +216,11 @@ export function ProductDetail({
 
               {/* Allergen Warning */}
               {hasAllergens && (
-                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex gap-2">
-                  <AlertTriangle size={20} className="text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div className="mb-4 p-3 bg-warning/10 border border-warning/30 rounded-lg flex gap-2">
+                  <AlertTriangle size={20} className="text-warning flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold text-yellow-800 text-sm">Contains Allergens</p>
-                    <p className="text-yellow-700 text-sm">
+                    <p className="font-semibold text-warning text-sm">Contains Allergens</p>
+                    <p className="text-warning/80 text-sm">
                       See ingredients list below for details
                     </p>
                   </div>
@@ -237,7 +237,7 @@ export function ProductDetail({
                         key={ingredient.id}
                         className={`text-sm p-2 rounded ${
                           ingredient.is_alergeno
-                            ? 'bg-red-50 text-red-900 border border-red-200'
+                            ? 'bg-destructive/10 text-destructive border border-destructive/20'
                             : 'text-foreground'
                         }`}
                       >
@@ -262,7 +262,7 @@ export function ProductDetail({
                   <button
                     onClick={decrementQuantity}
                     disabled={quantity <= MIN_QUANTITY}
-                    className="p-2 bg-muted hover:bg-gray-300 disabled:bg-muted rounded-lg transition-colors"
+                    className="p-2 bg-muted hover:bg-muted/80 disabled:opacity-50 rounded-lg transition-colors"
                     aria-label="Decrease quantity"
                   >
                     <Minus size={20} />
@@ -282,7 +282,7 @@ export function ProductDetail({
                   <button
                     onClick={incrementQuantity}
                     disabled={quantity >= MAX_QUANTITY}
-                    className="p-2 bg-muted hover:bg-gray-300 disabled:bg-muted rounded-lg transition-colors"
+                    className="p-2 bg-muted hover:bg-muted/80 disabled:opacity-50 rounded-lg transition-colors"
                     aria-label="Increase quantity"
                   >
                     <Plus size={20} />
@@ -293,7 +293,7 @@ export function ProductDetail({
               {/* Add to Cart Button */}
               <button
                 onClick={handleAddToCart}
-                className="w-full px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                className="w-full px-6 py-3 bg-success hover:bg-success/90 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
               >
                 <Plus size={20} />
                 Add to Cart

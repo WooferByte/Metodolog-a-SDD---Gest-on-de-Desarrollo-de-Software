@@ -68,7 +68,7 @@ export function SearchInput({
           value={localValue}
           onChange={(e) => setLocalValue(e.currentTarget.value)}
           placeholder={placeholder}
-          className="w-full pl-10 pr-10 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full pl-10 pr-10 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
           aria-label="Search products by name or description"
           aria-describedby="search-debounce-info"
         />
