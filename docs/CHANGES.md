@@ -22,24 +22,9 @@
 
 Estas inconsistencias fueron identificadas al sincronizar el estado real del repo con el mapa v3.0 y las specs originales. El orquestador debe auditar y reparar cada una **antes** de implementar `route-protection-rbac`.
 
-### INC-01 — `frontend-products-catalog-ui` archivado sin dependencias ⚠️ CRÍTICO
+### ~~INC-01~~ — `frontend-products-catalog-ui` archivado sin dependencias ✅ RESUELTO 2026-05-13
 
-**Problema**: `frontend-products-catalog-ui` fue archivado el 2026-05-09 pero sus dependencias de backend NO están implementadas:
-- `products-crud-core` ✅ archivado 2026-05-13
-- `products-categories-association` ✅ archivado 2026-05-13
-- `products-ingredients-association` ✅ archivado 2026-05-13
-- `products-catalog-public` ✅ archivado 2026-05-13
-
-El frontend del catálogo existe pero no tiene backend contra qué conectarse. Las queries de TanStack Query apuntan a endpoints que no existen. El componente compilará pero fallará en runtime con 404/500.
-
-**Impacto**: Alto — cuando se implementen los changes de backend del catálogo, el frontend archivado puede tener contratos de API incorrectos (endpoints, schemas de respuesta, campos).
-
-**Acción requerida**:
-1. Auditar el código archivado en `openspec/changes/archive/2026-05-09-frontend-products-catalog-ui/`
-2. Documentar qué endpoints asume el frontend (URLs, métodos, schemas de respuesta)
-3. Al implementar `products-catalog-public`, verificar que los endpoints coincidan exactamente con lo que el frontend espera
-4. Si hay discrepancia → crear change de corrección `fix-frontend-products-catalog-api-contract`
-5. Marcar en Engram: `engram store foodstore:deuda-tecnica '{"inc": "INC-01", ...}'`
+**Resolución**: Backend completo (products-crud-core, products-categories-association, products-ingredients-association, products-catalog-public — todos archivados 2026-05-13). Contrato de API auditado y corregido en `useProductsCatalog.ts` (2026-05-13): `busqueda→q`, `categoria→categoria_id`, `limit→size`, response envelope `{items,total,page,size,pages}`. No fue necesario crear `fix-frontend-products-catalog-api-contract`.
 
 ---
 
@@ -362,18 +347,13 @@ Tabla pivote `ProductoIngrediente` con `es_removible`. `PUT/DELETE /api/v1/produ
 
 ---
 
-### ⚠️ `frontend-products-catalog-ui`
-Archivado: `2026-05-09` — **ARCHIVADO SIN DEPENDENCIAS DE BACKEND (INC-01)**
+### ✅ `frontend-products-catalog-ui`
+Archivado: `2026-05-09` — contrato API corregido 2026-05-13 (INC-01 ✅ resuelto)
 
-Página Catalog con grid, ProductCard, filtros, paginación, skeletons, "Agregar al carrito".
+Página Catalog con grid, ProductCard, filtros, paginación, skeletons, "Agregar al carrito". Contrato corregido: `q=`, `categoria_id=`, `size/pages` envelope.
 
-**⚠️ ACCIÓN REQUERIDA al implementar `products-catalog-public`**:
-- Auditar `openspec/changes/archive/2026-05-09-frontend-products-catalog-ui/`
-- Verificar contratos de API: URLs, métodos, schemas de respuesta esperados
-- Si hay discrepancia con los endpoints reales → crear `fix-frontend-products-catalog-api-contract`
-
-**Skills**: `frontend-design`, `tailwind-design-system`
-**Dependencias originales no cumplidas**: `products-catalog-public` ❌
+**Skills**: `tailwind-design-system`, `ui-design-system`, `vercel-react-best-practices`, `frontend-state-management`
+**Dependencias**: `products-catalog-public` ✅
 
 ---
 
@@ -681,23 +661,27 @@ BLOQUE 2 — Auth (parcialmente completo)
 ├─ ✅ rbac-roles-management
 ├─ ✅ route-protection-rbac
 ├─ ✅ frontend-navigation-by-role
-├─ ❌ frontend-route-guards-auth     ← PRÓXIMO
-└─ ❌ frontend-error-handling-global
+├─ ✅ frontend-route-guards-auth
+└─ ✅ frontend-error-handling-global
+
+BLOQUE 2 — Layout Base
+├─ ✅ frontend-layout-components-shared
+├─ ✅ frontend-refactor-apply-skills
+└─ ✅ frontend-nav-responsive-fix
 
 BLOQUE 3 — Layout + Catálogo
-├─ ❌ frontend-layout-components-shared
-├─ ❌ categories-crud-hierarchical
-├─ ❌ ingredients-crud-allergens
+├─ ✅ categories-crud-hierarchical
+├─ ✅ ingredients-crud-allergens
 ├─ ✅ products-crud-core
 ├─ ✅ products-categories-association
 ├─ ✅ products-ingredients-association
 ├─ ✅ products-catalog-public
-└─ ⚠️  frontend-products-catalog-ui  ← AUDITAR al llegar aquí (INC-01)
+└─ ✅ frontend-products-catalog-ui   (INC-01 resuelto 2026-05-13)
 
 BLOQUE 4 — Perfil + Direcciones + Carrito
-├─ ❌ backend-user-profile-endpoints
+├─ ❌ backend-user-profile-endpoints  ← PRÓXIMO
 ├─ ❌ frontend-user-profile-ui
-├─ ❌ addresses-crud-by-user         ← verificar INC-02
+├─ ❌ addresses-crud-by-user
 ├─ ❌ frontend-addresses-ui
 ├─ ❌ frontend-shopping-cart-zustand
 └─ ❌ frontend-shopping-cart-ui
@@ -744,6 +728,7 @@ BLOQUE 9 — Entrega Final
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 3.2 | 2026-05-13 | INC-01 resuelto. Árbol de bloques sincronizado con estado real. frontend-refactor-apply-skills + frontend-nav-responsive-fix agregados. PRÓXIMO: backend-user-profile-endpoints. |
 | 3.1 | 2026-05-11 | Estado real sincronizado con OPSX archive. 6 inconsistencias documentadas (INC-01 a INC-06). BLOQUE 0 de reparación agregado. Nuevos changes: `frontend-widgets-layer`, `frontend-patterns-hooks-optimistic`, `deploy-production`. Corrección naming `es_predeterminada`. `INTEGER[]` explicitado en pedidos. `frontend-products-catalog-ui` marcado ⚠️. |
 | 3.0 | 2026-05-11 | Análisis de gaps completo. Changes nuevos: checkout-pre-validation, backend-admin-users-endpoints, system-configuration-backend, frontend-system-configuration-ui. |
 | 2.0 | 2026-04-24 | backend-dev-infrastructure agregado |
