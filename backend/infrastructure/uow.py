@@ -18,6 +18,7 @@ from core.models import (
     Categoria, Producto, Ingrediente, ProductoCategoria, ProductoIngrediente,
     EstadoPedido, FormaPago, Pedido, DetallePedido, HistorialEstadoPedido, Pago
 )
+from categorias.repository import CategoriaRepository
 from core.database import get_db
 
 
@@ -80,10 +81,10 @@ class UnitOfWork:
         return self._repositories["direcciones_entrega"]
 
     @property
-    def categorias(self) -> BaseRepository[Categoria]:
-        """Repository for Categoria entity."""
+    def categorias(self) -> CategoriaRepository:
+        """Repository for Categoria entity (CategoriaRepository with CTE tree support)."""
         if "categorias" not in self._repositories:
-            self._repositories["categorias"] = BaseRepository(self.session, Categoria)
+            self._repositories["categorias"] = CategoriaRepository(self.session)
         return self._repositories["categorias"]
 
     @property

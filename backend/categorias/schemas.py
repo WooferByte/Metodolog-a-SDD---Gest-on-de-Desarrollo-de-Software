@@ -73,3 +73,15 @@ class CategoriaResponse(BaseModel):
     creado_en: datetime
 
     model_config = {"from_attributes": True}
+
+
+class CategoriaTreeItem(CategoriaResponse):
+    """
+    Category representation enriched with tree depth.
+
+    Used by GET /categorias/tree and GET /categorias/{id}/subtree.
+    The depth field allows frontends to render indentation without
+    re-computing the hierarchy client-side.
+    """
+
+    depth: int
