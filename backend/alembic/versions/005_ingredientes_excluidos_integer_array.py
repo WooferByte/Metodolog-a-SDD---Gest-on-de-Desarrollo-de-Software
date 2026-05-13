@@ -17,30 +17,31 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # PostgreSQL doesn't support subqueries in ALTER COLUMN USING.
+    # Use add-column + UPDATE (subqueries allowed) + drop + rename instead.
+    op.execute("ALTER TABLE detalle_pedido ADD COLUMN ingredientes_excluidos_new INTEGER[]")
     op.execute(
         """
-        ALTER TABLE detalle_pedido
-          ALTER COLUMN ingredientes_excluidos TYPE INTEGER[]
-          USING CASE
-            WHEN ingredientes_excluidos IS NULL THEN NULL
-            WHEN ingredientes_excluidos = '' THEN '{}'::INTEGER[]
-            ELSE (
-              SELECT array_agg(x::integer)
-              FROM json_array_elements_text(ingredientes_excluidos::json) AS t(x)
-            )
-          END
-    """
+        UPDATE detalle_pedido
+        SET ingredientes_excluidos_new = (
+          SELECT array_agg(x::integer)
+          FROM json_array_elements_text(ingredientes_excluidos::json) AS t(x)
+        )
+        WHERE ingredientes_excluidos IS NOT NULL AND ingredientes_excluidos <> ''
+        """
     )
+    op.execute("ALTER TABLE detalle_pedido DROP COLUMN ingredientes_excluidos")
+    op.execute("ALTER TABLE detalle_pedido RENAME COLUMN ingredientes_excluidos_new TO ingredientes_excluidos")
 
 
 def downgrade() -> None:
+    op.execute("ALTER TABLE detalle_pedido ADD COLUMN ingredientes_excluidos_old VARCHAR")
     op.execute(
         """
-        ALTER TABLE detalle_pedido
-          ALTER COLUMN ingredientes_excluidos TYPE VARCHAR
-          USING CASE
-            WHEN ingredientes_excluidos IS NULL THEN NULL
-            ELSE array_to_json(ingredientes_excluidos)::text
-          END
-    """
+        UPDATE detalle_pedido
+        SET ingredientes_excluidos_old = array_to_json(ingredientes_excluidos)::text
+        WHERE ingredientes_excluidos IS NOT NULL
+        """
     )
+    op.execute("ALTER TABLE detalle_pedido DROP COLUMN ingredientes_excluidos")
+    op.execute("ALTER TABLE detalle_pedido RENAME COLUMN ingredientes_excluidos_old TO ingredientes_excluidos")
