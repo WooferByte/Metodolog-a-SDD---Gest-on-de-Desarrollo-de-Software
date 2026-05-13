@@ -1,15 +1,15 @@
 ## ADDED Requirements
 
 ### Requirement: List active products
-The system SHALL return a paginated list of active products (eliminado_en IS NULL) ordered by nombre. Anonymous users SHALL receive only active products. Users with STOCK or ADMIN role MAY request `?incluir_eliminados=true` to receive all products including soft-deleted ones.
+The system SHALL return a paginated envelope `{ "items": list[ProductoResponse], "total": int, "page": int, "size": int, "pages": int }` for `GET /api/v1/productos`. Accepts `?page=` (default=1), `?size=` (default=20, max=100), `?q=` (ILIKE on nombre/descripcion), `?categoria_id=` (filter by category), `?excluirAlergenos=` (CSV of ingrediente IDs). Public list filters `disponible=true AND eliminado_en IS NULL`. STOCK/ADMIN may use `?incluir_eliminados=true`.
 
-#### Scenario: Public list returns only active products
+#### Scenario: Public list returns only active available products
 - **WHEN** GET /api/v1/productos is called without authentication
-- **THEN** response is 200 with a list of products where eliminado_en IS NULL
+- **THEN** response is 200 with paginated envelope where all items have eliminado_en IS NULL and disponible=true
 
 #### Scenario: Admin can request deleted products
 - **WHEN** GET /api/v1/productos?incluir_eliminados=true is called with a STOCK or ADMIN token
-- **THEN** response is 200 with all products including those where eliminado_en IS NOT NULL
+- **THEN** response is 200 with paginated envelope containing all products including soft-deleted ones
 
 #### Scenario: Client role cannot request deleted products
 - **WHEN** GET /api/v1/productos?incluir_eliminados=true is called with a CLIENT token
