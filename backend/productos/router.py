@@ -34,6 +34,7 @@ from productos import service
 from productos.schemas import (
     CategoriaCompacta,
     IngredienteCompacto,
+    PaginatedProductosResponse,
     ProductoCategoriaSetRequest,
     ProductoCreate,
     ProductoIngredienteSetRequest,
@@ -86,10 +87,13 @@ router = APIRouter(prefix="/productos", tags=["Productos"])
 
 @router.get(
     "/",
-    response_model=list[ProductoResponse],
+    response_model=PaginatedProductosResponse,
     summary="List products",
     description=(
-        "Returns a paginated list of active products (excludes soft-deleted). "
+        "Returns a paginated envelope of active products (excludes soft-deleted). "
+        "Add ?q=pizza to search nombre/descripción (ILIKE). "
+        "Add ?categoria_id=3 to filter by category. "
+        "Add ?page=1&size=20 for pagination (default page=1, size=20, max size=100). "
         "Add ?incluir_eliminados=true with STOCK or ADMIN role to see all products. "
         "Add ?excluirAlergenos=1,3,7 (comma-separated ingredient IDs, max 50) to filter out "
         "products containing any of those allergen ingredients. "
@@ -97,6 +101,18 @@ router = APIRouter(prefix="/productos", tags=["Productos"])
     ),
 )
 async def list_productos(
+    q: Optional[str] = Query(
+        default=None,
+        max_length=200,
+        description="ILIKE search on nombre and descripción.",
+    ),
+    categoria_id: Optional[int] = Query(
+        default=None,
+        ge=1,
+        description="Filter products by category ID.",
+    ),
+    page: int = Query(default=1, ge=1, description="Page number (1-based)."),
+    size: int = Query(default=20, ge=1, le=100, description="Items per page (max 100)."),
     skip: int = 0,
     limit: int = 100,
     incluir_eliminados: bool = False,
@@ -107,8 +123,8 @@ async def list_productos(
     ),
     uow: UnitOfWork = Depends(get_uow),
     current_user: Optional[Usuario] = Depends(get_optional_user),
-) -> list[ProductoResponse]:
-    """List active products with pagination. incluir_eliminados=true requires STOCK/ADMIN."""
+) -> PaginatedProductosResponse:
+    """List active products with search, category filter, and pagination envelope."""
     # Parse excluirAlergenos query param — CSV string → list[int]
     alergeno_ids: List[int] = []
     if excluirAlergenos:
@@ -135,14 +151,22 @@ async def list_productos(
                 },
             )
 
+    # Canonical page/size params take priority; compute skip/limit from them
+    computed_skip = (page - 1) * size
+    computed_limit = size
+
     async with uow:
         return await service.list_productos(
             uow,
-            skip=skip,
-            limit=limit,
+            skip=computed_skip,
+            limit=computed_limit,
             incluir_eliminados=incluir_eliminados,
             current_user=current_user,
             excluir_alergenos=alergeno_ids,
+            q=q,
+            categoria_id=categoria_id,
+            page=page,
+            size=size,
         )
 
 

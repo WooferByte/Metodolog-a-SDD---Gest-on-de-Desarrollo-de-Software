@@ -130,3 +130,16 @@ class ProductoResponse(BaseModel):
     ingredientes: List[IngredienteCompacto] = []
 
     model_config = {"from_attributes": True}
+
+
+class PaginatedProductosResponse(BaseModel):
+    """Paginated envelope for product list responses.
+
+    Follows the spec-mandated structure: { items, total, page, size, pages }.
+    """
+
+    items: List[ProductoResponse]
+    total: int
+    page: int
+    size: int
+    pages: int

@@ -22,7 +22,9 @@ Adds:
 - remove_ingrediente(producto_id, ingrediente_id): delete a single pivot row
 """
 
-from sqlalchemy import delete, select
+from typing import Optional
+
+from sqlalchemy import delete, func, or_, select
 
 from core.models import Categoria, Ingrediente, Producto, ProductoCategoria, ProductoIngrediente
 from infrastructure.repositories.base_repository import BaseRepository
@@ -39,64 +41,59 @@ class ProductoRepository(BaseRepository[Producto]):
     def __init__(self, session) -> None:
         super().__init__(session, Producto)
 
-    async def list_active(
+    def _build_base_stmt(
         self,
-        skip: int = 0,
-        limit: int = 100,
         incluir_eliminados: bool = False,
-    ) -> list[Producto]:
+        q: Optional[str] = None,
+        categoria_id: Optional[int] = None,
+        alergeno_ids: list[int] = [],
+    ):
         """
-        Return paginated list of products ordered by nombre.
+        Build the shared base SELECT statement with all active filters applied.
 
-        Uses ORM select (NOT raw SQL) to correctly reconstruct SQLModel objects.
+        Called by both list_active and count_active to guarantee identical WHERE
+        clauses (DRY — avoids count/list divergence bugs).
+
+        Applies:
+        - eliminado_en IS NULL (always)
+        - disponible = true when not incluir_eliminados (D-05: RN-CA08 correctness fix)
+        - ILIKE on nombre OR descripcion if q is non-empty (D-01)
+        - JOIN on ProductoCategoria + DISTINCT if categoria_id is given (D-02)
+        - NOT IN subquery for alergeno exclusion if alergeno_ids is non-empty
 
         Args:
-            skip: Pagination offset.
-            limit: Maximum records to return (capped at 1000).
-            incluir_eliminados: If False (default), only return products with
-                eliminado_en IS NULL. If True, return all products including
-                soft-deleted ones (caller must enforce role check before passing True).
+            incluir_eliminados: Include soft-deleted products (caller enforces role).
+            q: Optional ILIKE search string for nombre/descripcion.
+            categoria_id: Optional category ID filter via pivot JOIN.
+            alergeno_ids: Allergen ingredient IDs to exclude (NOT IN subquery).
 
         Returns:
-            List of Producto instances ordered by nombre.
+            SQLAlchemy Select statement (no OFFSET/LIMIT applied).
         """
         stmt = select(Producto).order_by(Producto.nombre)
 
         if not incluir_eliminados:
             stmt = stmt.where(Producto.eliminado_en.is_(None))
+            # D-05: public list filters disponible=true per RN-CA08
+            stmt = stmt.where(Producto.disponible.is_(True))
 
-        stmt = stmt.offset(skip).limit(min(limit, 1000))
+        if q:
+            pattern = f"%{q.strip()}%"
+            stmt = stmt.where(
+                or_(
+                    Producto.nombre.ilike(pattern),
+                    Producto.descripcion.ilike(pattern),
+                )
+            )
 
-        result = await self.session.execute(stmt)
-        return list(result.scalars().all())
-
-    async def list_active_excluding_alergenos(
-        self,
-        skip: int = 0,
-        limit: int = 100,
-        alergeno_ids: list[int] = [],
-    ) -> list[Producto]:
-        """
-        Return paginated list of active products that do NOT contain ANY of the
-        specified allergen ingredient IDs.
-
-        Uses a NOT-IN subquery against producto_ingrediente for correctness.
-        Returns all active products if alergeno_ids is empty.
-
-        Args:
-            skip: Pagination offset.
-            limit: Maximum records to return (capped at 1000).
-            alergeno_ids: List of ingrediente IDs to exclude. Products that have
-                at least one of these ingredients are excluded from the result.
-
-        Returns:
-            List of Producto instances ordered by nombre.
-        """
-        stmt = (
-            select(Producto)
-            .where(Producto.eliminado_en.is_(None))
-            .order_by(Producto.nombre)
-        )
+        if categoria_id is not None:
+            # D-02: JOIN on pivot table + DISTINCT to avoid duplicate rows
+            stmt = (
+                stmt
+                .join(ProductoCategoria, ProductoCategoria.producto_id == Producto.id)
+                .where(ProductoCategoria.categoria_id == categoria_id)
+                .distinct()
+            )
 
         if alergeno_ids:
             # Subquery: product IDs that contain at least one allergen ingredient
@@ -108,9 +105,80 @@ class ProductoRepository(BaseRepository[Producto]):
             )
             stmt = stmt.where(Producto.id.notin_(subq))
 
+        return stmt
+
+    async def list_active(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        incluir_eliminados: bool = False,
+        q: Optional[str] = None,
+        categoria_id: Optional[int] = None,
+        alergeno_ids: list[int] = [],
+    ) -> list[Producto]:
+        """
+        Return paginated list of products with all optional filters applied.
+
+        Unified method replacing the former list_active + list_active_excluding_alergenos
+        (D-04). Supports text search (q), category filter (categoria_id), allergen
+        exclusion (alergeno_ids), and soft-delete inclusion (incluir_eliminados).
+
+        Args:
+            skip: Pagination offset.
+            limit: Maximum records to return (capped at 1000).
+            incluir_eliminados: If False (default), only return products with
+                eliminado_en IS NULL and disponible = true (RN-CA08).
+            q: Optional ILIKE search string for nombre/descripcion.
+            categoria_id: Optional category ID filter.
+            alergeno_ids: List of ingrediente IDs to exclude.
+
+        Returns:
+            List of Producto instances ordered by nombre.
+        """
+        stmt = self._build_base_stmt(
+            incluir_eliminados=incluir_eliminados,
+            q=q,
+            categoria_id=categoria_id,
+            alergeno_ids=alergeno_ids,
+        )
         stmt = stmt.offset(skip).limit(min(limit, 1000))
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
+
+    async def count_active(
+        self,
+        incluir_eliminados: bool = False,
+        q: Optional[str] = None,
+        categoria_id: Optional[int] = None,
+        alergeno_ids: list[int] = [],
+    ) -> int:
+        """
+        Return the total count of products matching the given filters.
+
+        Uses the same WHERE clauses as list_active (via _build_base_stmt) without
+        OFFSET/LIMIT, wrapped in SELECT COUNT(DISTINCT p.id) for correctness when
+        JOIN + DISTINCT is involved.
+
+        Args:
+            incluir_eliminados: Include soft-deleted products.
+            q: Optional ILIKE search string.
+            categoria_id: Optional category ID filter.
+            alergeno_ids: Allergen ingredient IDs to exclude.
+
+        Returns:
+            Integer count of matching products.
+        """
+        base = self._build_base_stmt(
+            incluir_eliminados=incluir_eliminados,
+            q=q,
+            categoria_id=categoria_id,
+            alergeno_ids=alergeno_ids,
+        )
+        # Wrap as subquery and count — ensures DISTINCT is respected
+        subq = base.subquery()
+        count_stmt = select(func.count()).select_from(subq)
+        result = await self.session.execute(count_stmt)
+        return result.scalar_one()
 
 
 class ProductoCategoriaRepository:

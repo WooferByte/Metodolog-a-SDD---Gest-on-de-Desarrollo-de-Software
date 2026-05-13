@@ -662,34 +662,38 @@ class TestListProductosExcluirAlergenos:
     """GET /api/v1/productos/?excluirAlergenos=... — allergen filter."""
 
     def test_sin_parametro_retorna_lista_normal(self):
-        """Without excluirAlergenos param, normal list_active is called."""
+        """Without excluirAlergenos param, returns paginated envelope."""
         from main import app
         from infrastructure.uow import get_uow
 
         producto = _make_producto(1, "Sandwich")
+        uow_instance = _make_uow(producto=producto)
+        uow_instance.productos.list_active = AsyncMock(return_value=[producto])
+        uow_instance.productos.count_active = AsyncMock(return_value=1)
 
         async def _fake_uow():
-            return _make_uow(producto=producto)
+            return uow_instance
 
         app.dependency_overrides[get_uow] = _fake_uow
         try:
             with TestClient(app, raise_server_exceptions=False) as client:
                 response = client.get("/api/v1/productos/")
             assert response.status_code == 200
-            assert isinstance(response.json(), list)
+            data = response.json()
+            assert "items" in data
+            assert "total" in data
         finally:
             app.dependency_overrides.clear()
 
     def test_con_ids_validos_retorna_200(self):
-        """excluirAlergenos with valid IDs → 200."""
+        """excluirAlergenos with valid IDs → 200 with envelope."""
         from main import app
         from infrastructure.uow import get_uow
 
         producto = _make_producto(1, "Sin Gluten")
         uow_instance = _make_uow(producto=producto)
-        uow_instance.productos.list_active_excluding_alergenos = AsyncMock(
-            return_value=[producto]
-        )
+        uow_instance.productos.list_active = AsyncMock(return_value=[producto])
+        uow_instance.productos.count_active = AsyncMock(return_value=1)
 
         async def _fake_uow():
             return uow_instance
@@ -699,6 +703,8 @@ class TestListProductosExcluirAlergenos:
             with TestClient(app, raise_server_exceptions=False) as client:
                 response = client.get("/api/v1/productos/?excluirAlergenos=1,3,7")
             assert response.status_code == 200
+            data = response.json()
+            assert "items" in data
         finally:
             app.dependency_overrides.clear()
 

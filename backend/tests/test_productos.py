@@ -96,23 +96,31 @@ def _make_user(roles: list[str]) -> MagicMock:
 
 
 class TestListProductos:
-    """list_productos delegates to repository correctly."""
+    """list_productos delegates to repository correctly and returns PaginatedProductosResponse."""
 
     @pytest.mark.asyncio
     async def test_list_productos_returns_active_by_default(self):
-        """Service delegates to repo.list_active with incluir_eliminados=False."""
+        """Service delegates to repo.list_active and returns PaginatedProductosResponse."""
         from productos.service import list_productos
+        from productos.schemas import PaginatedProductosResponse
 
         products = [_make_producto(1, "A"), _make_producto(2, "B")]
 
         repo = MagicMock()
         repo.list_active = AsyncMock(return_value=products)
+        repo.count_active = AsyncMock(return_value=2)
         uow = _make_uow(repo)
 
-        result = await list_productos(uow, skip=0, limit=100, incluir_eliminados=False)
+        result = await list_productos(uow, skip=0, limit=20, incluir_eliminados=False, page=1, size=20)
 
-        assert result == products
-        repo.list_active.assert_awaited_once_with(skip=0, limit=100, incluir_eliminados=False)
+        assert isinstance(result, PaginatedProductosResponse)
+        assert len(result.items) == 2
+        assert result.items[0].id == 1
+        assert result.items[1].id == 2
+        assert result.total == 2
+        assert result.page == 1
+        assert result.size == 20
+        assert result.pages == 1
 
     @pytest.mark.asyncio
     async def test_list_productos_con_eliminados_sin_autenticacion_403(self):
@@ -143,23 +151,25 @@ class TestListProductos:
 
     @pytest.mark.asyncio
     async def test_list_productos_con_eliminados_stock_200(self):
-        """list_productos with incluir_eliminados=True and STOCK role returns all products."""
+        """list_productos with incluir_eliminados=True and STOCK role returns envelope."""
         from productos.service import list_productos
+        from productos.schemas import PaginatedProductosResponse
 
         products = [_make_producto(1), _make_producto(2)]
         repo = MagicMock()
         repo.list_active = AsyncMock(return_value=products)
+        repo.count_active = AsyncMock(return_value=2)
         uow = _make_uow(repo)
         stock_user = _make_user(["STOCK"])
 
         result = await list_productos(
-            uow, incluir_eliminados=True, current_user=stock_user
+            uow, incluir_eliminados=True, current_user=stock_user, skip=0, limit=20, page=1, size=20
         )
 
-        assert result == products
-        repo.list_active.assert_awaited_once_with(
-            skip=0, limit=100, incluir_eliminados=True
-        )
+        assert isinstance(result, PaginatedProductosResponse)
+        assert len(result.items) == 2
+        assert result.items[0].id == 1
+        assert result.total == 2
 
 
 class TestGetProductoById:
@@ -345,14 +355,18 @@ class TestGetProductosPublic:
     """GET /api/v1/productos/ must be accessible without authentication."""
 
     def test_get_productos_public(self):
-        """GET /api/v1/productos/ → 200 without any Authorization header."""
+        """GET /api/v1/productos/ → 200 without any Authorization header, returns envelope."""
         from main import app
         from infrastructure.uow import get_uow
         from productos.router import get_optional_user
+        from productos.schemas import PaginatedProductosResponse
+
+        _envelope = PaginatedProductosResponse(items=[], total=0, page=1, size=20, pages=0)
 
         async def _fake_uow():
             uow = _make_uow()
             uow.productos.list_active = AsyncMock(return_value=[])
+            uow.productos.count_active = AsyncMock(return_value=0)
             return uow
 
         async def _no_user():
@@ -361,10 +375,16 @@ class TestGetProductosPublic:
         app.dependency_overrides[get_uow] = _fake_uow
         app.dependency_overrides[get_optional_user] = _no_user
         try:
-            with patch("productos.service.list_productos", new=AsyncMock(return_value=[])):
+            with patch("productos.service.list_productos", new=AsyncMock(return_value=_envelope)):
                 with TestClient(app, raise_server_exceptions=False) as client:
                     response = client.get("/api/v1/productos/")
                 assert response.status_code == 200
+                data = response.json()
+                assert "items" in data
+                assert "total" in data
+                assert "page" in data
+                assert "size" in data
+                assert "pages" in data
         finally:
             app.dependency_overrides.clear()
 

@@ -13,9 +13,12 @@ from fastapi import HTTPException, status
 
 from core.models import Categoria, Ingrediente, Producto, Usuario
 from infrastructure.uow import UnitOfWork
+import math
+
 from productos.schemas import (
     CategoriaCompacta,
     IngredienteCompacto,
+    PaginatedProductosResponse,
     ProductoCategoriaSetRequest,
     ProductoCreate,
     ProductoIngredienteSetRequest,
@@ -70,24 +73,32 @@ async def list_productos(
     incluir_eliminados: bool = False,
     current_user: Optional[Usuario] = None,
     excluir_alergenos: list[int] = [],
-) -> list[Producto]:
+    q: Optional[str] = None,
+    categoria_id: Optional[int] = None,
+    page: int = 1,
+    size: int = 20,
+) -> PaginatedProductosResponse:
     """
-    Return a paginated list of products ordered by nombre.
+    Return a paginated envelope of products ordered by nombre.
 
     If incluir_eliminados=True, enforces that the caller has STOCK or ADMIN role.
-    If excluir_alergenos is non-empty, filters products that contain any of those
-    allergen ingredient IDs.
+    Supports text search (q), category filter (categoria_id), and allergen exclusion.
+    Returns PaginatedProductosResponse { items, total, page, size, pages }.
 
     Args:
         uow: Unit of Work.
-        skip: Pagination offset.
-        limit: Maximum records to return.
+        skip: Raw offset (legacy — use page/size for canonical pagination).
+        limit: Raw limit (legacy — use page/size for canonical pagination).
         incluir_eliminados: If True, include soft-deleted products (RN-CA10 — requires STOCK or ADMIN).
         current_user: Authenticated user (may be None for public requests).
         excluir_alergenos: List of ingrediente IDs to exclude (allergen filter).
+        q: Optional ILIKE search string for nombre/descripcion.
+        categoria_id: Optional category ID filter.
+        page: 1-based page number (used to derive skip when provided via router).
+        size: Page size (used as limit when provided via router).
 
     Returns:
-        List of Producto instances.
+        PaginatedProductosResponse with items, total, page, size, pages.
 
     Raises:
         HTTPException 403 if incluir_eliminados=True and user lacks STOCK/ADMIN role.
@@ -116,17 +127,30 @@ async def list_productos(
                 },
             )
 
-    if excluir_alergenos:
-        return await uow.productos.list_active_excluding_alergenos(
-            skip=skip,
-            limit=limit,
-            alergeno_ids=excluir_alergenos,
-        )
-
-    return await uow.productos.list_active(
+    productos = await uow.productos.list_active(
         skip=skip,
         limit=limit,
         incluir_eliminados=incluir_eliminados,
+        q=q,
+        categoria_id=categoria_id,
+        alergeno_ids=excluir_alergenos,
+    )
+
+    total = await uow.productos.count_active(
+        incluir_eliminados=incluir_eliminados,
+        q=q,
+        categoria_id=categoria_id,
+        alergeno_ids=excluir_alergenos,
+    )
+
+    pages = math.ceil(total / size) if size > 0 else 0
+
+    return PaginatedProductosResponse(
+        items=productos,
+        total=total,
+        page=page,
+        size=size,
+        pages=pages,
     )
 
 
