@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-13 (backend-user-profile-endpoints archivado — EPIC 06 backend completo)
+> **Última actualización**: 2026-05-13 (frontend-user-profile-ui archivado — EPIC 06 completo)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -369,12 +369,13 @@ Archivado: `2026-05-13-backend-user-profile-endpoints`
 
 ---
 
-### ❌ `frontend-user-profile-ui`
+### ✅ `frontend-user-profile-ui`
+Archivado: `2026-05-13-frontend-user-profile-ui`
 
-Página MyProfile. Form editar nombre/teléfono. Cambio de contraseña. Última sesión.
+Página Profile. ProfileInfo (read-only, dl/dt/dd, Skeleton, Badge roles). EditProfileForm (dirty check, validación client-side, aria-live). ChangePasswordForm (show/hide toggle aria-pressed, countdown logout). 3 hooks TanStack Query (GET/PUT/POST 204). 5 E2E Playwright. Solo tokens semánticos, ARIA completo, responsive. 225/225 vitest.
 
-**Skills**: `frontend-design`, `tailwind-design-system`
-**Dependencias**: `backend-user-profile-endpoints`, `frontend-layout-components-shared`
+**Skills**: `tailwind-design-system`, `ui-design-system`, `vercel-react-best-practices`, `frontend-state-management`, `zustand-state-management`, `testing-e2e-playwright`
+**Dependencias**: `backend-user-profile-endpoints` ✅, `frontend-layout-components-shared` ✅
 
 ---
 
@@ -681,7 +682,8 @@ BLOQUE 3 — Layout + Catálogo
 
 BLOQUE 4 — Perfil + Direcciones + Carrito
 ├─ ✅ backend-user-profile-endpoints
-├─ ❌ frontend-user-profile-ui        ← PRÓXIMO
+├─ ✅ frontend-user-profile-ui
+├─ ❌ addresses-crud-by-user          ← PRÓXIMO
 ├─ ❌ frontend-user-profile-ui
 ├─ ❌ addresses-crud-by-user
 ├─ ❌ frontend-addresses-ui
