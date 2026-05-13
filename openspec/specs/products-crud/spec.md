@@ -16,7 +16,7 @@ The system SHALL return a paginated list of active products (eliminado_en IS NUL
 - **THEN** response is 403 Forbidden (RFC 7807)
 
 ### Requirement: Get product by ID
-The system SHALL return a single active product by primary key. Soft-deleted products SHALL return 404 for unauthenticated or CLIENT users. The response SHALL include a `categorias` field containing the list of categories (id, nombre, padre_id) currently associated with the product. If the product has no categories, `categorias` SHALL be an empty list.
+The system SHALL return a single active product by primary key. Soft-deleted products SHALL return 404 for unauthenticated or CLIENT users. The response SHALL include a `categorias` field (list of CategoriaCompacta: id, nombre, padre_id) and an `ingredientes` field (list of IngredienteCompacto: id, nombre, es_alergeno, es_removible). Both fields SHALL be empty lists if no associations exist. No authentication required.
 
 #### Scenario: Existing product returns 200
 - **WHEN** GET /api/v1/productos/{id} is called with a valid product ID

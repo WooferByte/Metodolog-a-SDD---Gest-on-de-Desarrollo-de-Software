@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-13 (products-categories-association archivado)
+> **Última actualización**: 2026-05-13 (products-ingredients-association archivado)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -27,7 +27,7 @@ Estas inconsistencias fueron identificadas al sincronizar el estado real del rep
 **Problema**: `frontend-products-catalog-ui` fue archivado el 2026-05-09 pero sus dependencias de backend NO están implementadas:
 - `products-crud-core` ✅ archivado 2026-05-13
 - `products-categories-association` ✅ archivado 2026-05-13
-- `products-ingredients-association` ❌ pendiente
+- `products-ingredients-association` ✅ archivado 2026-05-13
 - `products-catalog-public` ❌ pendiente
 
 El frontend del catálogo existe pero no tiene backend contra qué conectarse. Las queries de TanStack Query apuntan a endpoints que no existen. El componente compilará pero fallará en runtime con 404/500.
@@ -326,12 +326,13 @@ Tabla pivote `ProductoCategoria`. `PUT/DELETE /api/v1/productos/:id/categorias`.
 
 ---
 
-### ❌ `products-ingredients-association`
+### ✅ `products-ingredients-association` (archivado 2026-05-13)
 
 Tabla pivote `ProductoIngrediente` con `es_removible`. `PUT/DELETE /api/v1/productos/:id/ingredientes`. Filtro `?excluirAlergenos=1,3,7`.
 
 **Skills**: `fastapi-python`, `postgres`
 **Dependencias**: `products-crud-core`, `ingredients-crud-allergens`
+**Evidencia**: `openspec/changes/archive/2026-05-13-products-ingredients-association/`
 
 ---
 
@@ -672,7 +673,7 @@ BLOQUE 3 — Layout + Catálogo
 ├─ ❌ ingredients-crud-allergens
 ├─ ✅ products-crud-core
 ├─ ✅ products-categories-association
-├─ ❌ products-ingredients-association
+├─ ✅ products-ingredients-association
 ├─ ❌ products-catalog-public
 └─ ⚠️  frontend-products-catalog-ui  ← AUDITAR al llegar aquí (INC-01)
 
