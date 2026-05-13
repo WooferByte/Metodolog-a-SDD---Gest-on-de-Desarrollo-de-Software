@@ -37,8 +37,9 @@ const mockPerfil: PerfilData = {
   email: 'cliente@test.com',
   nombre: 'Cliente Test',
   telefono: '1234567890',
-  roles: ['CLIENT'],
-  creado_en: '2025-01-01T00:00:00Z',
+
+  creado_en: '2024-01-01T00:00:00',
+  activo: true,
 }
 
 // ── Helper: create wrapper with fresh QueryClient per test ─────────────────────

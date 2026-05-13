@@ -11,9 +11,11 @@ export interface PerfilData {
   id: number
   email: string
   nombre: string
+  apellido?: string | null
   telefono: string | null
-  roles: string[]
+  activo: boolean
   creado_en: string // ISO 8601
+  // Nota: roles NO vienen de la API — vienen del JWT vía authStore
 }
 
 /**

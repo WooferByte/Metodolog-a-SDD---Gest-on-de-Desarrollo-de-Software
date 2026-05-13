@@ -36,8 +36,9 @@ function formatDate(isoString: string): string {
 }
 
 export function ProfileInfo({ perfil, isLoading }: ProfileInfoProps) {
-  // Email from authStore — already available client-side, no duplication needed
+  // Email y roles desde authStore — ya disponibles del JWT, sin duplicar estado del servidor
   const email = useAuthStore((s) => s.user?.email)
+  const roles = useAuthStore((s) => s.user?.roles ?? [])
 
   return (
     <section aria-labelledby="profile-info-heading">
@@ -85,16 +86,16 @@ export function ProfileInfo({ perfil, isLoading }: ProfileInfoProps) {
                 </dd>
               </div>
 
-              {/* Roles */}
+              {/* Roles — desde authStore (JWT), no desde la API del perfil */}
               <div className="flex flex-col gap-1.5">
                 <dt className="text-muted-foreground font-medium">Roles</dt>
                 <dd>
                   <ul aria-label="Roles" className="flex flex-wrap gap-2 list-none p-0 m-0">
-                    {perfil?.roles.map((role) => (
+                    {roles.length > 0 ? roles.map((role) => (
                       <li key={role}>
                         <Badge variant={getBadgeVariant(role)}>{role}</Badge>
                       </li>
-                    )) ?? (
+                    )) : (
                       <li>
                         <span className="text-muted-foreground">—</span>
                       </li>
