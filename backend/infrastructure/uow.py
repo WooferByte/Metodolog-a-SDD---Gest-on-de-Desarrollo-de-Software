@@ -20,6 +20,7 @@ from core.models import (
 )
 from categorias.repository import CategoriaRepository
 from ingredientes.repository import IngredienteRepository
+from productos.repository import ProductoRepository
 from core.database import get_db
 
 
@@ -89,10 +90,10 @@ class UnitOfWork:
         return self._repositories["categorias"]
 
     @property
-    def productos(self) -> BaseRepository[Producto]:
-        """Repository for Producto entity."""
+    def productos(self) -> ProductoRepository:
+        """Repository for Producto entity (ProductoRepository with list_active support)."""
         if "productos" not in self._repositories:
-            self._repositories["productos"] = BaseRepository(self.session, Producto)
+            self._repositories["productos"] = ProductoRepository(self.session)
         return self._repositories["productos"]
 
     @property

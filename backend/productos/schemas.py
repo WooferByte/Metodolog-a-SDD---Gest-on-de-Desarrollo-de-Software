@@ -51,6 +51,12 @@ class ProductoUpdate(BaseModel):
         return v
 
 
+class ProductoStockUpdate(BaseModel):
+    """Schema for stock-only patch endpoint."""
+
+    stock_cantidad: int = Field(ge=0)
+
+
 class ProductoResponse(BaseModel):
     """Public product representation."""
 
