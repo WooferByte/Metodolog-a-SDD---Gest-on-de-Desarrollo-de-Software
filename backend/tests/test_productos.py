@@ -68,6 +68,12 @@ def _make_uow(repo: MagicMock | None = None) -> MagicMock:
     pc_repo.get_categorias = AsyncMock(return_value=[])
     uow.producto_categorias = pc_repo
 
+    # producto_ingredientes repo — needed since get_producto_by_id now enriches with ingredients
+    pi_repo = MagicMock()
+    pi_repo.get_ingredientes = AsyncMock(return_value=[])
+    pi_repo.list_active_excluding_alergenos = AsyncMock(return_value=[])
+    uow.producto_ingredientes = pi_repo
+
     # Async context manager wiring
     uow.__aenter__ = AsyncMock(return_value=uow)
     uow.__aexit__ = AsyncMock(return_value=False)

@@ -82,6 +82,39 @@ class ProductoCategoriaSetRequest(BaseModel):
         return v
 
 
+class IngredienteAsociacion(BaseModel):
+    """Single ingredient association entry for PUT /productos/{id}/ingredientes."""
+
+    ingrediente_id: int
+    es_removible: bool = False
+
+
+class IngredienteCompacto(BaseModel):
+    """Compact ingredient representation for product responses.
+
+    es_removible comes from the pivot table (ProductoIngrediente), not from Ingrediente.
+    """
+
+    id: int
+    nombre: str
+    es_alergeno: bool
+    es_removible: bool
+
+    model_config = {"from_attributes": True}
+
+
+class ProductoIngredienteSetRequest(BaseModel):
+    """Request body for PUT /productos/{id}/ingredientes — full replacement."""
+
+    ingredientes: List[IngredienteAsociacion] = Field(
+        default_factory=list,
+        description=(
+            "List of ingredient associations. "
+            "Empty list removes all associations."
+        ),
+    )
+
+
 class ProductoResponse(BaseModel):
     """Public product representation."""
 
@@ -94,5 +127,6 @@ class ProductoResponse(BaseModel):
     imagen_url: Optional[str]
     creado_en: datetime
     categorias: List[CategoriaCompacta] = []
+    ingredientes: List[IngredienteCompacto] = []
 
     model_config = {"from_attributes": True}

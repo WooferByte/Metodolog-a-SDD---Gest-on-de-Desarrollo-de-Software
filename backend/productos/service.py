@@ -11,12 +11,14 @@ from typing import Optional
 
 from fastapi import HTTPException, status
 
-from core.models import Categoria, Producto, Usuario
+from core.models import Categoria, Ingrediente, Producto, Usuario
 from infrastructure.uow import UnitOfWork
 from productos.schemas import (
     CategoriaCompacta,
+    IngredienteCompacto,
     ProductoCategoriaSetRequest,
     ProductoCreate,
+    ProductoIngredienteSetRequest,
     ProductoResponse,
     ProductoStockUpdate,
     ProductoUpdate,
@@ -67,11 +69,14 @@ async def list_productos(
     limit: int = 100,
     incluir_eliminados: bool = False,
     current_user: Optional[Usuario] = None,
+    excluir_alergenos: list[int] = [],
 ) -> list[Producto]:
     """
     Return a paginated list of products ordered by nombre.
 
     If incluir_eliminados=True, enforces that the caller has STOCK or ADMIN role.
+    If excluir_alergenos is non-empty, filters products that contain any of those
+    allergen ingredient IDs.
 
     Args:
         uow: Unit of Work.
@@ -79,6 +84,7 @@ async def list_productos(
         limit: Maximum records to return.
         incluir_eliminados: If True, include soft-deleted products (RN-CA10 — requires STOCK or ADMIN).
         current_user: Authenticated user (may be None for public requests).
+        excluir_alergenos: List of ingrediente IDs to exclude (allergen filter).
 
     Returns:
         List of Producto instances.
@@ -110,6 +116,14 @@ async def list_productos(
                 },
             )
 
+    if excluir_alergenos:
+        # Allergen filter: delegate to the pivot repo which does NOT IN subquery
+        return await uow.producto_ingredientes.list_active_excluding_alergenos(
+            skip=skip,
+            limit=limit,
+            alergeno_ids=excluir_alergenos,
+        )
+
     return await uow.productos.list_active(
         skip=skip,
         limit=limit,
@@ -125,25 +139,45 @@ def _categorias_to_compacta(categorias: list[Categoria]) -> list[CategoriaCompac
     ]
 
 
+def _ingredientes_to_compacto(
+    pairs: list[tuple[Ingrediente, bool]],
+) -> list[IngredienteCompacto]:
+    """
+    Map a list of (Ingrediente, es_removible) pairs to IngredienteCompacto schemas.
+
+    es_removible comes from the pivot table, not from the Ingrediente entity.
+    """
+    return [
+        IngredienteCompacto(
+            id=ing.id,
+            nombre=ing.nombre,
+            es_alergeno=ing.es_alergeno,
+            es_removible=es_removible,
+        )
+        for ing, es_removible in pairs
+    ]
+
+
 async def get_producto_by_id(
     uow: UnitOfWork,
     producto_id: int,
 ) -> ProductoResponse:
     """
-    Return a single Producto by primary key, enriched with its categories.
+    Return a single Producto by primary key, enriched with its categories and ingredients.
 
     Args:
         uow: Unit of Work.
         producto_id: Product ID to retrieve.
 
     Returns:
-        ProductoResponse with categorias list populated.
+        ProductoResponse with categorias and ingredientes lists populated.
 
     Raises:
         HTTPException 404 if not found or soft-deleted.
     """
     producto = await _get_or_404(uow, producto_id)
     categorias = await uow.producto_categorias.get_categorias(producto_id)
+    ingrediente_pairs = await uow.producto_ingredientes.get_ingredientes(producto_id)
     return ProductoResponse(
         id=producto.id,
         nombre=producto.nombre,
@@ -154,6 +188,7 @@ async def get_producto_by_id(
         imagen_url=producto.imagen_url,
         creado_en=producto.creado_en,
         categorias=_categorias_to_compacta(categorias),
+        ingredientes=_ingredientes_to_compacto(ingrediente_pairs),
     )
 
 
@@ -325,6 +360,112 @@ async def remove_categoria_producto(
         )
 
     await uow.producto_categorias.remove_categoria(producto_id, categoria_id)
+
+
+async def list_ingredientes_producto(
+    uow: UnitOfWork,
+    producto_id: int,
+) -> list[IngredienteCompacto]:
+    """
+    Return the list of ingredients associated with a product.
+
+    Args:
+        uow: Unit of Work.
+        producto_id: Product ID to look up.
+
+    Returns:
+        List of IngredienteCompacto schemas (may be empty).
+
+    Raises:
+        HTTPException 404 if the product does not exist or is soft-deleted.
+    """
+    await _get_or_404(uow, producto_id)
+    pairs = await uow.producto_ingredientes.get_ingredientes(producto_id)
+    return _ingredientes_to_compacto(pairs)
+
+
+async def set_ingredientes_producto(
+    uow: UnitOfWork,
+    producto_id: int,
+    data: ProductoIngredienteSetRequest,
+) -> list[IngredienteCompacto]:
+    """
+    Atomically replace all ingredient associations for a product.
+
+    Validates each ingrediente_id exists and is not soft-deleted before writing.
+
+    Args:
+        uow: Unit of Work.
+        producto_id: Product ID to update.
+        data: ProductoIngredienteSetRequest with the new set of ingredient associations.
+
+    Returns:
+        Updated list of IngredienteCompacto schemas.
+
+    Raises:
+        HTTPException 404 if the product or any ingredient does not exist.
+    """
+    await _get_or_404(uow, producto_id)
+
+    # Validate each ingredient exists and is not soft-deleted
+    for item in data.ingredientes:
+        ingrediente = await uow.ingredientes.get_by_id(item.ingrediente_id)
+        if ingrediente is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "type": "about:blank",
+                    "title": "Not Found",
+                    "status": 404,
+                    "detail": f"Ingrediente {item.ingrediente_id} not found or has been deleted",
+                },
+            )
+
+    items = [
+        {"ingrediente_id": item.ingrediente_id, "es_removible": item.es_removible}
+        for item in data.ingredientes
+    ]
+    await uow.producto_ingredientes.set_ingredientes(producto_id, items)
+    pairs = await uow.producto_ingredientes.get_ingredientes(producto_id)
+    return _ingredientes_to_compacto(pairs)
+
+
+async def remove_ingrediente_producto(
+    uow: UnitOfWork,
+    producto_id: int,
+    ingrediente_id: int,
+) -> None:
+    """
+    Remove a single ingredient association from a product.
+
+    Args:
+        uow: Unit of Work.
+        producto_id: Product ID.
+        ingrediente_id: Ingredient ID to disassociate.
+
+    Raises:
+        HTTPException 404 if the product does not exist or the association is absent.
+    """
+    await _get_or_404(uow, producto_id)
+
+    association = await uow.producto_ingredientes.get_association(
+        producto_id, ingrediente_id
+    )
+    if association is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "type": "about:blank",
+                "title": "Not Found",
+                "status": 404,
+                "detail": (
+                    f"Association between producto {producto_id} "
+                    f"and ingrediente {ingrediente_id} not found"
+                ),
+            },
+        )
+
+    await uow.producto_ingredientes.remove_ingrediente(producto_id, ingrediente_id)
 
 
 async def patch_stock(

@@ -78,6 +78,7 @@ def _make_uow(
     - uow.producto_categorias.get_association → pivot (or None)
     - uow.producto_categorias.set_categorias → AsyncMock (no-op)
     - uow.producto_categorias.remove_categoria → AsyncMock (no-op)
+    - uow.producto_ingredientes.get_ingredientes → AsyncMock (returns [])
     """
     uow = MagicMock()
 
@@ -98,6 +99,11 @@ def _make_uow(
     cat_repo = MagicMock()
     cat_repo.get_by_id = AsyncMock(return_value=categoria_obj)
     uow.categorias = cat_repo
+
+    # producto_ingredientes repo — needed since get_producto_by_id now enriches with ingredients
+    pi_repo = MagicMock()
+    pi_repo.get_ingredientes = AsyncMock(return_value=[])
+    uow.producto_ingredientes = pi_repo
 
     # Async context manager
     uow.__aenter__ = AsyncMock(return_value=uow)

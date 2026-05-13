@@ -20,7 +20,11 @@ from core.models import (
 )
 from categorias.repository import CategoriaRepository
 from ingredientes.repository import IngredienteRepository
-from productos.repository import ProductoCategoriaRepository, ProductoRepository
+from productos.repository import (
+    ProductoCategoriaRepository,
+    ProductoIngredienteRepository,
+    ProductoRepository,
+)
 from core.database import get_db
 
 
@@ -111,10 +115,10 @@ class UnitOfWork:
         return self._repositories["producto_categorias"]
 
     @property
-    def producto_ingredientes(self) -> BaseRepository[ProductoIngrediente]:
-        """Repository for ProductoIngrediente pivot entity."""
+    def producto_ingredientes(self) -> ProductoIngredienteRepository:
+        """Repository for ProductoIngrediente pivot entity (dedicated pivot repository)."""
         if "producto_ingredientes" not in self._repositories:
-            self._repositories["producto_ingredientes"] = BaseRepository(self.session, ProductoIngrediente)
+            self._repositories["producto_ingredientes"] = ProductoIngredienteRepository(self.session)
         return self._repositories["producto_ingredientes"]
 
     @property
