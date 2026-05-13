@@ -1,6 +1,6 @@
 # AGENTS.md — Food Store E-Commerce
 > **CRÍTICO**: Este archivo DEBE estar en `.agents/AGENTS.md` (versionado en Git).
-> **Versión**: 3.6 — Skills post-change-verification + e2e-playwright en Matriz · 2026-05-12
+> **Versión**: 3.7 — Matriz ampliada: +vercel-react-best-practices +frontend-state-management; paths corregidos; relevamiento completo skills · 2026-05-13
 
 ---
 
@@ -290,16 +290,16 @@ Cargá el `SKILL.md` (o archivo equivalente) **antes** de escribir código. Múl
 | JWT, refresh tokens, almacenamiento seguro, rotación | `jwt-security` | `.agents/skills/jwt-security/SKILL.md` | SKILL.md |
 | Zustand stores, slices, persistencia, suscripción granular | `zustand-state-management` | `.agents/skills/zustand-state-management/README.md` | README.md ⚠️ |
 | Elegir entre Zustand vs TanStack Query, evitar duplicación | `frontend-state-management` | `.agents/skills/frontend-state-management/SKILL.md` | SKILL.md |
-| Estructura API global, versionado, HATEOAS | `rest-api-design-patterns` | `.agents/skills/rest-api-design-patterns/EXAMPLES.md` | EXAMPLES.md ⚠️ |
+| Estructura API global, versionado, HATEOAS | `rest-api-design-patterns` | `.agents/skills/rest-api-design-patterns/SKILL.md` | SKILL.md |
 | MercadoPago, Stripe, webhooks, idempotencia, PCI DSS | `web-payments` | `.agents/skills/web-payments/SKILL.md` | SKILL.md |
-| Performance React, code splitting, bundle size, TanStack Query cache | `vercel-react-best-practices` | `.agents/skills/vercel-react-best-practices/AGENTS.md` | AGENTS.md ⚠️ |
+| Performance React, code splitting, bundle size, TanStack Query cache | `vercel-react-best-practices` | `.agents/skills/vercel-react-best-practices/SKILL.md` | SKILL.md |
 | CRUD pages para dashboard admin (tabla + formulario + filtros) | `dashboard-crud-page` | `.agents/skills/dashboard-crud-page/SKILL.md` | SKILL.md |
 | Buscar si existe una skill para X antes de crear código | `find-skills` | `.agents/skills/find-skills/SKILL.md` | SKILL.md |
 | Crear o mejorar una skill de agente | `skill-creator` | `.agents/skills/skill-creator/SKILL.md` | SKILL.md |
 | E2E con Playwright: auth JWT Zustand, guards de rutas, toasts HTTP, login/registro | `testing-e2e-playwright` | `.agents/skills/testing-e2e-playwright/SKILL.md` | SKILL.md |
 | Health check post-change: pytest, alembic, uvicorn, vitest, tsc, build | `post-change-verification` | `.agents/skills/post-change-verification/SKILL.md` | SKILL.md |
 
-> **⚠️ Nota**: 3 skills no tienen `SKILL.md` — tienen archivo alternativo marcado arriba. Leer el archivo que existe, no buscar SKILL.md en esas carpetas.
+> **⚠️ Nota**: Solo 1 skill tiene archivo alternativo: `zustand-state-management` → `README.md`. Todas las demás tienen `SKILL.md`. El path `rest-api-design-patterns` también tiene `SKILL.md` (no EXAMPLES.md).
 
 > **Skill NO presente**: `expo-tailwind-setup` — está instalada pero no aplica a este proyecto (mobile only). No cargar.
 
@@ -311,25 +311,27 @@ Cargá el `SKILL.md` (o archivo equivalente) **antes** de escribir código. Múl
 
 > **`post-change-verification`**: aplica a **TODOS** los changes sin excepción. Cargarla siempre antes de `opsx:archive`.
 
-| Tipo de Change | python-fastapi-ddd | postgres | tailwind-design-system | ui-design-system | api-design | jwt-security | zustand | web-payments | dashboard-crud-page | e2e-playwright |
-|----------------|:-----------------:|:--------:|:---------------------:|:----------------:|:----------:|:------------:|:-------:|:------------:|:------------------:|:--------------:|
-| backend core / setup | ✅ | ✅ | — | — | ✅ | — | — | — | — | — |
-| auth (login, registro, refresh, logout) | ✅ | — | — | — | ✅ | ✅ | — | — | — | — |
-| RBAC / route protection | ✅ | — | — | — | — | ✅ | — | — | — | — |
-| productos / categorías / ingredientes CRUD | ✅ | ✅ | — | — | ✅ | — | — | — | — | — |
-| pedidos FSM + audit trail | ✅ | ✅ | — | — | ✅ | — | — | — | — | — |
-| pagos MercadoPago backend | ✅ | ✅ | — | — | ✅ | — | — | ✅ | — | — |
-| migraciones Alembic | ✅ | ✅ | — | — | — | — | — | — | — | — |
-| frontend layout / componentes base | — | — | ✅ | ✅ | — | — | — | — | — | ✅ |
-| frontend auth UI | — | — | ✅ | ✅ | — | ✅ | — | — | — | ✅ |
-| frontend catálogo | — | — | ✅ | ✅ | — | — | — | — | — | ✅ |
-| frontend carrito (Zustand) | — | — | ✅ | — | — | — | ✅ | — | — | ✅ |
-| frontend checkout + pago | — | — | ✅ | ✅ | — | — | ✅ | ✅ | — | ✅ |
-| admin dashboard + métricas | ✅ | ✅ | ✅ | — | — | — | — | — | ✅ | — |
-| admin CRUD (productos, usuarios, stock) | ✅ | — | ✅ | — | — | — | — | — | ✅ | — |
-| validación pre-checkout | ✅ | ✅ | ✅ | — | ✅ | — | — | — | — | ✅ |
-| sistema configuración key-value | ✅ | ✅ | ✅ | — | — | — | — | — | ✅ | — |
-| custom hooks + optimistic updates | — | — | — | — | — | — | ✅ | — | — | ✅ |
+| Tipo de Change | python-fastapi-ddd | postgres | tailwind-design-system | ui-design-system | api-design | jwt-security | zustand | frontend-state-mgmt | vercel-react | web-payments | dashboard-crud-page | e2e-playwright |
+|----------------|:-----------------:|:--------:|:---------------------:|:----------------:|:----------:|:------------:|:-------:|:-------------------:|:------------:|:------------:|:------------------:|:--------------:|
+| backend core / setup | ✅ | ✅ | — | — | ✅ | — | — | — | — | — | — | — |
+| auth (login, registro, refresh, logout) | ✅ | — | — | — | ✅ | ✅ | — | — | — | — | — | — |
+| RBAC / route protection | ✅ | — | — | — | — | ✅ | — | — | — | — | — | — |
+| productos / categorías / ingredientes CRUD | ✅ | ✅ | — | — | ✅ | — | — | — | — | — | — | — |
+| pedidos FSM + audit trail | ✅ | ✅ | — | — | ✅ | — | — | — | — | — | — | — |
+| pagos MercadoPago backend | ✅ | ✅ | — | — | ✅ | — | — | — | — | ✅ | — | — |
+| migraciones Alembic | ✅ | ✅ | — | — | — | — | — | — | — | — | — | — |
+| frontend layout / componentes base | — | — | ✅ | ✅ | — | — | — | — | ✅ | — | — | ✅ |
+| frontend auth UI | — | — | ✅ | ✅ | — | ✅ | — | ✅ | ✅ | — | — | ✅ |
+| frontend catálogo | — | — | ✅ | ✅ | — | — | — | ✅ | ✅ | — | — | ✅ |
+| frontend carrito (Zustand) | — | — | ✅ | — | — | — | ✅ | ✅ | ✅ | — | — | ✅ |
+| frontend checkout + pago | — | — | ✅ | ✅ | — | — | ✅ | ✅ | ✅ | ✅ | — | ✅ |
+| admin dashboard + métricas | ✅ | ✅ | ✅ | — | — | — | — | — | ✅ | — | ✅ | — |
+| admin CRUD (productos, usuarios, stock) | ✅ | — | ✅ | — | — | — | — | — | ✅ | — | ✅ | — |
+| validación pre-checkout | ✅ | ✅ | ✅ | — | ✅ | — | — | ✅ | ✅ | — | — | ✅ |
+| sistema configuración key-value | ✅ | ✅ | ✅ | — | — | — | — | — | — | — | ✅ | — |
+| custom hooks + optimistic updates | — | — | — | — | — | — | ✅ | ✅ | ✅ | — | — | ✅ |
+
+> **Leyenda columnas abreviadas**: `frontend-state-mgmt` = `frontend-state-management` (`.agents/skills/frontend-state-management/SKILL.md`); `vercel-react` = `vercel-react-best-practices` (`.agents/skills/vercel-react-best-practices/SKILL.md`)
 
 ---
 
