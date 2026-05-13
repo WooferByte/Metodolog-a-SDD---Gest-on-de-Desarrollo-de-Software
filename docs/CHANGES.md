@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-13 (ingredients-crud-allergens archivado)
+> **Última actualización**: 2026-05-13 (products-crud-core archivado)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -25,7 +25,7 @@ Estas inconsistencias fueron identificadas al sincronizar el estado real del rep
 ### INC-01 — `frontend-products-catalog-ui` archivado sin dependencias ⚠️ CRÍTICO
 
 **Problema**: `frontend-products-catalog-ui` fue archivado el 2026-05-09 pero sus dependencias de backend NO están implementadas:
-- `products-crud-core` ❌ pendiente
+- `products-crud-core` ✅ archivado 2026-05-13
 - `products-categories-association` ❌ pendiente
 - `products-ingredients-association` ❌ pendiente
 - `products-catalog-public` ❌ pendiente
@@ -306,12 +306,13 @@ CRUD ingredientes con `es_alergeno`. Filtro `?es_alergeno=true/false`. Guard pro
 
 ## EPIC 05 — Productos y Catálogo
 
-### ❌ `products-crud-core`
+### ✅ `products-crud-core` (archivado 2026-05-13)
 
 Modelo `Producto`. `POST/GET/PUT/PATCH/DELETE /api/v1/productos`. Precio NUMERIC(10,2). Stock INTEGER ≥ 0. Soft delete. `?incluir_eliminados=true` para admin (RN-CA10).
 
 **Skills**: `fastapi-python`, `postgres`
 **Dependencias**: `route-protection-rbac`
+**Evidencia**: `openspec/changes/archive/2026-05-13-products-crud-core/`
 
 ---
 
@@ -668,7 +669,7 @@ BLOQUE 3 — Layout + Catálogo
 ├─ ❌ frontend-layout-components-shared
 ├─ ❌ categories-crud-hierarchical
 ├─ ❌ ingredients-crud-allergens
-├─ ❌ products-crud-core
+├─ ✅ products-crud-core
 ├─ ❌ products-categories-association
 ├─ ❌ products-ingredients-association
 ├─ ❌ products-catalog-public
