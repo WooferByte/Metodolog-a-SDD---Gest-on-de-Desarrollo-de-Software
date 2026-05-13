@@ -117,8 +117,7 @@ async def list_productos(
             )
 
     if excluir_alergenos:
-        # Allergen filter: delegate to the pivot repo which does NOT IN subquery
-        return await uow.producto_ingredientes.list_active_excluding_alergenos(
+        return await uow.productos.list_active_excluding_alergenos(
             skip=skip,
             limit=limit,
             alergeno_ids=excluir_alergenos,
@@ -461,6 +460,19 @@ async def remove_ingrediente_producto(
                 "detail": (
                     f"Association between producto {producto_id} "
                     f"and ingrediente {ingrediente_id} not found"
+                ),
+            },
+        )
+
+    if not association.es_removible:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "type": "about:blank",
+                "title": "Conflict",
+                "status": 409,
+                "detail": (
+                    f"Ingrediente {ingrediente_id} no es removible del producto {producto_id}"
                 ),
             },
         )

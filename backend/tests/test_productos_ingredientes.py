@@ -101,6 +101,7 @@ def _make_uow(
     productos_repo = MagicMock()
     productos_repo.get_by_id = AsyncMock(return_value=producto)
     productos_repo.list_active = AsyncMock(return_value=[producto] if producto else [])
+    productos_repo.list_active_excluding_alergenos = AsyncMock(return_value=[producto] if producto else [])
     uow.productos = productos_repo
 
     # producto_ingredientes repo
@@ -109,7 +110,6 @@ def _make_uow(
     pi_repo.set_ingredientes = AsyncMock(return_value=None)
     pi_repo.get_association = AsyncMock(return_value=pivot)
     pi_repo.remove_ingrediente = AsyncMock(return_value=None)
-    pi_repo.list_active_excluding_alergenos = AsyncMock(return_value=[])
     uow.producto_ingredientes = pi_repo
 
     # ingredientes repo
@@ -320,11 +320,11 @@ class TestRemoveIngredienteProducto:
 
     @pytest.mark.asyncio
     async def test_elimina_asociacion_exitosamente(self):
-        """Calls remove_ingrediente when the association exists."""
+        """Calls remove_ingrediente when the association exists and es_removible=True."""
         from productos.service import remove_ingrediente_producto
 
         producto = _make_producto(1)
-        pivot = _make_pivot_ing(1, 5, False)
+        pivot = _make_pivot_ing(1, 5, True)
         uow = _make_uow(producto=producto, pivot=pivot)
 
         await remove_ingrediente_producto(uow, 1, 5)
@@ -631,7 +631,7 @@ class TestDeleteIngredienteRouter:
 
         admin_user = _make_user(["ADMIN"])
         producto = _make_producto(1)
-        pivot = _make_pivot_ing(1, 5, False)
+        pivot = _make_pivot_ing(1, 5, True)
 
         async def _mock_user():
             return admin_user
@@ -687,7 +687,7 @@ class TestListProductosExcluirAlergenos:
 
         producto = _make_producto(1, "Sin Gluten")
         uow_instance = _make_uow(producto=producto)
-        uow_instance.producto_ingredientes.list_active_excluding_alergenos = AsyncMock(
+        uow_instance.productos.list_active_excluding_alergenos = AsyncMock(
             return_value=[producto]
         )
 
