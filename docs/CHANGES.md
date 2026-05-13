@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-13 (frontend-refactor-apply-skills + frontend-nav-responsive-fix archivados)
+> **Última actualización**: 2026-05-13 (backend-user-profile-endpoints archivado — EPIC 06 backend completo)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -359,12 +359,13 @@ Página Catalog con grid, ProductCard, filtros, paginación, skeletons, "Agregar
 
 ## EPIC 06 — Perfil de Cliente
 
-### ❌ `backend-user-profile-endpoints`
+### ✅ `backend-user-profile-endpoints`
+Archivado: `2026-05-13-backend-user-profile-endpoints`
 
-`GET/PUT /api/v1/perfil`. `POST /api/v1/perfil/cambiar-password` — valida password actual, hashea nueva, **revoca todos los refresh tokens activos** (US-063, RN-AU04).
+`GET/PUT /api/v1/perfil`. `POST /api/v1/perfil/cambiar-password` — valida password actual, hashea nueva (bcrypt cost=12), revoca TODOS los refresh tokens activos (US-063, RN-AU04). 3 archivos nuevos: `perfil_schemas.py`, `perfil_service.py`, `perfil_router.py`. 22/22 tests.
 
-**Skills**: `fastapi-python`
-**Dependencias**: `route-protection-rbac`
+**Skills**: `python-fastapi-ddd-skill`, `api-design`, `jwt-security`, `post-change-verification`
+**Dependencias**: `route-protection-rbac` ✅
 
 ---
 
@@ -679,7 +680,8 @@ BLOQUE 3 — Layout + Catálogo
 └─ ✅ frontend-products-catalog-ui   (INC-01 resuelto 2026-05-13)
 
 BLOQUE 4 — Perfil + Direcciones + Carrito
-├─ ❌ backend-user-profile-endpoints  ← PRÓXIMO
+├─ ✅ backend-user-profile-endpoints
+├─ ❌ frontend-user-profile-ui        ← PRÓXIMO
 ├─ ❌ frontend-user-profile-ui
 ├─ ❌ addresses-crud-by-user
 ├─ ❌ frontend-addresses-ui
