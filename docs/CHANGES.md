@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-14 (frontend-shopping-cart-zustand archivado)
+> **Última actualización**: 2026-05-14 (frontend-shopping-cart-ui archivado)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -427,12 +427,14 @@ CartStore hardening (`ingredientes_excluidos: number[]`, `uiStore` con `cartDraw
 
 ---
 
-### ❌ `frontend-shopping-cart-ui`
+### ✅ `frontend-shopping-cart-ui`
+Archivado: `2026-05-14-frontend-shopping-cart-ui`
+**Evidencia**: `openspec/changes/archive/2026-05-14-frontend-shopping-cart-ui/`
 
-CartDrawer con items, +/-, eliminar, vaciar, total, botón checkout. CartIcon en Navbar con contador. Estado vacío.
+Visual upgrade completo del carrito. CartItemRow: imagen 96×96 desktop, fallback con inicial en gradiente brand, pills ingredientes `rounded-full`, animación entrada `slide-in-down`. OrderSummary: desglose Subtotal/Envío/Total, badge "¡Gratis!" (`bg-primary/10`) con umbral $3.000, "Te faltan $X", CTA con total inline. EmptyCart rediseñado con SVG + copy invitador. CartPage 2 columnas desktop / stack mobile con resumen sticky. CartDrawer coherente. 278/278 vitest. 5 specs nuevas sincronizadas.
 
-**Skills**: `frontend-design`, `tailwind-design-system`
-**Dependencias**: `frontend-shopping-cart-zustand`, `frontend-layout-components-shared`
+**Skills**: `tailwind-design-system`, `ui-design-system`, `zustand-state-management`, `frontend-state-management`, `vercel-react-best-practices`, `testing-e2e-playwright`
+**Dependencias**: `frontend-shopping-cart-zustand` ✅, `frontend-layout-components-shared` ✅
 
 ---
 
@@ -703,7 +705,7 @@ BLOQUE 4 — Perfil + Direcciones + Carrito
 ├─ ✅ addresses-crud-by-user
 ├─ ✅ frontend-addresses-ui
 ├─ ✅ frontend-shopping-cart-zustand
-└─ ❌ frontend-shopping-cart-ui     ← PRÓXIMO
+└─ ✅ frontend-shopping-cart-ui
 
 BLOQUE 5 — Pre-checkout + Pedidos
 ├─ ❌ checkout-pre-validation
@@ -747,6 +749,7 @@ BLOQUE 9 — Entrega Final
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 3.7 | 2026-05-14 | frontend-shopping-cart-ui archivado. Visual upgrade completo: CartItemRow gradiente, OrderSummary desglose + envío gratis, EmptyCart rediseñado, CartPage 2 col. PRÓXIMO: BLOQUE 5 checkout-pre-validation. |
 | 3.6 | 2026-05-14 | frontend-shopping-cart-zustand archivado. CartDrawer + CartPage + store hardening. Fixes: theme toggle sidebar, cart clear logout, checkout redirect. PRÓXIMO: frontend-shopping-cart-ui. |
 | 3.5 | 2026-05-14 | frontend-addresses-ui archivado. Fixes: modal centrado, queryClient.clear() en logout, ProtectedRoute sin from en rutas con requiredRoles. PRÓXIMO: frontend-shopping-cart-zustand. |
 | 3.4 | 2026-05-14 | addresses-crud-by-user archivado. PRÓXIMO: frontend-addresses-ui. |
