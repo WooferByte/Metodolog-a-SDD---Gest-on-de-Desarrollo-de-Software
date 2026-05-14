@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-13 (frontend-user-profile-ui archivado — EPIC 06 completo)
+> **Última actualización**: 2026-05-14 (frontend-catalog-profile-fixes archivado — fixes catálogo, perfil y toasts)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -379,6 +379,17 @@ Página Profile. ProfileInfo (read-only, dl/dt/dd, Skeleton, Badge roles). EditP
 
 ---
 
+### ✅ `frontend-catalog-profile-fixes`
+Archivado: `2026-05-14-frontend-catalog-profile-fixes`
+**Evidencia**: `openspec/changes/archive/2026-05-14-frontend-catalog-profile-fixes/`
+
+Fixes post-entrega EPIC 05 y 06. (1) Toast normalisation: `safeString()` en interceptor Axios garantiza que `toast.message` siempre sea string primitivo; `String()` defensivo en `ToastContainer`. (2) Catalog filter UI: filtros móviles como overlay fijo (`hidden md:block`), grid full-width cuando colapsado, backdrop, tokens semánticos `@theme`, `accent-primary` en checkboxes, `hover:bg-muted/50`, `focus:ring-2 focus:ring-ring` WCAG AA. (3) ChangePasswordForm: validación cliente solo formato (required + mín 8 chars), eliminada comparación client-side passwordActual vs nuevaPassword, backend es autoridad. 3 nuevas specs capturadas: `toast-error-normalisation`, `change-password-form`, `catalog-filter-ui`.
+
+**Skills**: `tailwind-design-system`, `ui-design-system`, `frontend-state-management`, `vercel-react-best-practices`, `testing-e2e-playwright`, `jwt-security`
+**Dependencias**: `frontend-user-profile-ui` ✅, `frontend-products-catalog-ui` ✅, `frontend-error-handling-global` ✅
+
+---
+
 ## EPIC 07 — Direcciones de Entrega
 
 ### ❌ `addresses-crud-by-user`
@@ -732,6 +743,7 @@ BLOQUE 9 — Entrega Final
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 3.3 | 2026-05-14 | frontend-catalog-profile-fixes archivado. 3 nuevas specs: toast-error-normalisation, change-password-form, catalog-filter-ui. |
 | 3.2 | 2026-05-13 | INC-01 resuelto. Árbol de bloques sincronizado con estado real. frontend-refactor-apply-skills + frontend-nav-responsive-fix agregados. PRÓXIMO: backend-user-profile-endpoints. |
 | 3.1 | 2026-05-11 | Estado real sincronizado con OPSX archive. 6 inconsistencias documentadas (INC-01 a INC-06). BLOQUE 0 de reparación agregado. Nuevos changes: `frontend-widgets-layer`, `frontend-patterns-hooks-optimistic`, `deploy-production`. Corrección naming `es_predeterminada`. `INTEGER[]` explicitado en pedidos. `frontend-products-catalog-ui` marcado ⚠️. |
 | 3.0 | 2026-05-11 | Análisis de gaps completo. Changes nuevos: checkout-pre-validation, backend-admin-users-endpoints, system-configuration-backend, frontend-system-configuration-ui. |
