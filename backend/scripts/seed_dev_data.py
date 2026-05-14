@@ -225,11 +225,11 @@ async def seed_ingredientes(session: AsyncSession) -> list[Ingrediente]:
 async def seed_productos(session: AsyncSession) -> list[Producto]:
     _sep("PRODUCTOS (5)")
     data = [
-        dict(nombre="Pizza Margherita",    descripcion="Tomate, mozzarella y albahaca fresca",        precio=Decimal("1800.00"), stock=15, disponible=True,  imagen_url="https://example.com/pizza-margherita.jpg"),
-        dict(nombre="Hamburguesa Clásica", descripcion="Carne 200g, lechuga, tomate y aderezo",      precio=Decimal("1500.00"), stock=20, disponible=True,  imagen_url="https://example.com/hamburguesa.jpg"),
-        dict(nombre="Coca Cola 500ml",     descripcion="Gaseosa Coca Cola botella 500ml",            precio=Decimal("600.00"),  stock=50, disponible=True,  imagen_url="https://example.com/cocacola.jpg"),
-        dict(nombre="Brownie de Chocolate",descripcion="Brownie húmedo con nueces y chips de choco", precio=Decimal("800.00"),  stock=10, disponible=True,  imagen_url="https://example.com/brownie.jpg"),
-        dict(nombre="Empanadas x6",        descripcion="Seis empanadas de carne cortada a cuchillo", precio=Decimal("1200.00"), stock=25, disponible=False, imagen_url=None),
+        dict(nombre="Pizza Margherita",    descripcion="Tomate, mozzarella y albahaca fresca",        precio=Decimal("1800.00"), stock=15, disponible=True,  imagen_url="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400&q=80"),
+        dict(nombre="Hamburguesa Clásica", descripcion="Carne 200g, lechuga, tomate y aderezo",      precio=Decimal("1500.00"), stock=20, disponible=True,  imagen_url="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=80"),
+        dict(nombre="Coca Cola 500ml",     descripcion="Gaseosa Coca Cola botella 500ml",            precio=Decimal("600.00"),  stock=50, disponible=True,  imagen_url="https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&q=80"),
+        dict(nombre="Brownie de Chocolate",descripcion="Brownie húmedo con nueces y chips de choco", precio=Decimal("800.00"),  stock=10, disponible=True,  imagen_url="https://images.unsplash.com/photo-1564355808539-22fda35bed7e?w=400&q=80"),
+        dict(nombre="Empanadas x6",        descripcion="Seis empanadas de carne cortada a cuchillo", precio=Decimal("1200.00"), stock=25, disponible=False, imagen_url="https://images.unsplash.com/photo-1605629921711-2f6b00c6bbf4?w=400&q=80"),
     ]
     productos = []
     for d in data:
