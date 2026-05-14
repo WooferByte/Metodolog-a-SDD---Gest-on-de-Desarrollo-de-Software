@@ -59,7 +59,7 @@ export function CategoryFilter({ selectedIds, onChange }: CategoryFilterProps) {
       </h3>
 
       {/* Desktop: Always-visible list */}
-      <div className="hidden md:block space-y-0.5 max-h-64 overflow-y-auto">
+      <div className="hidden md:block space-y-0.5">
         {hierarchy.parents.map((parent) => (
           <div key={parent.id}>
             {/* Parent Category */}

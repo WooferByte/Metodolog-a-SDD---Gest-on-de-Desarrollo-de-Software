@@ -213,9 +213,11 @@ export default function CatalogPage() {
           {/* Filter Sidebar — hidden on mobile so the grid row collapses */}
           <div className="hidden md:block md:col-span-1">
             <FilterBar
+              search={filters.search}
               categoryIds={filters.categoryIds}
               excludeAllergens={filters.excludeAllergens}
               products={catalogData?.items}
+              onSearchChange={handleSearchChange}
               onCategoryChange={handleCategoryChange}
               onAllergenChange={handleAllergenChange}
             />
@@ -224,9 +226,11 @@ export default function CatalogPage() {
           {/* Mobile FilterBar — outside grid flow, full width, rendered above products */}
           <div className="md:hidden col-span-1">
             <FilterBar
+              search={filters.search}
               categoryIds={filters.categoryIds}
               excludeAllergens={filters.excludeAllergens}
               products={catalogData?.items}
+              onSearchChange={handleSearchChange}
               onCategoryChange={handleCategoryChange}
               onAllergenChange={handleAllergenChange}
             />
