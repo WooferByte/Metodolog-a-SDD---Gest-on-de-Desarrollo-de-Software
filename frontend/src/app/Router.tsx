@@ -4,14 +4,15 @@ import { ProtectedRoute } from '@/shared/routing/ProtectedRoute'
 import { Spinner } from '@/shared/components/ui/Spinner'
 
 // Lazy-loaded pages — each becomes a separate chunk (code splitting)
-const Catalog       = lazy(() => import('@/pages/Catalog'))
-const Login         = lazy(() => import('@/pages/Login'))
-const Register      = lazy(() => import('@/pages/Register'))
-const NotFound      = lazy(() => import('@/pages/NotFound'))
-const ForbiddenPage = lazy(() => import('@/pages/ForbiddenPage'))
-const Profile       = lazy(() => import('@/pages/Profile'))
-const Orders        = lazy(() => import('@/pages/Orders'))
-const Admin         = lazy(() => import('@/pages/Admin'))
+const Catalog          = lazy(() => import('@/pages/Catalog'))
+const Login            = lazy(() => import('@/pages/Login'))
+const Register         = lazy(() => import('@/pages/Register'))
+const NotFound         = lazy(() => import('@/pages/NotFound'))
+const ForbiddenPage    = lazy(() => import('@/pages/ForbiddenPage'))
+const Profile          = lazy(() => import('@/pages/Profile'))
+const Orders           = lazy(() => import('@/pages/Orders'))
+const Admin            = lazy(() => import('@/pages/Admin'))
+const MyAddressesPage  = lazy(() => import('@/pages/MyAddressesPage'))
 
 /**
  * Router — defines all application routes.
@@ -41,9 +42,9 @@ export default function Router() {
         <Route element={<ProtectedRoute requiredRoles={['CLIENT', 'ADMIN']} />}>
           <Route path="/profile" element={<Profile />} />
           <Route path="/orders" element={<Orders />} />
-          {/* /cart and /addresses — placeholder until dedicated pages exist */}
+          {/* /cart — placeholder until dedicated page exists */}
           <Route path="/cart" element={<Admin />} />
-          <Route path="/addresses" element={<Admin />} />
+          <Route path="/addresses" element={<MyAddressesPage />} />
         </Route>
 
         {/* ── STOCK routes: require STOCK or ADMIN ──────────── */}
