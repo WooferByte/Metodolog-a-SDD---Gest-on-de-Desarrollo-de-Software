@@ -10,6 +10,8 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createElement } from 'react'
 import { useAuthStore } from '../../../store/authStore'
 import { useLogout } from '../useLogout'
 
@@ -27,6 +29,12 @@ const mockLogoutUser = vi.mocked(logoutUser)
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+function createWrapper() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return ({ children }: { children: React.ReactNode }) =>
+    createElement(QueryClientProvider, { client: queryClient }, children)
+}
 
 function seedAuthStore(refreshToken: string | null = 'my-refresh-token') {
   useAuthStore.setState({
@@ -63,7 +71,7 @@ describe('useLogout hook', () => {
     seedAuthStore()
     mockLogoutUser.mockResolvedValue(undefined)
 
-    const { result } = renderHook(() => useLogout())
+    const { result } = renderHook(() => useLogout(), { wrapper: createWrapper() })
 
     await act(async () => {
       await result.current.logout()
@@ -81,7 +89,7 @@ describe('useLogout hook', () => {
     seedAuthStore()
     mockLogoutUser.mockRejectedValue(new Error('Network Error'))
 
-    const { result } = renderHook(() => useLogout())
+    const { result } = renderHook(() => useLogout(), { wrapper: createWrapper() })
 
     await act(async () => {
       await result.current.logout()
@@ -99,7 +107,7 @@ describe('useLogout hook', () => {
     seedAuthStore('specific-refresh-token')
     mockLogoutUser.mockResolvedValue(undefined)
 
-    const { result } = renderHook(() => useLogout())
+    const { result } = renderHook(() => useLogout(), { wrapper: createWrapper() })
 
     await act(async () => {
       await result.current.logout()
@@ -113,7 +121,7 @@ describe('useLogout hook', () => {
     seedAuthStore(null)  // no refresh token
     mockLogoutUser.mockResolvedValue(undefined)
 
-    const { result } = renderHook(() => useLogout())
+    const { result } = renderHook(() => useLogout(), { wrapper: createWrapper() })
 
     await act(async () => {
       await result.current.logout()
@@ -130,7 +138,7 @@ describe('useLogout hook', () => {
   it('7.2.5 isLoading starts false', () => {
     seedAuthStore()
 
-    const { result } = renderHook(() => useLogout())
+    const { result } = renderHook(() => useLogout(), { wrapper: createWrapper() })
 
     expect(result.current.isLoading).toBe(false)
   })
@@ -139,7 +147,7 @@ describe('useLogout hook', () => {
     seedAuthStore()
     mockLogoutUser.mockResolvedValue(undefined)
 
-    const { result } = renderHook(() => useLogout())
+    const { result } = renderHook(() => useLogout(), { wrapper: createWrapper() })
 
     await act(async () => {
       await result.current.logout()
@@ -152,7 +160,7 @@ describe('useLogout hook', () => {
     seedAuthStore()
     mockLogoutUser.mockRejectedValue(new Error('Server Error'))
 
-    const { result } = renderHook(() => useLogout())
+    const { result } = renderHook(() => useLogout(), { wrapper: createWrapper() })
 
     await act(async () => {
       await result.current.logout()

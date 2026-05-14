@@ -41,9 +41,14 @@ export function ProtectedRoute({ requiredRoles }: ProtectedRouteProps) {
     )
   }
 
-  // Guard 2: Not authenticated → send to login, preserve intended destination
+  // Guard 2: Not authenticated → send to login.
+  // Only preserve `from` for non-role-restricted routes. If the route requires
+  // specific roles, don't save `from` — a different user logging in next would
+  // get redirected there and hit /403 (e.g. admin logs out on /admin/dashboard,
+  // client logs in and gets sent to /admin/dashboard → access denied).
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />
+    const from = requiredRoles?.length ? undefined : { from: location }
+    return <Navigate to="/login" state={from} replace />
   }
 
   // Guard 3: Role check — user must have at least one of the required roles

@@ -20,6 +20,7 @@
  */
 
 import { useState, useCallback } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../store/authStore'
 import { logoutUser } from '../api/authApi'
 
@@ -40,6 +41,7 @@ export function useLogout(): UseLogoutReturn {
   const [isLoading, setIsLoading] = useState(false)
   const clearAuthState = useAuthStore((state) => state.logout)
   const refreshToken = useAuthStore((state) => state.refreshToken)
+  const queryClient = useQueryClient()
 
   const logout = useCallback(async () => {
     if (isLoading) return // prevent double-submission
@@ -53,11 +55,12 @@ export function useLogout(): UseLogoutReturn {
       // Network error or backend error — still clear local state below
       // The refresh token will expire naturally (7-day TTL)
     } finally {
-      // Always clear local state regardless of backend response
+      // Clear all cached server state so the next user starts fresh
+      queryClient.clear()
       clearAuthState()
       setIsLoading(false)
     }
-  }, [refreshToken, clearAuthState, isLoading])
+  }, [refreshToken, clearAuthState, queryClient, isLoading])
 
   return { logout, isLoading }
 }

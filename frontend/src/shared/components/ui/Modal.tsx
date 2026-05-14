@@ -84,6 +84,9 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
         // Reset default <dialog> styles
         'rounded-xl border border-border bg-card text-card-foreground',
         'shadow-lg p-0 max-w-lg w-full',
+        // Center: Tailwind Preflight resets margin to 0 on <dialog>, overriding
+        // the browser UA centering that showModal() normally provides.
+        'm-auto',
         // Backdrop
         'backdrop:bg-foreground/50',
         // Animation

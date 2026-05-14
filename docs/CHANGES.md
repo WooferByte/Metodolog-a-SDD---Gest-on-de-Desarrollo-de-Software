@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-14 (addresses-crud-by-user archivado)
+> **Última actualización**: 2026-05-14 (frontend-addresses-ui archivado)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -403,10 +403,11 @@ Modelo `DireccionEntrega` con campo `es_predeterminada` *(INC-02 ✅ resuelto)*.
 
 ---
 
-### ❌ `frontend-addresses-ui`
-**Change propuesto**: `openspec/changes/frontend-addresses-ui/` (proposal + design + specs + tasks ✅)
+### ✅ `frontend-addresses-ui`
+Archivado: `2026-05-14-frontend-addresses-ui`
+**Evidencia**: `openspec/changes/archive/2026-05-14-frontend-addresses-ui/`
 
-Página `MyAddressesPage` en `/direcciones` para CLIENT. `AddressCard` con editar/eliminar/marcar predeterminada. `AddressForm` modal reutilizable crear/editar. 5 hooks TanStack Query v5. Toasts, skeletons, estado vacío, confirmación de eliminación. Tests vitest + E2E Playwright.
+Página `MyAddressesPage` en `/direcciones` para CLIENT. `AddressCard` con editar/eliminar/marcar predeterminada. `AddressForm` modal reutilizable crear/editar. `DeleteAddressDialog`. 5 hooks TanStack Query v5. Toasts, skeletons, estado vacío. 247/247 vitest. Fixes post-testing: modal centrado (`m-auto` en `<dialog>`), caché TanStack Query limpiado al logout (`queryClient.clear()`), `ProtectedRoute` no guarda `from` en rutas con `requiredRoles` para evitar redirect a ruta sin permisos tras cambio de usuario.
 
 **Skills**: `tailwind-design-system`, `ui-design-system`, `frontend-state-management`, `vercel-react-best-practices`, `testing-e2e-playwright`
 **Dependencias**: `addresses-crud-by-user` ✅, `frontend-layout-components-shared` ✅
@@ -698,8 +699,8 @@ BLOQUE 4 — Perfil + Direcciones + Carrito
 ├─ ✅ backend-user-profile-endpoints
 ├─ ✅ frontend-user-profile-ui
 ├─ ✅ addresses-crud-by-user
-├─ ❌ frontend-addresses-ui          ← PRÓXIMO
-├─ ❌ frontend-shopping-cart-zustand
+├─ ✅ frontend-addresses-ui
+├─ ❌ frontend-shopping-cart-zustand ← PRÓXIMO
 └─ ❌ frontend-shopping-cart-ui
 
 BLOQUE 5 — Pre-checkout + Pedidos
@@ -744,6 +745,7 @@ BLOQUE 9 — Entrega Final
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 3.5 | 2026-05-14 | frontend-addresses-ui archivado. Fixes: modal centrado, queryClient.clear() en logout, ProtectedRoute sin from en rutas con requiredRoles. PRÓXIMO: frontend-shopping-cart-zustand. |
 | 3.4 | 2026-05-14 | addresses-crud-by-user archivado. PRÓXIMO: frontend-addresses-ui. |
 | 3.3 | 2026-05-14 | frontend-catalog-profile-fixes archivado. 3 nuevas specs: toast-error-normalisation, change-password-form, catalog-filter-ui. |
 | 3.2 | 2026-05-13 | INC-01 resuelto. Árbol de bloques sincronizado con estado real. frontend-refactor-apply-skills + frontend-nav-responsive-fix agregados. PRÓXIMO: backend-user-profile-endpoints. |
