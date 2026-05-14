@@ -39,12 +39,10 @@ export function ProductCard({
   onAddToCart,
 }: ProductCardProps) {
   const isAvailable = product.disponible && product.stock_cantidad > 0
-  const priceFormatted =
-    typeof product.precio_base === 'number' && !isNaN(product.precio_base)
-      ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
-          product.precio_base,
-        )
-      : '—'
+  const priceNum = parseFloat(String(product.precio_base))
+  const priceFormatted = isFinite(priceNum)
+    ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(priceNum)
+    : '—'
 
   /**
    * Fallback image for broken/missing images

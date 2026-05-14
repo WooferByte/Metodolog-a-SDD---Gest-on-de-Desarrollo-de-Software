@@ -34,7 +34,7 @@ export interface Product {
   id: string
   nombre: string
   descripcion: string
-  precio_base: number
+  precio_base: number | string
   imagen_url: string
   disponible: boolean
   stock_cantidad: number
