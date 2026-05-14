@@ -22,6 +22,7 @@
 import { useState, useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../store/authStore'
+import { useCartStore } from '../../store/cartStore'
 import { logoutUser } from '../api/authApi'
 
 export interface UseLogoutReturn {
@@ -57,6 +58,8 @@ export function useLogout(): UseLogoutReturn {
     } finally {
       // Clear all cached server state so the next user starts fresh
       queryClient.clear()
+      // Clear cart — each user starts with an empty cart
+      useCartStore.getState().clearCart()
       clearAuthState()
       setIsLoading(false)
     }
