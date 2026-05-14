@@ -19,6 +19,7 @@ from core.models import (
     EstadoPedido, FormaPago, Pedido, DetallePedido, HistorialEstadoPedido, Pago
 )
 from categorias.repository import CategoriaRepository
+from direcciones.repository import DireccionRepository
 from ingredientes.repository import IngredienteRepository
 from productos.repository import (
     ProductoCategoriaRepository,
@@ -81,10 +82,17 @@ class UnitOfWork:
 
     @property
     def direcciones_entrega(self) -> BaseRepository[DireccionEntrega]:
-        """Repository for DireccionEntrega entity."""
+        """Repository for DireccionEntrega entity (generic — kept for backward compatibility)."""
         if "direcciones_entrega" not in self._repositories:
             self._repositories["direcciones_entrega"] = BaseRepository(self.session, DireccionEntrega)
         return self._repositories["direcciones_entrega"]
+
+    @property
+    def direcciones(self) -> DireccionRepository:
+        """Repository for DireccionEntrega with ownership and bulk-update methods."""
+        if "direcciones" not in self._repositories:
+            self._repositories["direcciones"] = DireccionRepository(self.session)
+        return self._repositories["direcciones"]
 
     @property
     def categorias(self) -> CategoriaRepository:
