@@ -23,7 +23,7 @@
  */
 
 import { useState } from 'react'
-import { Menu, X } from 'lucide-react'
+import { Filter, X } from 'lucide-react'
 import { SearchInput } from './SearchInput'
 import { CategoryFilter } from './CategoryFilter'
 import { AllergenFilter } from './AllergenFilter'
@@ -63,6 +63,9 @@ export function FilterBar({
   const [isOpen, setIsOpen] = useState(false)
   const allergens = useAllergensFilter(products)
 
+  const activeCount =
+    categoryIds.length + excludeAllergens.length + (search.trim() ? 1 : 0)
+
   const handleClearAll = () => {
     onSearchChange('')
     onCategoryChange([])
@@ -89,8 +92,8 @@ export function FilterBar({
         />
       </div>
 
-      {/* Allergens */}
-      {products && products.length > 0 && (
+      {/* Allergens — only when current page has products with allergen data */}
+      {products && products.length > 0 ? (
         <div className="py-3">
           <AllergenFilter
             allergens={allergens}
@@ -98,46 +101,46 @@ export function FilterBar({
             onChange={onAllergenChange}
           />
         </div>
-      )}
+      ) : null}
 
       {/* Clear All Button */}
-      {(search || categoryIds.length > 0 || excludeAllergens.length > 0) && (
+      {activeCount > 0 ? (
         <div className="py-3">
           <button
             onClick={handleClearAll}
-            className="w-full px-4 py-2 border border-border text-foreground rounded-lg hover:bg-muted/50 hover:text-foreground font-medium transition-colors"
+            className="w-full px-4 py-2 border border-border text-foreground rounded-lg hover:bg-muted/50 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
             aria-label="Clear all filters"
           >
             Clear All Filters
           </button>
         </div>
-      )}
+      ) : null}
     </div>
   )
 
   return (
     <>
-      {/* ── Mobile: Hamburger trigger (full-width row, no grid impact) ── */}
+      {/* ── Mobile: Filter trigger button (full-width row, no grid impact) ── */}
       <div className="md:hidden mb-4">
         <button
           onClick={() => setIsOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+          className="inline-flex items-center gap-2 px-3 py-2 bg-secondary text-secondary-foreground border border-border rounded-lg hover:bg-muted/50 transition-colors text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
           aria-label="Open filters"
           aria-expanded={isOpen}
           aria-controls="mobile-filter-panel"
         >
-          <Menu size={20} aria-hidden="true" />
-          Filters
-          {(categoryIds.length > 0 || excludeAllergens.length > 0 || search) && (
-            <span className="ml-1 text-xs bg-primary-foreground/20 px-1.5 py-0.5 rounded">
-              {categoryIds.length + excludeAllergens.length + (search ? 1 : 0)}
+          <Filter size={16} aria-hidden="true" />
+          Filtros
+          {activeCount > 0 ? (
+            <span className="ml-1 inline-flex items-center justify-center h-5 min-w-5 px-1 text-xs font-semibold bg-primary text-primary-foreground rounded-full">
+              {activeCount}
             </span>
-          )}
+          ) : null}
         </button>
       </div>
 
       {/* ── Mobile: Fixed overlay panel (z-50, no layout flow) ── */}
-      {isOpen && (
+      {isOpen ? (
         <>
           {/* Backdrop — closes panel on outside click (z-40, below panel) */}
           <div
@@ -160,7 +163,7 @@ export function FilterBar({
               <button
                 onClick={() => setIsOpen(false)}
                 aria-label="Close filters"
-                className="text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                className="text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-md p-1"
               >
                 <X size={20} aria-hidden="true" />
               </button>
@@ -169,13 +172,13 @@ export function FilterBar({
             {filterPanelContent}
           </aside>
         </>
-      )}
+      ) : null}
 
-      {/* ── Desktop: Static sidebar (always visible, no fixed positioning) ── */}
+      {/* ── Desktop: Static sidebar card ── */}
       <aside
         role="complementary"
         aria-label="Product filters"
-        className="hidden md:block bg-card rounded-lg shadow-md p-4"
+        className="hidden md:block bg-card rounded-xl border border-border shadow-sm p-5"
       >
         {filterPanelContent}
       </aside>

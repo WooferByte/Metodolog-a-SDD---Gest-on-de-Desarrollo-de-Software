@@ -148,7 +148,7 @@ export default function CatalogPage() {
       addToCart({
         productId: product.id,
         name: product.nombre,
-        price: product.precio,
+        price: product.precio_base,
         quantity,
         image: product.imagen_url,
       })

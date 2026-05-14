@@ -28,12 +28,13 @@ export interface Category {
 
 /**
  * Product - single product from catalog
+ * NOTE: backend sends `precio_base` (ProductoResponse.precio_base) — keep aligned.
  */
 export interface Product {
   id: string
   nombre: string
   descripcion: string
-  precio: number
+  precio_base: number
   imagen_url: string
   disponible: boolean
   stock_cantidad: number
