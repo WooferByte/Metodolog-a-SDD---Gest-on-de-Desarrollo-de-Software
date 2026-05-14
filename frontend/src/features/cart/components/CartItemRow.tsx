@@ -94,23 +94,14 @@ export function CartItemRow({ item, onQuantityChange, onRemove }: CartItemRowPro
           </div>
         )}
 
-        {/* Stepper + remove row */}
-        <div className="flex items-center justify-between mt-3 gap-3">
+        {/* Stepper + remove — separate so they don't crowd at 375px */}
+        <div className="flex items-center justify-between mt-3">
           <QuantityStepper
             value={item.quantity}
             onChange={handleQuantityChange}
             productName={item.name}
           />
 
-          {/* Subtotal */}
-          <p className="text-sm text-muted-foreground">
-            Subtotal:{' '}
-            <span className="font-semibold text-foreground">
-              {formatCurrency(item.price * item.quantity)}
-            </span>
-          </p>
-
-          {/* Remove button */}
           <button
             type="button"
             onClick={() => onRemove(item.productId)}
@@ -121,6 +112,14 @@ export function CartItemRow({ item, onQuantityChange, onRemove }: CartItemRowPro
             <Trash2 className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
+
+        {/* Subtotal — own line, right-aligned */}
+        <p className="text-xs text-right text-muted-foreground mt-1">
+          Subtotal:{' '}
+          <span className="font-semibold text-foreground">
+            {formatCurrency(item.price * item.quantity)}
+          </span>
+        </p>
       </div>
     </article>
   )

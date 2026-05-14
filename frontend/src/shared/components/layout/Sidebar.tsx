@@ -21,6 +21,7 @@
 
 import { useEffect, useCallback } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { Moon, Sun } from 'lucide-react'
 import { useUIStore } from '@/store/uiStore'
 import { useNavLinks } from '@/shared/hooks/useNavLinks'
 import { cn } from '@/shared/lib/utils'
@@ -28,6 +29,8 @@ import { cn } from '@/shared/lib/utils'
 export function Sidebar() {
   const sidebarOpen = useUIStore((s) => s.sidebarOpen)
   const toggleSidebar = useUIStore((s) => s.toggleSidebar)
+  const theme = useUIStore((s) => s.theme)
+  const setTheme = useUIStore((s) => s.setTheme)
   const navLinks = useNavLinks()
   const location = useLocation()
 
@@ -132,6 +135,27 @@ export function Sidebar() {
             })}
           </ul>
         </nav>
+
+        {/* Footer — theme toggle */}
+        <div className="border-t border-border px-3 py-4">
+          <button
+            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+            aria-label={theme === 'light' ? 'Activar modo oscuro' : 'Activar modo claro'}
+            className={cn(
+              'w-full flex items-center gap-3 rounded-lg px-3 py-2',
+              'text-sm font-medium text-muted-foreground',
+              'hover:bg-accent hover:text-accent-foreground',
+              'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            )}
+          >
+            {theme === 'light' ? (
+              <Moon className="h-4 w-4" aria-hidden="true" />
+            ) : (
+              <Sun className="h-4 w-4" aria-hidden="true" />
+            )}
+            {theme === 'light' ? 'Modo oscuro' : 'Modo claro'}
+          </button>
+        </div>
       </aside>
     </>
   )
