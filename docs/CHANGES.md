@@ -404,11 +404,12 @@ Modelo `DireccionEntrega` con campo `es_predeterminada` *(INC-02 ✅ resuelto)*.
 ---
 
 ### ❌ `frontend-addresses-ui`
+**Change propuesto**: `openspec/changes/frontend-addresses-ui/` (proposal + design + specs + tasks ✅)
 
-Página MyAddresses. AddressCard con editar/eliminar/predeterminada. Form AddressForm.
+Página `MyAddressesPage` en `/direcciones` para CLIENT. `AddressCard` con editar/eliminar/marcar predeterminada. `AddressForm` modal reutilizable crear/editar. 5 hooks TanStack Query v5. Toasts, skeletons, estado vacío, confirmación de eliminación. Tests vitest + E2E Playwright.
 
-**Skills**: `frontend-design`, `tailwind-design-system`
-**Dependencias**: `addresses-crud-by-user`, `frontend-layout-components-shared`
+**Skills**: `tailwind-design-system`, `ui-design-system`, `frontend-state-management`, `vercel-react-best-practices`, `testing-e2e-playwright`
+**Dependencias**: `addresses-crud-by-user` ✅, `frontend-layout-components-shared` ✅
 
 ---
 
