@@ -43,7 +43,7 @@ export interface CartItem {
   price: number
   quantity: number
   image?: string
-  ingredientes_excluidos?: string[] // Ingredient personalization
+  ingredientes_excluidos?: number[] // Ingredient personalization — IDs as integers (RN-CR04/05, aligns with backend INTEGER[])
 }
 
 /**
@@ -97,6 +97,7 @@ export interface UIStore {
   // State
   theme: 'light' | 'dark'
   sidebarOpen: boolean
+  cartDrawerOpen: boolean
   toasts: Array<{
     id: string
     message: string
@@ -108,6 +109,8 @@ export interface UIStore {
   // Actions
   setTheme: (theme: UIStore['theme']) => void
   toggleSidebar: () => void
+  toggleCartDrawer: () => void
+  setCartDrawerOpen: (open: boolean) => void
   addToast: (toast: Omit<UIStore['toasts'][0], 'id'>) => void
   removeToast: (toastId: string) => void
   setHasHydrated: (hydrated: boolean) => void

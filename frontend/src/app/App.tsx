@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '@/shared/config/queryClient'
@@ -7,6 +7,11 @@ import Router from '@/app/Router'
 import { AppLayout } from '@/shared/components/layout'
 import { ToastContainer } from '@/shared/components/ToastContainer'
 import { useUIStore } from '@/store/uiStore'
+
+// CartDrawer is lazy-loaded — it only initializes when first opened (bundle-dynamic-imports)
+const CartDrawer = lazy(() =>
+  import('@/widgets/CartDrawer').then((m) => ({ default: m.CartDrawer }))
+)
 
 /**
  * Root Application Component
@@ -42,6 +47,10 @@ export default function App() {
           <AppLayout>
             <Router />
           </AppLayout>
+          {/* CartDrawer — global overlay, outside <Routes> so it persists across route changes */}
+          <Suspense fallback={null}>
+            <CartDrawer />
+          </Suspense>
           {/* ToastContainer rendered outside <main> — floats over all content */}
           <ToastContainer />
         </BrowserRouter>

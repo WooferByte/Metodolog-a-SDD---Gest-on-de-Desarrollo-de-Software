@@ -71,16 +71,13 @@ describe('CartStore', () => {
         name: 'Pizza',
         price: 10.99,
         quantity: 1,
-        ingredientes_excluidos: ['onion', 'mushroom'],
+        ingredientes_excluidos: [1, 2], // number[] — aligns with backend INTEGER[] (RN-CR04/05)
       }
 
       addItem(item)
 
       const state = useCartStore.getState()
-      expect(state.items[0].ingredientes_excluidos).toEqual([
-        'onion',
-        'mushroom',
-      ])
+      expect(state.items[0].ingredientes_excluidos).toEqual([1, 2])
     })
   })
 
@@ -321,14 +318,14 @@ describe('CartStore', () => {
         name: 'Pizza',
         price: 10.99,
         quantity: 1,
-        ingredientes_excluidos: ['onion'],
+        ingredientes_excluidos: [5], // number[] — ID 5 as integer (RN-CR04/05)
       }
 
       addItem(item)
 
       const stored = localStorage.getItem('food-store-cart')
       const parsed = JSON.parse(stored!)
-      expect(parsed.state.items[0].ingredientes_excluidos).toEqual(['onion'])
+      expect(parsed.state.items[0].ingredientes_excluidos).toEqual([5])
     })
   })
 

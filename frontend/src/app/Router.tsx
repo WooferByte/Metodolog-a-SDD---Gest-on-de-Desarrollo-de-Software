@@ -13,6 +13,7 @@ const Profile          = lazy(() => import('@/pages/Profile'))
 const Orders           = lazy(() => import('@/pages/Orders'))
 const Admin            = lazy(() => import('@/pages/Admin'))
 const MyAddressesPage  = lazy(() => import('@/pages/MyAddressesPage'))
+const CartPage         = lazy(() => import('@/pages/CartPage'))
 
 /**
  * Router — defines all application routes.
@@ -42,8 +43,7 @@ export default function Router() {
         <Route element={<ProtectedRoute requiredRoles={['CLIENT', 'ADMIN']} />}>
           <Route path="/profile" element={<Profile />} />
           <Route path="/orders" element={<Orders />} />
-          {/* /cart — placeholder until dedicated page exists */}
-          <Route path="/cart" element={<Admin />} />
+          <Route path="/cart" element={<CartPage />} />
           <Route path="/addresses" element={<MyAddressesPage />} />
         </Route>
 

@@ -37,6 +37,7 @@ export const useUIStore = create<UIStore>()(
       // Initial state
       theme: 'light',
       sidebarOpen: false,
+      cartDrawerOpen: false,
       toasts: [],
       _hasHydrated: false,
 
@@ -48,6 +49,15 @@ export const useUIStore = create<UIStore>()(
         set((state) => ({
           sidebarOpen: !state.sidebarOpen,
         })),
+
+      // Action: Toggle cart drawer visibility
+      toggleCartDrawer: () =>
+        set((state) => ({
+          cartDrawerOpen: !state.cartDrawerOpen,
+        })),
+
+      // Action: Set cart drawer open/close explicitly
+      setCartDrawerOpen: (open: boolean) => set({ cartDrawerOpen: open }),
 
       // Action: Add toast notification
       // Generates unique ID for toast using crypto.randomUUID (available in

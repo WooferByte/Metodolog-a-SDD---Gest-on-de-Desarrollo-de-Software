@@ -230,11 +230,11 @@ describe('MANUAL TESTS - CHANGE 8 (frontend-zustand-stores-setup)', () => {
         name: 'Pepperoni Pizza',
         price: 12.99,
         quantity: 1,
-        ingredientes_excluidos: ['onion', 'garlic']
+        ingredientes_excluidos: [1, 2] // number[] — IDs as integers (RN-CR04/05)
       })
 
       const item = store.getItem('pizza-001')
-      expect(item?.ingredientes_excluidos).toEqual(['onion', 'garlic'])
+      expect(item?.ingredientes_excluidos).toEqual([1, 2])
     })
 
     it('Test 15: localStorage persistence (cart)', () => {

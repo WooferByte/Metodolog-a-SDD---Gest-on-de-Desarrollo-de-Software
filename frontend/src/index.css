@@ -34,6 +34,14 @@
   --color-card: oklch(100% 0 0);
   --color-card-foreground: oklch(14.5% 0.025 264);
 
+  /* Food Store brand — warm amber/orange for appetite appeal */
+  --color-brand: oklch(72% 0.18 55);
+  --color-brand-foreground: oklch(15% 0.02 55);
+
+  /* Cart item row surface tokens */
+  --color-cart-item-bg: oklch(98% 0.005 264);
+  --color-cart-item-border: oklch(92% 0.01 264);
+
   /* Status colors for Badge component */
   --color-success: oklch(55% 0.15 145);
   --color-success-foreground: oklch(98% 0.01 145);
