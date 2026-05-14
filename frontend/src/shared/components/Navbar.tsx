@@ -1,18 +1,19 @@
 /**
- * Navbar — top bar: brand, sidebar toggle, user info, theme toggle.
+ * Navbar — top bar: brand, sidebar toggle, user info, cart icon.
  *
  * Navigation links are NOT rendered here — the Sidebar handles all
  * navigation in every breakpoint (mobile overlay + desktop persistent).
+ * Theme toggle lives in the Sidebar footer.
  *
  * Layout:
  *   Left:  [☰ Hamburger] [Food Store]
- *   Right: [user@email] [Cerrar sesión] [🌙 Theme toggle]
+ *   Right: [user@email] [Cerrar sesión] [🛒 Cart]
  *
  * All styles use Tailwind v4 utility classes — zero inline style props.
  */
 
 import { Link } from 'react-router-dom'
-import { Menu, X, Moon, Sun, ShoppingCart } from 'lucide-react'
+import { Menu, X, ShoppingCart } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useUIStore } from '@/store/uiStore'
 import { useCartStore } from '@/store/cartStore'
@@ -26,15 +27,9 @@ export default function Navbar() {
   const sidebarOpen = useUIStore((s) => s.sidebarOpen)
   const toggleSidebar = useUIStore((s) => s.toggleSidebar)
   const toggleCartDrawer = useUIStore((s) => s.toggleCartDrawer)
-  const theme = useUIStore((s) => s.theme)
-  const setTheme = useUIStore((s) => s.setTheme)
 
   // Granular selector — re-renders only when item count changes (not when prices change)
   const cartCount = useCartStore((s) => s.totalItems())
-
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light')
-  }
 
   return (
     <nav className="bg-gray-900 text-white flex items-center justify-between px-4 py-3 z-40 relative">
@@ -61,7 +56,7 @@ export default function Navbar() {
         </Link>
       </div>
 
-      {/* Right: User info + theme toggle */}
+      {/* Right: User info + cart */}
       <div className="flex items-center gap-4">
         {isAuthenticated && (
           <>
@@ -100,18 +95,6 @@ export default function Navbar() {
           )}
         </button>
 
-        {/* Theme toggle */}
-        <button
-          onClick={toggleTheme}
-          aria-label={theme === 'light' ? 'Activar modo oscuro' : 'Activar modo claro'}
-          className="p-1.5 rounded-md text-gray-300 hover:text-white hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-        >
-          {theme === 'light' ? (
-            <Moon className="h-5 w-5" aria-hidden="true" />
-          ) : (
-            <Sun className="h-5 w-5" aria-hidden="true" />
-          )}
-        </button>
       </div>
     </nav>
   )
