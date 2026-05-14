@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-14 (frontend-addresses-ui archivado)
+> **Última actualización**: 2026-05-14 (frontend-shopping-cart-zustand archivado)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -416,12 +416,14 @@ Página `MyAddressesPage` en `/direcciones` para CLIENT. `AddressCard` con edita
 
 ## EPIC 08 — Carrito de Compras
 
-### ❌ `frontend-shopping-cart-zustand`
+### ✅ `frontend-shopping-cart-zustand`
+Archivado: `2026-05-14-frontend-shopping-cart-zustand`
+**Evidencia**: `openspec/changes/archive/2026-05-14-frontend-shopping-cart-zustand/`
 
-Completar `cartStore`: `addItem`, `removeItem`, `updateQuantity`, `clearCart`, selectores, persistencia localStorage. Personalización como array de IDs de ingredientes a excluir (RN-CR04, RN-CR05). Incrementar cantidad si producto ya en carrito (RN-CR03).
+CartStore hardening (`ingredientes_excluidos: number[]`, `uiStore` con `cartDrawerOpen`). Feature `features/cart/`: `useCart`, `QuantityStepper`, `CartItemRow`, `EmptyCart`, `OrderSummary`. Widget `CartDrawer` (slide-in, focus trap, Escape, backdrop). `CartPage` lazy-loaded. CartIcon con badge animado en Navbar. 275/275 vitest. Fixes post-testing: theme toggle movido al footer del Sidebar, cart se vacía al logout, redirect a `/login` al hacer checkout sin sesión (CartDrawer + OrderSummary con `state.from` correcto).
 
-**Skills**: `frontend-design`
-**Dependencias**: `frontend-zustand-stores-setup`
+**Skills**: `tailwind-design-system`, `ui-design-system`, `zustand-state-management`, `frontend-state-management`, `vercel-react-best-practices`, `testing-e2e-playwright`
+**Dependencias**: `frontend-zustand-stores-setup` ✅
 
 ---
 
@@ -700,8 +702,8 @@ BLOQUE 4 — Perfil + Direcciones + Carrito
 ├─ ✅ frontend-user-profile-ui
 ├─ ✅ addresses-crud-by-user
 ├─ ✅ frontend-addresses-ui
-├─ ❌ frontend-shopping-cart-zustand ← PRÓXIMO
-└─ ❌ frontend-shopping-cart-ui
+├─ ✅ frontend-shopping-cart-zustand
+└─ ❌ frontend-shopping-cart-ui     ← PRÓXIMO
 
 BLOQUE 5 — Pre-checkout + Pedidos
 ├─ ❌ checkout-pre-validation
@@ -745,6 +747,7 @@ BLOQUE 9 — Entrega Final
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 3.6 | 2026-05-14 | frontend-shopping-cart-zustand archivado. CartDrawer + CartPage + store hardening. Fixes: theme toggle sidebar, cart clear logout, checkout redirect. PRÓXIMO: frontend-shopping-cart-ui. |
 | 3.5 | 2026-05-14 | frontend-addresses-ui archivado. Fixes: modal centrado, queryClient.clear() en logout, ProtectedRoute sin from en rutas con requiredRoles. PRÓXIMO: frontend-shopping-cart-zustand. |
 | 3.4 | 2026-05-14 | addresses-crud-by-user archivado. PRÓXIMO: frontend-addresses-ui. |
 | 3.3 | 2026-05-14 | frontend-catalog-profile-fixes archivado. 3 nuevas specs: toast-error-normalisation, change-password-form, catalog-filter-ui. |
