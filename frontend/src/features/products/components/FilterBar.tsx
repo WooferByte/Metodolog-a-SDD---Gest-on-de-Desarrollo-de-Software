@@ -24,18 +24,15 @@
 
 import { useState } from 'react'
 import { Filter, X } from 'lucide-react'
-import { SearchInput } from './SearchInput'
 import { CategoryFilter } from './CategoryFilter'
 import { AllergenFilter } from './AllergenFilter'
 import { useAllergensFilter } from '@/features/products/hooks'
 import type { Product } from '@/features/products/types'
 
 interface FilterBarProps {
-  search: string
   categoryIds: string[]
   excludeAllergens: string[]
   products: Product[] | undefined
-  onSearchChange: (value: string) => void
   onCategoryChange: (ids: string[]) => void
   onAllergenChange: (ids: string[]) => void
 }
@@ -52,22 +49,18 @@ interface FilterBarProps {
  * @param onAllergenChange - Callback when allergens change
  */
 export function FilterBar({
-  search,
   categoryIds,
   excludeAllergens,
   products,
-  onSearchChange,
   onCategoryChange,
   onAllergenChange,
 }: FilterBarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const allergens = useAllergensFilter(products)
 
-  const activeCount =
-    categoryIds.length + excludeAllergens.length + (search.trim() ? 1 : 0)
+  const activeCount = categoryIds.length + excludeAllergens.length
 
   const handleClearAll = () => {
-    onSearchChange('')
     onCategoryChange([])
     onAllergenChange([])
   }
@@ -75,15 +68,6 @@ export function FilterBar({
   // Shared filter panel content — used in both desktop sidebar and mobile overlay
   const filterPanelContent = (
     <div className="divide-y divide-border">
-      {/* Search */}
-      <div className="py-3">
-        <SearchInput
-          value={search}
-          onChange={onSearchChange}
-          placeholder="Search products..."
-        />
-      </div>
-
       {/* Categories */}
       <div className="py-3">
         <CategoryFilter
