@@ -23,7 +23,7 @@
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { X, ShoppingCart } from 'lucide-react'
-import { useUIStore, useCartStore } from '@/store'
+import { useUIStore, useCartStore, useAuthStore } from '@/store'
 import { CartItemRow } from '@/features/cart/components/CartItemRow'
 import { EmptyCart } from '@/features/cart/components/EmptyCart'
 import { formatCurrency } from '@/features/cart/types'
@@ -31,6 +31,8 @@ import { formatCurrency } from '@/features/cart/types'
 export function CartDrawer() {
   const cartDrawerOpen = useUIStore((s) => s.cartDrawerOpen)
   const setCartDrawerOpen = useUIStore((s) => s.setCartDrawerOpen)
+
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   // Granular selectors — never subscribe to entire store
   const items = useCartStore((s) => s.items)
@@ -167,9 +169,10 @@ export function CartDrawer() {
                 Ver carrito completo
               </Link>
 
-              {/* Checkout CTA */}
+              {/* Checkout CTA — redirect to login if not authenticated */}
               <Link
-                to="/checkout"
+                to={isAuthenticated ? '/checkout' : '/login'}
+                state={isAuthenticated ? undefined : { from: { pathname: '/checkout' } }}
                 onClick={() => setCartDrawerOpen(false)}
                 className="block w-full py-2.5 px-4 rounded-md bg-primary text-primary-foreground font-semibold text-sm text-center hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >

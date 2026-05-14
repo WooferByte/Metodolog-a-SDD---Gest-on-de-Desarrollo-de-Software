@@ -23,7 +23,8 @@ export function OrderSummary() {
   const isEmpty = itemCount === 0
 
   const ctaTo = isAuthenticated ? '/checkout' : '/login'
-  const ctaState = isAuthenticated ? undefined : { from: '/checkout' }
+  // Login page expects { from: { pathname } } — same shape as ProtectedRoute
+  const ctaState = isAuthenticated ? undefined : { from: { pathname: '/checkout' } }
 
   return (
     <aside
