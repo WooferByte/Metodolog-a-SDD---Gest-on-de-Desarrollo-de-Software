@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-14 (frontend-catalog-profile-fixes archivado — fixes catálogo, perfil y toasts)
+> **Última actualización**: 2026-05-14 (addresses-crud-by-user archivado)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -392,9 +392,11 @@ Fixes post-entrega EPIC 05 y 06. (1) Toast normalisation: `safeString()` en inte
 
 ## EPIC 07 — Direcciones de Entrega
 
-### ❌ `addresses-crud-by-user`
+### ✅ `addresses-crud-by-user`
+Archivado: `2026-05-14-addresses-crud-by-user`
+**Evidencia**: `openspec/changes/archive/2026-05-14-addresses-crud-by-user/`
 
-Modelo `DireccionEntrega` con campo `es_predeterminada` *(🔧 verificar INC-02 — puede estar como `es_principal` en BD)*. `POST/GET/PUT/PATCH/DELETE /api/v1/direcciones`. Primera dirección → predeterminada automática (RN-DI01). Solo una predeterminada por usuario (RN-DI02). Ownership por userId JWT (RN-DI03).
+Modelo `DireccionEntrega` con campo `es_predeterminada` *(INC-02 ✅ resuelto)*. `POST/GET/PUT/PATCH/DELETE /api/v1/direcciones`. Primera dirección → predeterminada automática (RN-DI01). Solo una predeterminada por usuario (RN-DI02). Ownership por userId JWT (RN-DI03).
 
 **Skills**: `fastapi-python`, `postgres`
 **Dependencias**: `route-protection-rbac`
@@ -694,10 +696,8 @@ BLOQUE 3 — Layout + Catálogo
 BLOQUE 4 — Perfil + Direcciones + Carrito
 ├─ ✅ backend-user-profile-endpoints
 ├─ ✅ frontend-user-profile-ui
-├─ ❌ addresses-crud-by-user          ← PRÓXIMO
-├─ ❌ frontend-user-profile-ui
-├─ ❌ addresses-crud-by-user
-├─ ❌ frontend-addresses-ui
+├─ ✅ addresses-crud-by-user
+├─ ❌ frontend-addresses-ui          ← PRÓXIMO
 ├─ ❌ frontend-shopping-cart-zustand
 └─ ❌ frontend-shopping-cart-ui
 
@@ -743,6 +743,7 @@ BLOQUE 9 — Entrega Final
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 3.4 | 2026-05-14 | addresses-crud-by-user archivado. PRÓXIMO: frontend-addresses-ui. |
 | 3.3 | 2026-05-14 | frontend-catalog-profile-fixes archivado. 3 nuevas specs: toast-error-normalisation, change-password-form, catalog-filter-ui. |
 | 3.2 | 2026-05-13 | INC-01 resuelto. Árbol de bloques sincronizado con estado real. frontend-refactor-apply-skills + frontend-nav-responsive-fix agregados. PRÓXIMO: backend-user-profile-endpoints. |
 | 3.1 | 2026-05-11 | Estado real sincronizado con OPSX archive. 6 inconsistencias documentadas (INC-01 a INC-06). BLOQUE 0 de reparación agregado. Nuevos changes: `frontend-widgets-layer`, `frontend-patterns-hooks-optimistic`, `deploy-production`. Corrección naming `es_predeterminada`. `INTEGER[]` explicitado en pedidos. `frontend-products-catalog-ui` marcado ⚠️. |
