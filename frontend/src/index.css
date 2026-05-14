@@ -75,6 +75,14 @@
     from { transform: translateY(-0.5rem); opacity: 0; }
     to   { transform: translateY(0);       opacity: 1; }
   }
+
+  /* Cart item entry animation: slide down from -8px with fade */
+  --animate-slide-in-down: slide-in-down 0.2s ease-out;
+
+  @keyframes slide-in-down {
+    from { transform: translateY(-8px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
 }
 
 /* ── Dark mode variant — activates on .dark class ─────────── */

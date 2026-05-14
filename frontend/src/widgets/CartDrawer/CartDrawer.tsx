@@ -133,8 +133,8 @@ export function CartDrawer() {
           </button>
         </header>
 
-        {/* Scrollable item list */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+        {/* Scrollable item list — scroll-smooth + overscroll-contain for iOS */}
+        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-3 scroll-smooth">
           {items.length === 0 ? (
             <EmptyCart />
           ) : (
@@ -174,9 +174,9 @@ export function CartDrawer() {
                 to={isAuthenticated ? '/checkout' : '/login'}
                 state={isAuthenticated ? undefined : { from: { pathname: '/checkout' } }}
                 onClick={() => setCartDrawerOpen(false)}
-                className="block w-full py-2.5 px-4 rounded-md bg-primary text-primary-foreground font-semibold text-sm text-center hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="block w-full py-3 px-4 rounded-md bg-primary text-primary-foreground font-semibold text-sm text-center hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                Proceder al pago
+                Proceder al pago · {formatCurrency(totalPrice)}
               </Link>
             </div>
           </footer>

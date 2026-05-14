@@ -5,6 +5,9 @@
  * - Shows item count and total price
  * - CTA button is disabled when cart is empty
  * - Shows correct pluralization for 1 vs N items
+ * - Shows delivery breakdown with FREE_DELIVERY_THRESHOLD logic
+ * - Shows "¡Gratis!" badge when subtotal >= 3000
+ * - Shows progress text when below threshold
  */
 
 import '@testing-library/jest-dom'
@@ -48,7 +51,8 @@ describe('OrderSummary', () => {
     renderWithRouter(<OrderSummary />)
     expect(screen.getByText('3 productos')).toBeInTheDocument()
     // CTA should be a link (not a disabled button) when cart has items
-    expect(screen.getByRole('link', { name: 'Proceder al pago' })).toBeInTheDocument()
+    // Text includes total: "Proceder al pago · $X.XXX"
+    expect(screen.getByRole('link', { name: /Proceder al pago/i })).toBeInTheDocument()
   })
 
   it('uses singular "producto" for exactly 1 item', () => {
@@ -69,5 +73,31 @@ describe('OrderSummary', () => {
     expect(
       screen.getByText(/Deberás iniciar sesión para completar el pedido/i)
     ).toBeInTheDocument()
+  })
+
+  it('shows free delivery badge when subtotal >= 3000', () => {
+    useCartStore.setState({
+      items: [{ productId: 'p1', name: 'Pizza', price: 3000, quantity: 1 }],
+    })
+    renderWithRouter(<OrderSummary />)
+    expect(screen.getByLabelText('Envío gratis')).toBeInTheDocument()
+  })
+
+  it('shows "Te faltan" progress text when below FREE_DELIVERY_THRESHOLD', () => {
+    useCartStore.setState({
+      items: [{ productId: 'p1', name: 'Pizza', price: 1000, quantity: 1 }],
+    })
+    renderWithRouter(<OrderSummary />)
+    expect(screen.getByText(/Te faltan/i)).toBeInTheDocument()
+  })
+
+  it('shows subtotal and delivery rows in the breakdown', () => {
+    useCartStore.setState({
+      items: [{ productId: 'p1', name: 'Pizza', price: 500, quantity: 1 }],
+    })
+    renderWithRouter(<OrderSummary />)
+    expect(screen.getByText('Subtotal')).toBeInTheDocument()
+    expect(screen.getByText('Envío')).toBeInTheDocument()
+    expect(screen.getByText('Total')).toBeInTheDocument()
   })
 })

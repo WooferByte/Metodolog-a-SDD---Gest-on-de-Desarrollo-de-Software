@@ -4,16 +4,16 @@
  * FSD layer: pages/ (consumes features/cart and widgets)
  *
  * Layout:
- *   - Desktop (lg+): two-column — items list left, OrderSummary sticky right
- *   - Mobile: single column — items list, then OrderSummary below
+ *   - Desktop (lg+): two-column — items list left (col-span-2), OrderSummary sticky right (col-span-1)
+ *   - Mobile: single column — items list, then OrderSummary below (sticky bottom-0 on mobile)
  *
  * State: ALL via useCartStore (zero useState for cart logic).
  * Empty state: EmptyCart component when items.length === 0.
  *
  * Accessibility:
  *   - <main> with aria-label="Carrito de compras"
- *   - <h1> heading
- *   - "Vaciar carrito" only visible when cart has items
+ *   - <h1> heading with item count
+ *   - "Vaciar carrito" only visible when cart has items (text-destructive)
  *
  * Performance:
  *   - Lazy-loaded from Router.tsx (bundle-dynamic-imports)
@@ -26,6 +26,7 @@ import { CartItemRow, OrderSummary, EmptyCart } from '@/features/cart/components
 export default function CartPage() {
   // Granular selectors
   const items = useCartStore((s) => s.items)
+  const totalItems = useCartStore((s) => s.totalItems())
   const removeItem = useCartStore((s) => s.removeItem)
   const updateQuantity = useCartStore((s) => s.updateQuantity)
   const clearCart = useCartStore((s) => s.clearCart)
@@ -37,14 +38,21 @@ export default function CartPage() {
       aria-label="Carrito de compras"
       className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
     >
-      {/* Page header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Mi carrito</h1>
+      {/* Page header with separator */}
+      <div className="flex items-center justify-between border-b border-border mb-6 pb-4">
+        <h1 className="text-2xl font-bold text-foreground">
+          Mi Carrito
+          {!isEmpty && (
+            <span className="ml-2 text-base font-normal text-muted-foreground">
+              ({totalItems} {totalItems !== 1 ? 'ítems' : 'ítem'})
+            </span>
+          )}
+        </h1>
         {!isEmpty && (
           <button
             type="button"
             onClick={clearCart}
-            className="text-sm text-muted-foreground hover:text-destructive underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+            className="text-sm text-destructive hover:text-destructive/80 underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
           >
             Vaciar carrito
           </button>
@@ -70,8 +78,8 @@ export default function CartPage() {
             </ul>
           </section>
 
-          {/* Order summary panel */}
-          <div>
+          {/* Order summary panel — sticky on desktop, visible at bottom on mobile */}
+          <div className="lg:sticky lg:top-4">
             <OrderSummary />
           </div>
         </div>

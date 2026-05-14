@@ -2,12 +2,15 @@
  * CartItemRow — renders a single cart item.
  *
  * Layout mobile: image left (80×80), content right in column.
- * Layout desktop (sm+): flex-row with image, name+price, stepper+remove.
+ * Layout desktop (sm+): image 96×96, wider layout.
  *
  * Accessibility (WCAG 2.1 AA):
  *   - article with aria-label="Producto: {name}"
  *   - remove button: aria-label="Eliminar {name} del carrito"
  *   - image alt text or role="presentation" on fallback
+ *
+ * Animation: entry slide-in-down via CSS @keyframes (defined in index.css).
+ *   Uses @starting-style via inline style + animate utility.
  *
  * Styling: Only semantic Tailwind v4 tokens — zero raw colors.
  */
@@ -36,18 +39,18 @@ export function CartItemRow({ item, onQuantityChange, onRemove }: CartItemRowPro
     <article
       role="article"
       aria-label={`Producto: ${item.name}`}
-      className="flex gap-4 p-4 bg-card border border-border rounded-lg hover:border-ring transition-colors"
+      className="flex gap-4 p-4 bg-card border border-border rounded-lg hover:border-ring transition-colors animate-[slide-in-down_0.2s_ease-out]"
     >
-      {/* Product image */}
+      {/* Product image — 80×80 mobile, 96×96 desktop (sm+) */}
       <div className="shrink-0">
         {item.image ? (
           <img
             src={item.image}
             alt={item.name}
             loading="lazy"
-            width={80}
-            height={80}
-            className="w-20 h-20 object-cover rounded-md bg-muted"
+            width={96}
+            height={96}
+            className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-md bg-muted"
             onError={(e) => {
               const img = e.currentTarget
               img.style.display = 'none'
@@ -57,14 +60,14 @@ export function CartItemRow({ item, onQuantityChange, onRemove }: CartItemRowPro
             }}
           />
         ) : null}
-        {/* Fallback — always in DOM; hidden when image loads */}
+        {/* Fallback — elegant gradient with initial letter, not plain grey */}
         <div
           role="img"
           aria-label={`Imagen de ${item.name}`}
-          className="w-20 h-20 rounded-md bg-muted flex items-center justify-center text-3xl"
+          className="w-20 h-20 sm:w-24 sm:h-24 rounded-md bg-gradient-to-br from-brand/20 to-brand/40 flex items-center justify-center text-2xl font-bold text-brand-foreground select-none"
           style={{ display: item.image ? 'none' : 'flex' }}
         >
-          🍔
+          {item.name.charAt(0).toUpperCase()}
         </div>
       </div>
 
@@ -80,13 +83,13 @@ export function CartItemRow({ item, onQuantityChange, onRemove }: CartItemRowPro
           </p>
         </div>
 
-        {/* Ingredientes excluidos pills */}
+        {/* Ingredientes excluidos — visual badge pills (task 2.2) */}
         {item.ingredientes_excluidos && item.ingredientes_excluidos.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-1">
+          <div className="flex flex-wrap gap-1 mt-1.5" aria-label="Personalizaciones">
             {item.ingredientes_excluidos.map((ingredienteId) => (
               <span
                 key={ingredienteId}
-                className="text-xs text-muted-foreground bg-muted rounded px-2 py-0.5"
+                className="bg-muted border border-border text-xs rounded-full px-2 py-0.5 text-muted-foreground"
               >
                 Sin: #{ingredienteId}
               </span>
@@ -113,7 +116,7 @@ export function CartItemRow({ item, onQuantityChange, onRemove }: CartItemRowPro
           </button>
         </div>
 
-        {/* Subtotal — own line, right-aligned */}
+        {/* Subtotal — own line, right-aligned (task 2.4) */}
         <p className="text-xs text-right text-muted-foreground mt-1">
           Subtotal:{' '}
           <span className="font-semibold text-foreground">
