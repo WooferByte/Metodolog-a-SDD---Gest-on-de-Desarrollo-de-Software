@@ -61,9 +61,9 @@ export function AllergenFilter({
   if (allergens.length === 0) {
     return (
       <div className="space-y-2">
-        <label className="block text-sm font-semibold text-foreground">
+        <h3 className="text-sm font-semibold text-foreground">
           Allergen Exclusions
-        </label>
+        </h3>
         <p className="text-sm text-muted-foreground">No allergens found in current products</p>
       </div>
     )
@@ -72,20 +72,20 @@ export function AllergenFilter({
   return (
     <div className="space-y-2">
       <fieldset>
-        <legend className="text-sm font-semibold text-foreground mb-2">
+        <legend className="text-sm font-semibold text-foreground mb-3">
           Exclude Allergens
         </legend>
-        <div className="space-y-2 max-h-48 overflow-y-auto">
+        <div className="space-y-1 max-h-48 overflow-y-auto">
           {allergens.map((allergen) => (
             <label
               key={allergen.id}
-              className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1 rounded transition-colors"
+              className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 px-1 py-1 rounded transition-colors"
             >
               <input
                 type="checkbox"
                 checked={selectedIds.includes(allergen.id)}
                 onChange={() => handleToggle(allergen.id)}
-                className="w-4 h-4 rounded border-border text-red-600 focus:ring-2 focus:ring-red-500"
+                className="w-4 h-4 accent-primary rounded border-border focus:ring-2 focus:ring-ring focus:ring-offset-1"
                 aria-label={`Exclude ${allergen.nombre} (found in ${allergen.count} product${allergen.count !== 1 ? 's' : ''})`}
               />
               <span className="text-sm text-foreground flex-1">{allergen.nombre}</span>
@@ -101,7 +101,7 @@ export function AllergenFilter({
       {selectedIds.length > 0 && (
         <button
           onClick={handleClearAll}
-          className="w-full text-sm text-destructive hover:text-destructive/80 font-medium py-1 transition-colors"
+          className="w-full text-sm text-destructive hover:text-destructive/80 font-medium py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
           aria-label="Clear all allergen filters"
         >
           Clear All

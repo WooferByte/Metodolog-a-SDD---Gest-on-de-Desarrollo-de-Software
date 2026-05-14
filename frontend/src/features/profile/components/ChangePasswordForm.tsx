@@ -4,7 +4,14 @@
  * Client-side validation:
  *   - passwordActual: required, min 8 chars
  *   - nuevaPassword: required, min 8 chars
- *   - nuevaPassword !== passwordActual
+ *
+ * NOTE: The same-password equality check has been intentionally removed.
+ * The backend is the only entity that can determine whether the supplied
+ * `password_actual` matches the stored hash. A client-side string comparison
+ * would incorrectly block valid requests (e.g. when the user mistyped the
+ * current password field) and provide no security benefit. The backend 400
+ * response for a wrong current password is handled by the Axios interceptor
+ * toast — no client-side check needed.
  *
  * On 204 success: shows success toast + waits 2000ms + authStore.logout()
  * ProtectedRoute then redirects automatically to /login.
@@ -54,9 +61,6 @@ export function ChangePasswordForm() {
       newErrors.nuevaPassword = 'La nueva contraseña es requerida.'
     } else if (nuevaPassword.length < 8) {
       newErrors.nuevaPassword = 'La nueva contraseña debe tener al menos 8 caracteres.'
-    } else if (nuevaPassword === passwordActual) {
-      newErrors.nuevaPassword =
-        'La nueva contraseña debe ser diferente a la actual.'
     }
 
     return newErrors

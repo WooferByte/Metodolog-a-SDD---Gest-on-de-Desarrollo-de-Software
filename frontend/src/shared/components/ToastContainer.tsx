@@ -49,27 +49,27 @@ const DEFAULT_DURATION: Record<ToastType, number> = {
 
 const TOAST_STYLES: Record<ToastType, string> = {
   success:
-    'border-green-200 bg-green-50 text-green-800',
+    'border-border bg-card text-foreground',
   error:
-    'border-red-200 bg-red-50 text-red-800',
+    'border-destructive/30 bg-destructive/10 text-foreground',
   warning:
-    'border-yellow-200 bg-yellow-50 text-yellow-800',
+    'border-border bg-muted text-foreground',
   info:
-    'border-blue-200 bg-blue-50 text-blue-800',
+    'border-border bg-card text-foreground',
 }
 
 const ICON_STYLES: Record<ToastType, string> = {
-  success: 'text-green-500',
-  error: 'text-red-500',
-  warning: 'text-yellow-500',
-  info: 'text-blue-500',
+  success: 'text-foreground',
+  error: 'text-destructive',
+  warning: 'text-muted-foreground',
+  info: 'text-muted-foreground',
 }
 
 const CLOSE_STYLES: Record<ToastType, string> = {
-  success: 'text-green-400 hover:text-green-600',
-  error: 'text-red-400 hover:text-red-600',
-  warning: 'text-yellow-400 hover:text-yellow-600',
-  info: 'text-blue-400 hover:text-blue-600',
+  success: 'text-muted-foreground hover:text-foreground',
+  error: 'text-destructive/70 hover:text-destructive',
+  warning: 'text-muted-foreground hover:text-foreground',
+  info: 'text-muted-foreground hover:text-foreground',
 }
 
 // ---------------------------------------------------------------------------
@@ -122,7 +122,7 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
       <ToastIcon type={toast.type} />
 
       <p className="flex-1 text-sm font-medium leading-snug">
-        {toast.message}
+        {String(toast.message)}
       </p>
 
       <button

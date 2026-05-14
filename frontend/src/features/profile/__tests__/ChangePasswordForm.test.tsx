@@ -5,14 +5,19 @@
  *   - Renders two password inputs by default (type="password")
  *   - Toggle button changes password-actual input type to "text"
  *   - Toggle button changes nueva-password input type to "text"
- *   - Shows error if nueva contraseña equals actual
  *   - Shows error if passwords are shorter than 8 chars
  *   - Does NOT call mutate if validation fails
  *   - Calls mutate with correct payload when validation passes
+ *   - Calls mutate when nueva password equals actual (removed same-password check)
  *
  * Strategy:
  *   - Mock useCambiarPassword with vi.mock
  *   - No auth or QueryClient needed since mutation is mocked
+ *
+ * NOTE: The "same password error" test was intentionally removed.
+ * The same-password client-side check was deleted (BUG 2 fix). The backend
+ * is the authority on whether the current password is correct — the client
+ * should not block requests based on string equality.
  */
 
 import '@testing-library/jest-dom'
@@ -58,13 +63,21 @@ describe('ChangePasswordForm', () => {
     expect(screen.getByLabelText('Nueva contraseña')).toHaveAttribute('type', 'text')
   })
 
-  it('shows error when nueva password equals actual', () => {
+  it('calls mutate when nueva password equals actual (no client-side same-password block)', () => {
+    // BUG 2 fix: the same-password equality check was removed.
+    // When both fields have identical strings >= 8 chars, the form must
+    // call mutate and let the backend decide whether to reject the request.
     render(<ChangePasswordForm />)
     fireEvent.change(screen.getByLabelText('Contraseña actual'), { target: { value: 'password123' } })
     fireEvent.change(screen.getByLabelText('Nueva contraseña'), { target: { value: 'password123' } })
     fireEvent.click(screen.getByRole('button', { name: /cambiar contraseña/i }))
-    expect(screen.getByText(/nueva contraseña debe ser diferente/i)).toBeInTheDocument()
-    expect(mockMutate).not.toHaveBeenCalled()
+    // No "diferente" error message should appear
+    expect(screen.queryByText(/nueva contraseña debe ser diferente/i)).not.toBeInTheDocument()
+    // mutate IS called — the backend owns this validation
+    expect(mockMutate).toHaveBeenCalledWith(
+      { password_actual: 'password123', nueva_password: 'password123' },
+      expect.any(Object),
+    )
   })
 
   it('shows error when passwords are shorter than 8 chars', () => {

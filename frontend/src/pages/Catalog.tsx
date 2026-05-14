@@ -204,9 +204,27 @@ export default function CatalogPage() {
         />
 
         {/* Main Content: Filters + Grid */}
+        {/* FilterBar manages its own mobile open/close state and renders
+            the hamburger trigger internally — see FilterBar.tsx for details.
+            On mobile: the FilterBar wrapper is hidden from the grid flow (hidden md:block)
+            so it does not create an empty row. The mobile trigger is rendered
+            by FilterBar as a fixed-position overlay panel (z-50). */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          {/* Filter Sidebar */}
-          <div className="md:col-span-1">
+          {/* Filter Sidebar — hidden on mobile so the grid row collapses */}
+          <div className="hidden md:block md:col-span-1">
+            <FilterBar
+              search={filters.search}
+              categoryIds={filters.categoryIds}
+              excludeAllergens={filters.excludeAllergens}
+              products={catalogData?.items}
+              onSearchChange={handleSearchChange}
+              onCategoryChange={handleCategoryChange}
+              onAllergenChange={handleAllergenChange}
+            />
+          </div>
+
+          {/* Mobile FilterBar — outside grid flow, full width, rendered above products */}
+          <div className="md:hidden col-span-1">
             <FilterBar
               search={filters.search}
               categoryIds={filters.categoryIds}
@@ -219,7 +237,7 @@ export default function CatalogPage() {
           </div>
 
           {/* Products Grid */}
-          <div className="md:col-span-3">
+          <div className="col-span-1 md:col-span-3">
             {/* Result count — aria-live so screen readers announce filter changes */}
             {catalogData && !isError && (
               <p

@@ -140,6 +140,26 @@ describe('ToastContainer', () => {
     expect(useUIStore.getState().toasts).toHaveLength(0)
   })
 
+  it('renders a string when toast.message is an object (belt-and-suspenders guard)', () => {
+    // Simulate a case where addToast is called with a non-string message
+    // (should never happen via the interceptor after safeString fix, but guards
+    // against manual callers sending objects — must not crash)
+    useUIStore.setState({
+      toasts: [
+        // Intentionally bypass TypeScript to simulate the runtime bug scenario
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        { id: 'obj-1', message: { detail: 'Error from object' } as any, type: 'error' },
+      ],
+    })
+
+    // Should NOT throw a React render error
+    expect(() => render(<ToastContainer />)).not.toThrow()
+
+    // Should display something readable (String({...}) = "[object Object]") — not crash
+    const alerts = screen.getAllByRole('alert')
+    expect(alerts.length).toBeGreaterThan(0)
+  })
+
   it('limits visible toasts to 5 (oldest trimmed when more than 5 exist)', () => {
     // Add 7 toasts directly to the store
     useUIStore.setState({

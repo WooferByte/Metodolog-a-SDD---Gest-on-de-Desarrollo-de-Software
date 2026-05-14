@@ -92,6 +92,33 @@ apiClient.interceptors.request.use(
 )
 
 // ---------------------------------------------------------------------------
+// safeString — normalise unknown values to string | undefined (BUG 1 fix)
+// Prevents React crash when RFC 7807 `detail` is an object, array, or null
+// instead of a plain string. This is the single normalisation point; any
+// value that reaches addToast via this path will always be a string.
+// ---------------------------------------------------------------------------
+
+/**
+ * Converts any unknown value to a safe string or undefined.
+ *
+ * - string  → returned as-is
+ * - object with `detail` property → recurse into detail
+ * - other object / array → JSON.stringify
+ * - null / undefined → undefined
+ */
+export function safeString(value: unknown): string | undefined {
+  if (value === undefined || value === null) return undefined
+  if (typeof value === 'string') return value
+  if (
+    typeof value === 'object' &&
+    'detail' in (value as object)
+  ) {
+    return safeString((value as Record<string, unknown>).detail)
+  }
+  return JSON.stringify(value)
+}
+
+// ---------------------------------------------------------------------------
 // Error message mapping — RFC 7807 status codes to user-friendly messages
 // Design decision D-4: prioritise `detail` from RFC 7807 response body;
 // fall back to fixed Spanish messages per status code.
@@ -162,7 +189,7 @@ apiClient.interceptors.response.use(
 
     // Non-401 errors: map to toast and reject
     if (status !== 401) {
-      const rfcDetail = (error.response.data as Partial<ApiError>)?.detail
+      const rfcDetail = safeString((error.response.data as Partial<ApiError>)?.detail)
       const { message, type } = getErrorMessage(status, rfcDetail)
       useUIStore.getState().addToast({ message, type })
       return Promise.reject(error)
