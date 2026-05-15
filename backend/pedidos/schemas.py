@@ -3,6 +3,13 @@ Pydantic v2 request/response schemas for order endpoints.
 
 Validates cantidad >= 1 per line item, items list non-empty.
 Sanitizes observacion against XSS.
+
+Also contains validation schemas for pre-checkout cart validation:
+  - ValidarItemRequest
+  - ValidarCarritoRequest
+  - StockInsuficienteItem
+  - CambioPrecioItem
+  - ValidarCarritoResponse
 """
 from datetime import datetime
 from decimal import Decimal
@@ -16,6 +23,85 @@ from core.sanitize import sanitize_text
 # ---------------------------------------------------------------------------
 # Request schemas
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# Cart validation schemas (checkout-pre-validation)
+# ---------------------------------------------------------------------------
+
+
+class ValidarItemRequest(BaseModel):
+    """A single cart item sent for pre-checkout validation.
+
+    Fields:
+        producto_id: The product's primary key in the database.
+        cantidad: Quantity requested by the user (must be >= 1).
+        precio_carrito: Price stored in the client cart at the time of addItem().
+            Used for price-drift detection against the current DB price.
+    """
+
+    producto_id: int
+    cantidad: int = Field(ge=1)
+    precio_carrito: Decimal
+
+
+class ValidarCarritoRequest(BaseModel):
+    """Request body for POST /api/v1/pedidos/validar.
+
+    Fields:
+        items: Non-empty list of cart items to validate.
+        direccion_id: ID of the selected delivery address.
+    """
+
+    items: list[ValidarItemRequest] = Field(min_length=1)
+    direccion_id: int
+
+
+class StockInsuficienteItem(BaseModel):
+    """Describes a single stock-shortage issue.
+
+    Returned when a cart item requests more units than available.
+    """
+
+    producto_id: int
+    nombre: str
+    stock_actual: int
+    cantidad_solicitada: int
+
+
+class CambioPrecioItem(BaseModel):
+    """Describes a single price-drift issue.
+
+    Returned when the cart-stored price differs from the current DB price
+    by more than 0.01 (1-cent tolerance).
+    """
+
+    producto_id: int
+    precio_carrito: Decimal
+    precio_actual: Decimal
+
+
+class ValidarCarritoResponse(BaseModel):
+    """Structured validation report returned by POST /api/v1/pedidos/validar.
+
+    HTTP 200 — soft warnings (stock issues, price changes, or clean).
+    HTTP 422 — hard blocks (empty cart or missing address — never reaches this
+               schema; they are raised as HTTPException before this is returned).
+
+    Fields:
+        stock_insuficiente: Products where requested qty > available stock.
+        productos_invalidos: Product IDs that are unavailable (soft-deleted,
+            disponible=False, or not found in DB).
+        cambios_de_precio: Products where cart price drifted from DB price.
+        carrito_vacio: True if the submitted items list was empty (hard block).
+        sin_direccion: True if the user has no active delivery addresses (hard block).
+    """
+
+    stock_insuficiente: list[StockInsuficienteItem] = Field(default_factory=list)
+    productos_invalidos: list[int] = Field(default_factory=list)
+    cambios_de_precio: list[CambioPrecioItem] = Field(default_factory=list)
+    carrito_vacio: bool = False
+    sin_direccion: bool = False
 
 
 class DetallePedidoCreate(BaseModel):

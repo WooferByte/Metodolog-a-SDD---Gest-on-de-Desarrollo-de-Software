@@ -14,6 +14,7 @@ const Orders           = lazy(() => import('@/pages/Orders'))
 const Admin            = lazy(() => import('@/pages/Admin'))
 const MyAddressesPage  = lazy(() => import('@/pages/MyAddressesPage'))
 const CartPage         = lazy(() => import('@/pages/CartPage'))
+const CheckoutPage     = lazy(() => import('@/pages/CheckoutPage'))
 
 /**
  * Router — defines all application routes.
@@ -44,6 +45,7 @@ export default function Router() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/cart" element={<CartPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/addresses" element={<MyAddressesPage />} />
         </Route>
 

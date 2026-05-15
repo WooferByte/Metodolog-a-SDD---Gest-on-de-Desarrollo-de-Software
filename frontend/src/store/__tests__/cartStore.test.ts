@@ -44,7 +44,14 @@ describe('CartStore', () => {
 
       const state = useCartStore.getState()
       expect(state.items).toHaveLength(1)
-      expect(state.items[0]).toEqual(item)
+      // precio_carrito is auto-assigned from price if not provided
+      expect(state.items[0]).toMatchObject({
+        productId: item.productId,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        precio_carrito: item.price, // frozen at add time
+      })
     })
 
     it('should increment quantity if item already exists', () => {
@@ -62,6 +69,54 @@ describe('CartStore', () => {
       const state = useCartStore.getState()
       expect(state.items).toHaveLength(1)
       expect(state.items[0].quantity).toBe(3) // 1 + 2
+    })
+
+    it('should freeze precio_carrito at first add — not overwritten on duplicate add', () => {
+      // precio_carrito is the price snapshot for pre-checkout price drift detection.
+      // It must remain at the value from the FIRST addItem() call, even if the
+      // caller sends a different price on the second add.
+      const { addItem } = useCartStore.getState()
+      const firstAdd: CartItem = {
+        productId: 'prod-1',
+        name: 'Producto',
+        price: 100.00,
+        precio_carrito: 100.00,
+        quantity: 1,
+      }
+
+      addItem(firstAdd)
+
+      // Second add with a different price (simulating price change)
+      const secondAdd: CartItem = {
+        ...firstAdd,
+        price: 120.00,
+        precio_carrito: 120.00,
+        quantity: 1,
+      }
+      addItem(secondAdd)
+
+      const state = useCartStore.getState()
+      expect(state.items).toHaveLength(1)
+      // quantity incremented
+      expect(state.items[0].quantity).toBe(2)
+      // precio_carrito preserved from first add — NOT 120
+      expect(state.items[0].precio_carrito).toBe(100.00)
+    })
+
+    it('should assign precio_carrito from price when not explicitly provided', () => {
+      const { addItem } = useCartStore.getState()
+      const item: CartItem = {
+        productId: 'prod-2',
+        name: 'Producto Sin PrecioCarrito',
+        price: 75.50,
+        quantity: 1,
+        // No precio_carrito provided
+      }
+
+      addItem(item)
+
+      const state = useCartStore.getState()
+      expect(state.items[0].precio_carrito).toBe(75.50)
     })
 
     it('should support ingredient personalization', () => {
@@ -193,7 +248,13 @@ describe('CartStore', () => {
       addItem(item)
       const found = getItem('pizza-123')
 
-      expect(found).toEqual(item)
+      // Use toMatchObject since addItem also assigns precio_carrito automatically
+      expect(found).toMatchObject({
+        productId: item.productId,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+      })
     })
 
     it('should return undefined if item does not exist', () => {

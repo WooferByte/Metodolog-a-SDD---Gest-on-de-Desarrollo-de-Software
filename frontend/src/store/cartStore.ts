@@ -46,7 +46,10 @@ export const useCartStore = create<CartStore>()(
             )
 
             if (existingItem) {
-              // Item already in cart - increment quantity
+              // Item already in cart - increment quantity only.
+              // IMPORTANT: Do NOT overwrite precio_carrito — it must stay frozen
+              // at the price from the FIRST add (checkout pre-validation relies on
+              // comparing this original price against the current backend price).
               return {
                 items: state.items.map((i) =>
                   i.productId === item.productId
@@ -56,9 +59,15 @@ export const useCartStore = create<CartStore>()(
               }
             }
 
-            // New item - add to cart
+            // New item — add to cart.
+            // precio_carrito is frozen here: use item.precio_carrito if explicitly
+            // provided, otherwise fall back to item.price (current display price).
+            const newItem: CartItem = {
+              ...item,
+              precio_carrito: item.precio_carrito ?? item.price,
+            }
             return {
-              items: [...state.items, item],
+              items: [...state.items, newItem],
             }
           }),
 

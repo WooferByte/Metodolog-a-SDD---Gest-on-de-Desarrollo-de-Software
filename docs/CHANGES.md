@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-14 (frontend-shopping-cart-ui archivado)
+> **Última actualización**: 2026-05-15 (checkout-pre-validation archivado)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -440,12 +440,14 @@ Visual upgrade completo del carrito. CartItemRow: imagen 96×96 desktop, fallbac
 
 ## EPIC 09 — Validaciones Pre-Checkout *(NUEVO en v3.0)*
 
-### ❌ `checkout-pre-validation`
+### ✅ `checkout-pre-validation`
+Archivado: `2026-05-15-checkout-pre-validation`
+**Evidencia**: `openspec/changes/archive/2026-05-15-checkout-pre-validation/`
 
-`POST /api/v1/pedidos/validar` (CLIENT). Verifica disponibilidad y stock. Compara precios actuales vs carrito. Response: `stockInsuficiente`, `productosInvalidos`, `cambiosDePrecio`. Frontend: llamar al entrar al Checkout, mostrar alertas/modal de confirmación.
+`POST /api/v1/pedidos/validar` (CLIENT). Verifica stock disponible, precios vigentes (tolerancia 1¢), productos válidos/disponibles, dirección de entrega existente, carrito no vacío. HTTP 422 RFC 7807 para hard blocks (carrito vacío, sin dirección). HTTP 200 con payload `ValidarCarritoResponse` para soft warnings (stock/precio drift). Frontend: `useCheckoutValidation` hook (useMutation), `CheckoutValidationModal` (hard block vs soft warning), `CheckoutPage` con validación al montar, `/checkout` route. `precio_carrito` congelado en cartStore al primer addItem. 12/12 pytest + 293/293 vitest + 3 E2E Playwright. Bugfix post-apply: `stock_cantidad`/`precio_base` field names.
 
-**Skills**: `fastapi-python`, `postgres`, `frontend-design`
-**Dependencias**: `products-crud-core`, `frontend-shopping-cart-zustand`
+**Skills**: `python-fastapi-ddd-skill`, `supabase-postgres-best-practices`, `api-design`, `rest-api-design-patterns`, `jwt-security`, `tailwind-design-system`, `frontend-state-management`, `vercel-react-best-practices`, `testing-e2e-playwright`, `post-change-verification`
+**Dependencias**: `products-crud-core` ✅, `frontend-shopping-cart-zustand` ✅
 
 ---
 
@@ -708,7 +710,7 @@ BLOQUE 4 — Perfil + Direcciones + Carrito
 └─ ✅ frontend-shopping-cart-ui
 
 BLOQUE 5 — Pre-checkout + Pedidos
-├─ ❌ checkout-pre-validation
+├─ ✅ checkout-pre-validation
 ├─ ❌ orders-fsm-backend             ← verificar INC-04 (INTEGER[])
 ├─ ❌ orders-api-endpoints
 ├─ ❌ frontend-orders-listing-ui
@@ -749,6 +751,7 @@ BLOQUE 9 — Entrega Final
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 3.8 | 2026-05-15 | checkout-pre-validation archivado. POST /api/v1/pedidos/validar. Hard block 422/soft warning 200. precio_carrito congelado. PRÓXIMO: orders-fsm-backend. |
 | 3.7 | 2026-05-14 | frontend-shopping-cart-ui archivado. Visual upgrade completo: CartItemRow gradiente, OrderSummary desglose + envío gratis, EmptyCart rediseñado, CartPage 2 col. PRÓXIMO: BLOQUE 5 checkout-pre-validation. |
 | 3.6 | 2026-05-14 | frontend-shopping-cart-zustand archivado. CartDrawer + CartPage + store hardening. Fixes: theme toggle sidebar, cart clear logout, checkout redirect. PRÓXIMO: frontend-shopping-cart-ui. |
 | 3.5 | 2026-05-14 | frontend-addresses-ui archivado. Fixes: modal centrado, queryClient.clear() en logout, ProtectedRoute sin from en rutas con requiredRoles. PRÓXIMO: frontend-shopping-cart-zustand. |

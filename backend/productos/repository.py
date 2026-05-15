@@ -145,6 +145,30 @@ class ProductoRepository(BaseRepository[Producto]):
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
+    async def get_by_ids(self, producto_ids: list[int]) -> list[Producto]:
+        """
+        Batch-fetch products by primary key list (single IN query).
+
+        Returns all rows matching the given IDs without applying any
+        disponible/eliminado_en filters — callers need the raw records to
+        classify products as invalid (soft-deleted, unavailable, or missing).
+
+        Used by the checkout pre-validation service to detect stock shortfalls,
+        price drift, and unavailable/deleted products in O(1) DB round-trips.
+
+        Args:
+            producto_ids: List of product primary keys to fetch.
+
+        Returns:
+            List of Producto instances (may include soft-deleted / unavailable).
+            Preserves database order (no guaranteed sort).
+        """
+        if not producto_ids:
+            return []
+        stmt = select(Producto).where(Producto.id.in_(producto_ids))
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
     async def count_active(
         self,
         incluir_eliminados: bool = False,

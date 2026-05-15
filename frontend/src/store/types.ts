@@ -40,7 +40,20 @@ export interface AuthStore {
 export interface CartItem {
   productId: string
   name: string
+  /** Current display price — may change after the product is added to cart. */
   price: number
+  /**
+   * Price frozen at the moment addItem() is called.
+   *
+   * Set once when the product is first added. NOT overwritten on subsequent
+   * addItem() calls for the same product (duplicate-add only increments quantity).
+   * Used by the checkout pre-validation hook to detect price drift against the
+   * current backend price (see useCheckoutValidation).
+   *
+   * Backward-compat: items rehydrated from localStorage before this field was
+   * added will lack precio_carrito. The checkout hook falls back to `price`.
+   */
+  precio_carrito?: number
   quantity: number
   image?: string
   ingredientes_excluidos?: number[] // Ingredient personalization — IDs as integers (RN-CR04/05, aligns with backend INTEGER[])
