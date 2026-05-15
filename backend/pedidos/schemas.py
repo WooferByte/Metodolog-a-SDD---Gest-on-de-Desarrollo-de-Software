@@ -164,3 +164,38 @@ class PedidoResponse(BaseModel):
     actualizado_en: datetime
 
     model_config = {"from_attributes": True}
+
+
+class PedidoDetailResponse(PedidoResponse):
+    """Order representation with line items (extends PedidoResponse)."""
+
+    detalles: list[DetallePedidoResponse]
+
+
+class AvanzarEstadoRequest(BaseModel):
+    """Request body for advancing a Pedido state via FSM transition."""
+
+    nuevo_estado_id: int = Field(ge=1, le=6)
+    observacion: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("observacion", mode="before")
+    @classmethod
+    def sanitize_observacion(cls, v: object) -> object:
+        """Strip HTML tags from the free-text observation field."""
+        if isinstance(v, str):
+            return sanitize_text(v)
+        return v
+
+
+class HistorialEstadoResponse(BaseModel):
+    """Audit trail entry for an order status change."""
+
+    id: int
+    pedido_id: int
+    estado_anterior_id: Optional[int]
+    estado_nuevo_id: int
+    observacion: Optional[str]
+    usuario_responsable_id: Optional[int]
+    creado_en: datetime
+
+    model_config = {"from_attributes": True}

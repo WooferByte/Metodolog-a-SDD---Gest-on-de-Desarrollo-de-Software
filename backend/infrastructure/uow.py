@@ -14,13 +14,27 @@ from fastapi import Depends
 
 from .repositories.base_repository import BaseRepository
 from core.models import (
-    Usuario, Rol, UsuarioRol, RefreshToken, DireccionEntrega,
-    Categoria, Producto, Ingrediente, ProductoCategoria, ProductoIngrediente,
-    EstadoPedido, FormaPago, Pedido, DetallePedido, HistorialEstadoPedido, Pago
+    Usuario,
+    Rol,
+    UsuarioRol,
+    RefreshToken,
+    DireccionEntrega,
+    Categoria,
+    Producto,
+    Ingrediente,
+    ProductoCategoria,
+    ProductoIngrediente,
+    EstadoPedido,
+    FormaPago,
+    Pedido,
+    DetallePedido,
+    HistorialEstadoPedido,
+    Pago,
 )
 from categorias.repository import CategoriaRepository
 from direcciones.repository import DireccionRepository
 from ingredientes.repository import IngredienteRepository
+from pedidos.repository import HistorialEstadoPedidoRepository, PedidoRepository
 from productos.repository import (
     ProductoCategoriaRepository,
     ProductoIngredienteRepository,
@@ -32,15 +46,15 @@ from core.database import get_db
 class UnitOfWork:
     """
     Unit of Work pattern for coordinating repository operations in a transaction.
-    
+
     Use as async context manager to ensure atomicity:
-    
+
     Usage:
         async with UnitOfWork(session) as uow:
             usuario = await uow.usuarios.create(new_usuario)
             pedido = await uow.pedidos.create(new_pedido)
             await uow.commit()  # Commits both or rolls back both
-    
+
     Features:
     - Automatic commit on success
     - Automatic rollback on exception
@@ -52,7 +66,7 @@ class UnitOfWork:
     def __init__(self, session: AsyncSession):
         """
         Initialize Unit of Work with async database session.
-        
+
         Args:
             session: AsyncSession from FastAPI dependency
         """
@@ -84,7 +98,9 @@ class UnitOfWork:
     def direcciones_entrega(self) -> BaseRepository[DireccionEntrega]:
         """Repository for DireccionEntrega entity (generic — kept for backward compatibility)."""
         if "direcciones_entrega" not in self._repositories:
-            self._repositories["direcciones_entrega"] = BaseRepository(self.session, DireccionEntrega)
+            self._repositories["direcciones_entrega"] = BaseRepository(
+                self.session, DireccionEntrega
+            )
         return self._repositories["direcciones_entrega"]
 
     @property
@@ -126,7 +142,9 @@ class UnitOfWork:
     def producto_ingredientes(self) -> ProductoIngredienteRepository:
         """Repository for ProductoIngrediente pivot entity (dedicated pivot repository)."""
         if "producto_ingredientes" not in self._repositories:
-            self._repositories["producto_ingredientes"] = ProductoIngredienteRepository(self.session)
+            self._repositories["producto_ingredientes"] = ProductoIngredienteRepository(
+                self.session
+            )
         return self._repositories["producto_ingredientes"]
 
     @property
@@ -144,10 +162,10 @@ class UnitOfWork:
         return self._repositories["formas_pago"]
 
     @property
-    def pedidos(self) -> BaseRepository[Pedido]:
-        """Repository for Pedido entity."""
+    def pedidos(self) -> PedidoRepository:
+        """Repository for Pedido entity (PedidoRepository with FSM support)."""
         if "pedidos" not in self._repositories:
-            self._repositories["pedidos"] = BaseRepository(self.session, Pedido)
+            self._repositories["pedidos"] = PedidoRepository(self.session)
         return self._repositories["pedidos"]
 
     @property
@@ -158,10 +176,12 @@ class UnitOfWork:
         return self._repositories["detalles_pedido"]
 
     @property
-    def historial_estado_pedido(self) -> BaseRepository[HistorialEstadoPedido]:
-        """Repository for HistorialEstadoPedido entity (append-only)."""
+    def historial_estado_pedido(self) -> HistorialEstadoPedidoRepository:
+        """Repository for HistorialEstadoPedido entity (append-only audit trail)."""
         if "historial_estado_pedido" not in self._repositories:
-            self._repositories["historial_estado_pedido"] = BaseRepository(self.session, HistorialEstadoPedido)
+            self._repositories["historial_estado_pedido"] = HistorialEstadoPedidoRepository(
+                self.session
+            )
         return self._repositories["historial_estado_pedido"]
 
     @property
@@ -181,7 +201,7 @@ class UnitOfWork:
     async def commit(self) -> None:
         """
         Commit all changes in the transaction.
-        
+
         Raises:
             SQLAlchemy exceptions on constraint violations
         """
@@ -198,9 +218,9 @@ class UnitOfWork:
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         """
         Exit async context manager (transaction end).
-        
+
         Auto-commits on success, auto-rolls back on exception.
-        
+
         Args:
             exc_type: Exception type if exception occurred
             exc_val: Exception value
@@ -221,7 +241,7 @@ class UnitOfWork:
 async def get_uow(session: AsyncSession = Depends(get_db)) -> UnitOfWork:
     """
     FastAPI dependency for injecting Unit of Work into route handlers.
-    
+
     Usage in routes:
         @app.post("/api/v1/usuarios")
         async def create_user(user: UserCreateSchema, uow: UnitOfWork = Depends(get_uow)):
@@ -229,10 +249,10 @@ async def get_uow(session: AsyncSession = Depends(get_db)) -> UnitOfWork:
                 new_user = Usuario(...)
                 user = await uow.usuarios.create(new_user)
                 return user
-    
+
     Args:
         session: AsyncSession injected by FastAPI
-        
+
     Returns:
         UnitOfWork instance for the request
     """

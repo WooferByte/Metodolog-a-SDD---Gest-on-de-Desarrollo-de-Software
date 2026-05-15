@@ -145,6 +145,35 @@ class ProductoRepository(BaseRepository[Producto]):
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
+    async def get_by_id_locked(self, producto_id: int) -> Optional[Producto]:
+        """
+        Fetch a single active product with a SELECT ... FOR UPDATE lock.
+
+        Prevents race conditions when multiple concurrent orders try to decrement
+        stock for the same product (RN-PE04).
+
+        Filters: eliminado_en IS NULL AND disponible = True.
+        A product that is soft-deleted or marked unavailable returns None,
+        letting the caller raise HTTP 422 "producto inválido".
+
+        Args:
+            producto_id: Primary key of the product to lock.
+
+        Returns:
+            Producto instance (locked) if active and available, None otherwise.
+        """
+        stmt = (
+            select(Producto)
+            .where(
+                Producto.id == producto_id,
+                Producto.eliminado_en.is_(None),
+                Producto.disponible.is_(True),
+            )
+            .with_for_update()
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().first()
+
     async def get_by_ids(self, producto_ids: list[int]) -> list[Producto]:
         """
         Batch-fetch products by primary key list (single IN query).
