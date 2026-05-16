@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-15 (orders-fsm-backend archivado)
+> **Última actualización**: 2026-05-15 (orders-api-endpoints archivado)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -464,11 +464,13 @@ FSM 6 estados: PENDIENTE→CONFIRMADO→EN_PREPARACIÓN→EN_CAMINO→ENTREGADO 
 
 ---
 
-### ❌ `orders-api-endpoints`
+### ✅ `orders-api-endpoints`
+Archivado: `2026-05-15-orders-api-endpoints`
+**Evidencia**: `openspec/changes/archive/2026-05-15-orders-api-endpoints/`
 
-`POST /api/v1/pedidos`, `GET /api/v1/pedidos`, `GET /api/v1/pedidos/:id`, `PATCH /api/v1/pedidos/:id/avanzar`, `GET /api/v1/pedidos/:id/historial`, `DELETE /api/v1/pedidos/:id` (cancelar). Permisos por rol.
+`POST /api/v1/pedidos` (CLIENT, rate 10/h por usuario_id), `GET /api/v1/pedidos` (paginado), `GET /api/v1/pedidos/{id}` (ownership → 403), `PATCH /api/v1/pedidos/{id}/estado` (ADMIN only), `DELETE /api/v1/pedidos/{id}` (FSM cancel + soft delete atómico). RFC 7807. 28/28 pytest.
 
-**Skills**: `fastapi-python`, `postgres`
+**Skills**: `python-fastapi-ddd-skill`, `supabase-postgres-best-practices`, `api-design`, `rest-api-design-patterns`, `jwt-security`, `post-change-verification`
 **Dependencias**: `orders-fsm-backend`
 
 ---
@@ -714,7 +716,7 @@ BLOQUE 4 — Perfil + Direcciones + Carrito
 BLOQUE 5 — Pre-checkout + Pedidos
 ├─ ✅ checkout-pre-validation
 ├─ ✅ orders-fsm-backend
-├─ ❌ orders-api-endpoints
+├─ ✅ orders-api-endpoints
 ├─ ❌ frontend-orders-listing-ui
 ├─ ❌ frontend-orders-detail-ui
 └─ ❌ frontend-orders-management-admin
@@ -753,6 +755,7 @@ BLOQUE 9 — Entrega Final
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 4.0 | 2026-05-15 | orders-api-endpoints archivado. POST/GET/PATCH/DELETE /api/v1/pedidos. Rate limit por usuario_id, ownership 403, FSM ADMIN-only, soft delete atómico. 28/28 pytest. PRÓXIMO: frontend-orders-listing-ui. |
 | 3.9 | 2026-05-15 | orders-fsm-backend archivado. FSM 6 estados, PedidoRepository, HistorialEstadoPedidoRepository, VALID_TRANSITIONS, SELECT FOR UPDATE. 29/29 pytest 96% coverage. PRÓXIMO: orders-api-endpoints. |
 | 3.8 | 2026-05-15 | checkout-pre-validation archivado. POST /api/v1/pedidos/validar. Hard block 422/soft warning 200. precio_carrito congelado. PRÓXIMO: orders-fsm-backend. |
 | 3.7 | 2026-05-14 | frontend-shopping-cart-ui archivado. Visual upgrade completo: CartItemRow gradiente, OrderSummary desglose + envío gratis, EmptyCart rediseñado, CartPage 2 col. PRÓXIMO: BLOQUE 5 checkout-pre-validation. |

@@ -187,6 +187,22 @@ class AvanzarEstadoRequest(BaseModel):
         return v
 
 
+class PaginatedPedidosResponse(BaseModel):
+    """Paginated list of orders for a user.
+
+    Fields:
+        items: Page of Pedido objects (non-deleted, newest first).
+        total: Total count of non-deleted orders for the user (for UI pagination).
+        limit: Page size applied in this request.
+        offset: Offset applied in this request.
+    """
+
+    items: list[PedidoResponse]
+    total: int
+    limit: int
+    offset: int
+
+
 class HistorialEstadoResponse(BaseModel):
     """Audit trail entry for an order status change."""
 

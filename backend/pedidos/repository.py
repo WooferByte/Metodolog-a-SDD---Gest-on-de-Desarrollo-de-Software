@@ -125,6 +125,31 @@ class PedidoRepository(BaseRepository[Pedido]):
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
+    async def count_by_usuario(self, usuario_id: int) -> int:
+        """
+        Count non-deleted orders for a given user.
+
+        Used for pagination metadata in list_by_usuario.
+
+        Args:
+            usuario_id: Owner user ID.
+
+        Returns:
+            Count of non-deleted Pedido rows for the user.
+        """
+        from sqlalchemy import func
+
+        stmt = (
+            select(func.count())
+            .select_from(Pedido)
+            .where(
+                Pedido.usuario_id == usuario_id,
+                Pedido.eliminado_en.is_(None),
+            )
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one()
+
     async def update_estado(self, pedido_id: int, nuevo_estado_pedido_id: int) -> Optional[Pedido]:
         """
         Update the estado_pedido_id and actualizado_en of a Pedido.
