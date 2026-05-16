@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-15 (checkout-pre-validation archivado)
+> **Última actualización**: 2026-05-15 (orders-fsm-backend archivado)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -453,11 +453,13 @@ Archivado: `2026-05-15-checkout-pre-validation`
 
 ## EPIC 10 — Pedidos
 
-### ❌ `orders-fsm-backend`
+### ✅ `orders-fsm-backend`
+Archivado: `2026-05-15-orders-fsm-backend`
+**Evidencia**: `openspec/changes/archive/2026-05-15-orders-fsm-backend/`
 
-FSM 6 estados: PENDIENTE→CONFIRMADO→EN_PREPARACIÓN→EN_CAMINO→ENTREGADO + CANCELADO. `HistorialEstadoPedido` append-only. Snapshot precio + dirección. UoW atómico. Personalización como `INTEGER[]` (RN-PE07). `SELECT FOR UPDATE` para stock (RN-PE04). Rate limiting creación: 10/usuario/hora (US-073). PENDIENTE→CONFIRMADO solo por Sistema/webhook (RN-FS02).
+FSM 6 estados: PENDIENTE→CONFIRMADO→EN_PREPARACIÓN→EN_CAMINO→ENTREGADO + CANCELADO. `HistorialEstadoPedido` append-only. Snapshot precio + dirección. UoW atómico. Personalización como `INTEGER[]` (RN-PE07). `SELECT FOR UPDATE` para stock (RN-PE04). PENDIENTE→CONFIRMADO solo por Sistema/webhook (RN-FS02). `PedidoRepository` + `HistorialEstadoPedidoRepository`. `VALID_TRANSITIONS` dict + `SYSTEM_ONLY_TARGETS`. 29/29 pytest, 96% coverage.
 
-**Skills**: `fastapi-python`, `postgres`
+**Skills**: `python-fastapi-ddd-skill`, `supabase-postgres-best-practices`, `api-design`, `post-change-verification`
 **Dependencias**: `backend-patterns-base-repository-uow`, `addresses-crud-by-user`, `products-crud-core`
 
 ---
@@ -711,7 +713,7 @@ BLOQUE 4 — Perfil + Direcciones + Carrito
 
 BLOQUE 5 — Pre-checkout + Pedidos
 ├─ ✅ checkout-pre-validation
-├─ ❌ orders-fsm-backend             ← verificar INC-04 (INTEGER[])
+├─ ✅ orders-fsm-backend
 ├─ ❌ orders-api-endpoints
 ├─ ❌ frontend-orders-listing-ui
 ├─ ❌ frontend-orders-detail-ui
@@ -751,6 +753,7 @@ BLOQUE 9 — Entrega Final
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 3.9 | 2026-05-15 | orders-fsm-backend archivado. FSM 6 estados, PedidoRepository, HistorialEstadoPedidoRepository, VALID_TRANSITIONS, SELECT FOR UPDATE. 29/29 pytest 96% coverage. PRÓXIMO: orders-api-endpoints. |
 | 3.8 | 2026-05-15 | checkout-pre-validation archivado. POST /api/v1/pedidos/validar. Hard block 422/soft warning 200. precio_carrito congelado. PRÓXIMO: orders-fsm-backend. |
 | 3.7 | 2026-05-14 | frontend-shopping-cart-ui archivado. Visual upgrade completo: CartItemRow gradiente, OrderSummary desglose + envío gratis, EmptyCart rediseñado, CartPage 2 col. PRÓXIMO: BLOQUE 5 checkout-pre-validation. |
 | 3.6 | 2026-05-14 | frontend-shopping-cart-zustand archivado. CartDrawer + CartPage + store hardening. Fixes: theme toggle sidebar, cart clear logout, checkout redirect. PRÓXIMO: frontend-shopping-cart-ui. |
