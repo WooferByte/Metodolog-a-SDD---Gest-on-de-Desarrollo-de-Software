@@ -2,28 +2,38 @@
  * OrdersPanelPage — ADMIN/PEDIDOS panel for managing orders.
  *
  * Route: /admin/pedidos (ProtectedRoute, roles: ['PEDIDOS', 'ADMIN'])
- * Loaded via React.lazy in Router.tsx (design.md D6).
+ * Loaded via React.lazy in Router.tsx.
  *
- * Features:
- * - OrdersFilters reading/writing Zustand UI state
- * - OrdersTable with ARIA-compliant table and skeleton rows
+ * Features (frontend-orders-management-admin):
+ * - OrdersFilters (basic: estado, search, fechaDesde, fechaHasta)
+ * - OrderFiltersPanel (advanced: usuarioEmail, totalMin, totalMax — collapsible)
+ * - OrdersManagementTable with checkboxes + state change buttons
+ * - BulkActionsBar for bulk cancel / bulk state change
+ * - StateTransitionModal for per-order state changes
  * - Paginated with keepPreviousData (no flash on page change)
  * - isFetching indicator during background re-fetches
- * - Accessible pagination with aria-current="page"
+ * - Selection cleared on page change
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useOrders } from '@/features/orders/hooks/useOrders'
 import { OrdersFilters } from '@/features/orders/components/OrdersFilters'
-import { OrdersTable } from '@/features/orders/components/OrdersTable'
+import { OrderFiltersPanel } from '@/features/orders/components/management/OrderFiltersPanel'
+import { OrdersManagementTable } from '@/features/orders/components/management/OrdersManagementTable'
+import { BulkActionsBar } from '@/features/orders/components/management/BulkActionsBar'
+import { StateTransitionModal } from '@/features/orders/components/management/StateTransitionModal'
 import { useOrdersFilterStore } from '@/features/orders/store/ordersFilterStore'
+import { useOrdersManagementStore } from '@/features/orders/store/ordersManagementStore'
 
 const LIMIT = 15
 
 export default function OrdersPanelPage() {
   const navigate = useNavigate()
   const [page, setPage] = useState(0)
+
+  // State transition modal — per-order (not bulk)
+  const [stateModalOrderId, setStateModalOrderId] = useState<number | null>(null)
 
   // Read filters from Zustand store (client state — never server data)
   const estadoId   = useOrdersFilterStore((s) => s.estadoId)
@@ -47,9 +57,16 @@ export default function OrdersPanelPage() {
   const hasPrev = page > 0
   const hasNext = page < lastPage
 
-  // Reset to page 0 when filters change (handled naturally because queryKey changes)
-  // Note: page state resets via filter changes would require a useEffect, but since
-  // the filter change triggers a new query, offset is sent correctly.
+  // Clear bulk selection when page changes
+  const clearAll = useOrdersManagementStore((s) => s.clearAll)
+  useEffect(() => {
+    clearAll()
+  }, [page, clearAll])
+
+  // Find the order for the state modal
+  const stateModalOrder = stateModalOrderId != null
+    ? orders.find((o) => o.id === stateModalOrderId) ?? null
+    : null
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
@@ -63,14 +80,23 @@ export default function OrdersPanelPage() {
         )}
       </div>
 
-      {/* Filters bar — reads/writes Zustand store */}
+      {/* Basic filters bar — reads/writes Zustand store */}
       <OrdersFilters />
 
-      {/* Orders table */}
-      <OrdersTable
+      {/* Advanced filters panel (collapsible) */}
+      <OrderFiltersPanel />
+
+      {/* Bulk actions bar — visible only when ≥1 order selected */}
+      <div className="mb-3">
+        <BulkActionsBar orders={orders} />
+      </div>
+
+      {/* Orders table with management columns */}
+      <OrdersManagementTable
         orders={orders}
         isLoading={isLoading}
         onViewDetail={(id) => navigate(`/admin/pedidos/${id}`)}
+        onStateChange={(id) => setStateModalOrderId(id)}
       />
 
       {/* Pagination */}
@@ -122,6 +148,17 @@ export default function OrdersPanelPage() {
         <p className="mt-4 text-center text-xs text-muted-foreground">
           {total} {total === 1 ? 'pedido' : 'pedidos'} en total
         </p>
+      )}
+
+      {/* Per-order StateTransitionModal */}
+      {stateModalOrder != null && (
+        <StateTransitionModal
+          orderId={stateModalOrder.id}
+          currentStatusId={stateModalOrder.estado_pedido_id}
+          isOpen={stateModalOrderId != null}
+          onClose={() => setStateModalOrderId(null)}
+          onSuccess={() => setStateModalOrderId(null)}
+        />
       )}
     </main>
   )

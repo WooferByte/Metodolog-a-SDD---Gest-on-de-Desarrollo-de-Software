@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-16 (frontend-orders-detail-ui archivado)
+> **Última actualización**: 2026-05-16 (frontend-orders-management-admin archivado)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -497,11 +497,13 @@ Página `/pedidos/:id` y `/admin/pedidos/:id`. OrderDetailHeader (fecha, total, 
 
 ---
 
-### ❌ `frontend-orders-management-admin`
+### ✅ `frontend-orders-management-admin`
+Archivado: `2026-05-16-frontend-orders-management-admin`
+**Evidencia**: `openspec/changes/archive/2026-05-16-frontend-orders-management-admin/`
 
-Tabla admin con filtros, bulk actions. Componente `OrderConfirmation` post-creación (US-071). Páginas `PaymentSuccess`, `PaymentFailure`, `PaymentPending` para callbacks MP (US-072).
+Panel admin completo de gestión de pedidos. OrdersManagementTable (tabla desktop + cards mobile). StateTransitionModal (FSM-aware, solo transiciones válidas). BulkActionsBar (deshabilitado si estados mixtos). BulkConfirmModal (alertdialog). OrderFiltersPanel (totalMin/totalMax collapsible). ordersManagementStore (Set<number> selección bulk). useBulkOrderActions (Promise.allSettled). 430/430 vitest. Fix: email duplicado eliminado de OrderFiltersPanel.
 
-**Skills**: `frontend-design`, `tailwind-design-system`
+**Skills**: `tailwind-design-system`, `ui-design-system`, `vercel-react-best-practices`, `zustand-state-management`, `frontend-state-management`, `testing-e2e-playwright`, `dashboard-crud-page`
 **Dependencias**: `frontend-orders-listing-ui`, `frontend-orders-detail-ui`
 
 ---
@@ -759,6 +761,7 @@ BLOQUE 9 — Entrega Final
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 4.3 | 2026-05-16 | frontend-orders-management-admin archivado. Tabla bulk + StateTransitionModal + BulkActionsBar + filtros avanzados. 430/430 vitest. PRÓXIMO: BLOQUE 6 pagos. |
 | 4.2 | 2026-05-16 | frontend-orders-detail-ui archivado. OrderDetailPage + OrderTimeline + CancelOrderModal + bugfixes (direccion_snapshot, cancel sin soft-delete, es_alergeno). PRÓXIMO: frontend-orders-management-admin. |
 | 4.1 | 2026-05-15 | frontend-orders-listing-ui archivado. MyOrdersPage + OrdersPanelPage. ORDER_STATUS_MAP, filtros email/estado/fecha, tokens accent-orange/purple. 314/314 vitest. PRÓXIMO: frontend-orders-detail-ui. |
 | 4.0 | 2026-05-15 | orders-api-endpoints archivado. POST/GET/PATCH/DELETE /api/v1/pedidos. Rate limit por usuario_id, ownership 403, FSM ADMIN-only, soft delete atómico. 28/28 pytest. PRÓXIMO: frontend-orders-listing-ui. |
