@@ -269,6 +269,10 @@ async def get_pedido(
     """
     async with uow:
         result = await uow.pedidos.get_by_id_with_details(pedido_id)
+        if result is not None:
+            historial = await uow.historial_estado_pedido.list_by_pedido(pedido_id)
+        else:
+            historial = []
 
     if result is None:
         from fastapi import HTTPException
@@ -305,6 +309,7 @@ async def get_pedido(
     return PedidoDetailResponse(
         **PedidoResponse.model_validate(pedido).model_dump(),
         detalles=[d if hasattr(d, "__dict__") else d for d in detalles],
+        historial=historial,
     )
 
 
@@ -452,9 +457,5 @@ async def delete_pedido(
 
         # Step 4: FSM cancel (validates transition, reverts stock, appends historial)
         pedido_cancelado = await service.cancelar(pedido_id, current_user.id, uow)
-
-        # Step 5: soft delete — set eliminado_en in same transaction
-        pedido_cancelado.eliminado_en = datetime.now(timezone.utc).replace(tzinfo=None)
-        uow.session.add(pedido_cancelado)
 
     return PedidoResponse.model_validate(pedido_cancelado)

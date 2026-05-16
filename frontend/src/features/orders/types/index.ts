@@ -21,13 +21,14 @@ export interface Order {
   forma_pago_id: number
 }
 
-/** Address snapshot embedded in each order (captured at order-creation time) */
+/** Address snapshot embedded in each order — matches backend DireccionEntrega serialization */
 export interface DireccionSnapshot {
-  calle: string
-  numero: string
-  ciudad: string
-  provincia: string
-  codigo_postal?: string
+  alias?: string | null
+  linea1?: string | null
+  ciudad?: string | null
+  codigo_postal?: string | null
+  piso?: string | null
+  departamento?: string | null
 }
 
 /**
@@ -62,4 +63,50 @@ export interface OrderStatusMeta {
   /** Tailwind classes using semantic @theme tokens for badge background + text */
   bgClass: string
   textClass: string
+}
+
+// ---------------------------------------------------------------------------
+// Detail types — extended for GET /api/v1/pedidos/{id}
+// ---------------------------------------------------------------------------
+
+/**
+ * Detalle de línea del pedido — snapshot congelado al momento de compra.
+ * NEVER use these to look up live product data — they are immutable snapshots.
+ */
+export interface OrderDetailItem {
+  id: number
+  producto_id: number
+  /** Product name as it was at the time of purchase (snapshot) */
+  nombre_snapshot: string
+  cantidad: number
+  /** Unit price as it was at the time of purchase (snapshot) */
+  precio_snapshot: number
+  /** INTEGER[] — IDs of excluded/modified ingredients (matches backend field name) */
+  ingredientes_excluidos: number[] | null
+}
+
+/**
+ * Entrada del historial de estados FSM del pedido.
+ * Append-only — never updated or deleted.
+ */
+export interface OrderHistorialItem {
+  id: number
+  pedido_id: number
+  estado_anterior_id: number | null
+  estado_nuevo_id: number
+  observacion: string | null
+  /** ID of the user responsible for the transition */
+  usuario_responsable_id: number | null
+  /** Email included by the backend for display convenience; null if not available */
+  usuario_email: string | null
+  creado_en: string    // ISO 8601
+}
+
+/**
+ * Detalle completo del pedido — response of GET /api/v1/pedidos/{id}.
+ * Extends Order with line items and FSM history.
+ */
+export interface OrderDetail extends Order {
+  detalles: OrderDetailItem[]
+  historial: OrderHistorialItem[]
 }

@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-15 (frontend-orders-listing-ui archivado)
+> **Última actualización**: 2026-05-16 (frontend-orders-detail-ui archivado)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -486,11 +486,13 @@ MyOrdersPage (`/orders`) — timeline visual CLIENT con OrderCard, badge por est
 
 ---
 
-### ❌ `frontend-orders-detail-ui`
+### ✅ `frontend-orders-detail-ui`
+Archivado: `2026-05-16-frontend-orders-detail-ui`
+**Evidencia**: `openspec/changes/archive/2026-05-16-frontend-orders-detail-ui/`
 
-Página OrderDetail. Items con snapshots. Timeline de estados (HistorialEstadoPedido). Botones de acción por estado y rol. Cancelar con confirmación.
+Página `/pedidos/:id` y `/admin/pedidos/:id`. OrderDetailHeader (fecha, total, badge, dirección snapshot). OrderItemSnapshot (nombre_snapshot + precio_snapshot, nunca datos vivos). OrderTimeline (slide-in CSS puro, staggered delay). OrderActions (FSM por rol — CLIENT cancela PENDIENTE, ADMIN avanza estados). CancelOrderModal (dialog nativo, focus trap). useOrderDetailStore (Zustand v5). 347/347 vitest. Bugfixes: direccion_snapshot parseada de JSON string, cancel sin soft-delete (pedido queda visible como CANCELADO), es_alergeno renombrado, ProductDetail fetchea GET /productos/:id al abrirse.
 
-**Skills**: `frontend-design`, `tailwind-design-system`
+**Skills**: `tailwind-design-system`, `ui-design-system`, `vercel-react-best-practices`, `zustand-state-management`, `frontend-state-management`, `testing-e2e-playwright`, `dashboard-crud-page`
 **Dependencias**: `orders-api-endpoints`, `frontend-layout-components-shared`
 
 ---
@@ -757,6 +759,7 @@ BLOQUE 9 — Entrega Final
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 4.2 | 2026-05-16 | frontend-orders-detail-ui archivado. OrderDetailPage + OrderTimeline + CancelOrderModal + bugfixes (direccion_snapshot, cancel sin soft-delete, es_alergeno). PRÓXIMO: frontend-orders-management-admin. |
 | 4.1 | 2026-05-15 | frontend-orders-listing-ui archivado. MyOrdersPage + OrdersPanelPage. ORDER_STATUS_MAP, filtros email/estado/fecha, tokens accent-orange/purple. 314/314 vitest. PRÓXIMO: frontend-orders-detail-ui. |
 | 4.0 | 2026-05-15 | orders-api-endpoints archivado. POST/GET/PATCH/DELETE /api/v1/pedidos. Rate limit por usuario_id, ownership 403, FSM ADMIN-only, soft delete atómico. 28/28 pytest. PRÓXIMO: frontend-orders-listing-ui. |
 | 3.9 | 2026-05-15 | orders-fsm-backend archivado. FSM 6 estados, PedidoRepository, HistorialEstadoPedidoRepository, VALID_TRANSITIONS, SELECT FOR UPDATE. 29/29 pytest 96% coverage. PRÓXIMO: orders-api-endpoints. |

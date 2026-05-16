@@ -83,7 +83,7 @@ export function ProductCard({
         </div>
 
         {/* Allergen Indicator */}
-        {product.ingredientes.some((ing) => ing.is_alergeno) && (
+        {product.ingredientes.some((ing) => ing.es_alergeno) && (
           <div
             className="absolute bottom-2 left-2 bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-semibold"
             role="img"

@@ -14,7 +14,8 @@
 export interface Ingredient {
   id: string
   nombre: string
-  is_alergeno: boolean // True if ingredient is an allergen
+  es_alergeno: boolean
+  es_removible?: boolean
 }
 
 /**

@@ -43,7 +43,7 @@ export function useAllergensFilter(products: Product[] | undefined): AllergenIte
     products.forEach((product) => {
       product.ingredientes.forEach((ingredient: Ingredient) => {
         // Only track ingredients marked as allergens
-        if (ingredient.is_alergeno) {
+        if (ingredient.es_alergeno) {
           const existing = allergenMap.get(ingredient.id) || {
             id: ingredient.id,
             nombre: ingredient.nombre,

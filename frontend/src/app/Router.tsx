@@ -10,7 +10,6 @@ const Register          = lazy(() => import('@/pages/Register'))
 const NotFound          = lazy(() => import('@/pages/NotFound'))
 const ForbiddenPage     = lazy(() => import('@/pages/ForbiddenPage'))
 const Profile           = lazy(() => import('@/pages/Profile'))
-const Orders            = lazy(() => import('@/pages/Orders'))
 const Admin             = lazy(() => import('@/pages/Admin'))
 const MyAddressesPage   = lazy(() => import('@/pages/MyAddressesPage'))
 const CartPage          = lazy(() => import('@/pages/CartPage'))
@@ -18,6 +17,8 @@ const CheckoutPage      = lazy(() => import('@/pages/CheckoutPage'))
 // Orders listing pages (change: frontend-orders-listing-ui)
 const MyOrdersPage      = lazy(() => import('@/pages/MyOrdersPage'))
 const OrdersPanelPage   = lazy(() => import('@/pages/OrdersPanelPage'))
+// Order detail page (change: frontend-orders-detail-ui)
+const OrderDetailPage   = lazy(() => import('@/pages/OrderDetailPage'))
 
 /**
  * Router — defines all application routes.
@@ -47,7 +48,7 @@ export default function Router() {
         <Route element={<ProtectedRoute requiredRoles={['CLIENT', 'ADMIN']} />}>
           <Route path="/profile" element={<Profile />} />
           <Route path="/orders" element={<MyOrdersPage />} />
-          <Route path="/orders/:id" element={<MyOrdersPage />} />
+          <Route path="/pedidos/:id" element={<OrderDetailPage />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/addresses" element={<MyAddressesPage />} />
@@ -63,6 +64,10 @@ export default function Router() {
         {/* ── PEDIDOS routes: require PEDIDOS or ADMIN ──────── */}
         <Route element={<ProtectedRoute requiredRoles={['PEDIDOS', 'ADMIN']} />}>
           <Route path="/admin/pedidos" element={<OrdersPanelPage />} />
+          <Route
+            path="/admin/pedidos/:id"
+            element={<OrderDetailPage adminMode />}
+          />
         </Route>
 
         {/* ── ADMIN-only routes ─────────────────────────────── */}

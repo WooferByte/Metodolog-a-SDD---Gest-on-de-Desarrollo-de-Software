@@ -11,8 +11,8 @@
  * Mobile-first: readable at 375px viewport without horizontal overflow.
  */
 
+import { Link } from 'react-router-dom'
 import { cn } from '@/shared/lib/utils'
-import { Button } from '@/shared/components/ui/Button'
 import { OrderStatusBadge } from '@/features/orders/components/OrderStatusBadge'
 import type { Order } from '@/features/orders/types'
 
@@ -89,14 +89,21 @@ export function OrderCard({ order, mode, onViewDetail, className }: OrderCardPro
           <p className="text-base font-semibold text-foreground">
             {formatARS(order.total)}
           </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onViewDetail?.(order.id)}
+          <Link
+            to={`/pedidos/${order.id}`}
             aria-label={`Ver detalle del pedido #${order.id}`}
+            onClick={() => onViewDetail?.(order.id)}
+            className={cn(
+              'inline-flex items-center justify-center gap-2 font-medium',
+              'transition-colors duration-150',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring',
+              'border border-border bg-transparent text-foreground',
+              'hover:bg-accent hover:text-accent-foreground',
+              'h-8 px-3 text-sm rounded-md',
+            )}
           >
             Ver detalle
-          </Button>
+          </Link>
         </footer>
       </article>
     )
@@ -129,15 +136,21 @@ export function OrderCard({ order, mode, onViewDetail, className }: OrderCardPro
         {formatARS(order.total)}
       </span>
 
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => onViewDetail?.(order.id)}
+      <Link
+        to={`/admin/pedidos/${order.id}`}
         aria-label={`Ver detalle del pedido #${order.id}`}
-        className="shrink-0"
+        onClick={() => onViewDetail?.(order.id)}
+        className={cn(
+          'inline-flex items-center justify-center gap-2 font-medium',
+          'transition-colors duration-150',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring',
+          'border border-border bg-transparent text-foreground',
+          'hover:bg-accent hover:text-accent-foreground',
+          'h-8 px-3 text-sm rounded-md shrink-0',
+        )}
       >
         Ver
-      </Button>
+      </Link>
     </div>
   )
 }

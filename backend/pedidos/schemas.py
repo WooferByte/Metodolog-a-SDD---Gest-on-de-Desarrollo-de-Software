@@ -167,9 +167,10 @@ class PedidoResponse(BaseModel):
 
 
 class PedidoDetailResponse(PedidoResponse):
-    """Order representation with line items (extends PedidoResponse)."""
+    """Order representation with line items and FSM audit trail."""
 
     detalles: list[DetallePedidoResponse]
+    historial: list["HistorialEstadoResponse"] = []
 
 
 class AvanzarEstadoRequest(BaseModel):
@@ -212,6 +213,7 @@ class HistorialEstadoResponse(BaseModel):
     estado_nuevo_id: int
     observacion: Optional[str]
     usuario_responsable_id: Optional[int]
+    usuario_email: Optional[str] = None
     creado_en: datetime
 
     model_config = {"from_attributes": True}

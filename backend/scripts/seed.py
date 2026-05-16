@@ -1,283 +1,388 @@
 """
-Database seed script for initializing Food Store with default data.
+Database seed script for Food Store — datos completos y realistas.
 
-This script implements idempotent seed logic using a get_or_create pattern:
-- It safely runs multiple times without creating duplicates
-- It checks for existing data before creating new records
-- It uses database transactions to ensure data consistency
+Idempotente: puede correrse múltiples veces sin duplicar datos.
 
-Usage:
-    poetry run python backend/scripts/seed.py
-
-Or from backend directory:
+Usage (desde backend/):
     python scripts/seed.py
-
-Environment:
-    Set SEED_DATABASE=true in .env to enable automatic seeding on app startup (future enhancement)
 """
 import asyncio
 import sys
-from datetime import datetime
+from decimal import Decimal
 from pathlib import Path
+from typing import Optional, Tuple, Type, TypeVar
 
-# Add parent directory (backend) to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import SQLModel
 
-from core.config import settings
-from core.database import engine, async_session_local, create_db_tables
-from core.models import Rol, EstadoPedido, FormaPago, Usuario
+from core.database import engine, async_session_local
+from core.models import (
+    Categoria,
+    EstadoPedido,
+    FormaPago,
+    Ingrediente,
+    Producto,
+    ProductoCategoria,
+    ProductoIngrediente,
+    Rol,
+    Usuario,
+    UsuarioRol,
+)
+from core.security import hash_password
 
-
-async def get_or_create_rol(session: AsyncSession, nombre: str, descripcion: str = None) -> Rol:
-    """
-    Get an existing role or create it if not found.
-    
-    This implements the idempotent get_or_create pattern:
-    - Queries for existing role by name
-    - Returns it if found
-    - Creates and returns new role if not found
-    
-    Args:
-        session: AsyncSession for database operations
-        nombre: Role name (unique)
-        descripcion: Role description
-    
-    Returns:
-        Rol: Existing or newly created role
-    """
-    # Query for existing role
-    stmt = select(Rol).where(Rol.nombre == nombre)
-    result = await session.execute(stmt)
-    existing = result.scalars().first()
-    
-    if existing:
-        print(f"  [EXISTS] Rol '{nombre}' already exists (id={existing.id})")
-        return existing
-    
-    # Create new role
-    new_rol = Rol(nombre=nombre, descripcion=descripcion)
-    session.add(new_rol)
-    await session.flush()  # Get the ID without committing yet
-    print(f"  [CREATE] Created Rol '{nombre}' (id={new_rol.id})")
-    return new_rol
+T = TypeVar("T", bound=SQLModel)
 
 
-async def get_or_create_estado_pedido(
-    session: AsyncSession, nombre: str, descripcion: str = None
-) -> EstadoPedido:
-    """
-    Get an existing order status or create it if not found.
-    
-    Args:
-        session: AsyncSession for database operations
-        nombre: Status name (unique)
-        descripcion: Status description
-    
-    Returns:
-        EstadoPedido: Existing or newly created status
-    """
-    stmt = select(EstadoPedido).where(EstadoPedido.nombre == nombre)
-    result = await session.execute(stmt)
-    existing = result.scalars().first()
-    
-    if existing:
-        print(f"  [EXISTS] EstadoPedido '{nombre}' already exists (id={existing.id})")
-        return existing
-    
-    new_estado = EstadoPedido(nombre=nombre, descripcion=descripcion)
-    session.add(new_estado)
-    await session.flush()
-    print(f"  [CREATE] Created EstadoPedido '{nombre}' (id={new_estado.id})")
-    return new_estado
-
-
-async def get_or_create_forma_pago(
-    session: AsyncSession, nombre: str, descripcion: str = None, activo: bool = True
-) -> FormaPago:
-    """
-    Get an existing payment method or create it if not found.
-    
-    Args:
-        session: AsyncSession for database operations
-        nombre: Payment method name (unique)
-        descripcion: Payment method description
-        activo: Whether the payment method is active
-    
-    Returns:
-        FormaPago: Existing or newly created payment method
-    """
-    stmt = select(FormaPago).where(FormaPago.nombre == nombre)
-    result = await session.execute(stmt)
-    existing = result.scalars().first()
-    
-    if existing:
-        print(f"  [EXISTS] FormaPago '{nombre}' already exists (id={existing.id})")
-        return existing
-    
-    new_forma = FormaPago(nombre=nombre, descripcion=descripcion, activo=activo)
-    session.add(new_forma)
-    await session.flush()
-    print(f"  [CREATE] Created FormaPago '{nombre}' (id={new_forma.id})")
-    return new_forma
-
-
-async def get_or_create_usuario(
+async def get_or_create(
     session: AsyncSession,
-    email: str,
-    nombre: str,
-    password: str,
-    rol_id: int,
-    apellido: str = None,
-) -> Usuario:
-    """
-    Get an existing user or create it if not found.
-    
-    Args:
-        session: AsyncSession for database operations
-        email: User email (unique identifier)
-        nombre: User first name
-        password: Plain text password (will be hashed)
-        rol_id: Foreign key to Rol table
-        apellido: User last name
-    
-    Returns:
-        Usuario: Existing or newly created user
-    """
-    stmt = select(Usuario).where(Usuario.email == email)
+    model: Type[T],
+    filter_by: dict,
+    create_data: Optional[dict] = None,
+) -> Tuple[T, bool]:
+    """Generic get-or-create. Returns (instance, created_bool)."""
+    stmt = select(model)
+    for key, val in filter_by.items():
+        stmt = stmt.where(getattr(model, key) == val)
     result = await session.execute(stmt)
     existing = result.scalars().first()
-    
     if existing:
-        print(f"  [EXISTS] Usuario '{email}' already exists (id={existing.id})")
-        return existing
-    
-    new_usuario = Usuario(
-        email=email,
-        nombre=nombre,
-        apellido=apellido,
-        hashed_password=Usuario.hash_password(password),
-        rol_id=rol_id,
-    )
-    session.add(new_usuario)
+        return existing, False
+    obj = model(**{**filter_by, **(create_data or {})})
+    session.add(obj)
     await session.flush()
-    print(f"  [CREATE] Created Usuario '{email}' (id={new_usuario.id})")
-    return new_usuario
+    return obj, True
 
 
-async def seed_database():
-    """
-    Seed the database with essential data.
-    
-    Creates:
-    1. Roles: ADMIN, STOCK, PEDIDOS, CLIENT
-    2. Order statuses: PENDIENTE, CONFIRMADO, EN_PREPARACIÓN, EN_CAMINO, ENTREGADO, CANCELADO
-    3. Payment methods: MERCADOPAGO, EFECTIVO, TRANSFERENCIA
-    4. Admin user: admin@foodstore.com with ADMIN role
-    
-    This function is idempotent and can be run multiple times safely.
-    Uses AsyncSession to maintain database connection pool and transaction safety.
-    """
-    print("\n" + "="*70)
-    print("[SEED] Starting database seeding...")
-    print("="*70 + "\n")
-    
-    # Create tables first
-    print("[TABLE] Creating tables...")
-    await create_db_tables()
-    print("[OK] Tables created or verified\n")
-    
-    try:
-        async with async_session_local() as session:
-            # ===== SEED ROLES =====
-            print("[ROLES] Seeding Roles...")
-            rol_admin = await get_or_create_rol(
-                session, "ADMIN", "Administrador del sistema con acceso total"
+async def seed_database() -> None:
+    print("\n" + "=" * 60)
+    print("[SEED] Food Store — iniciando seed completo...")
+    print("=" * 60)
+
+    async with async_session_local() as session:
+
+        # ──────────────────────────────────────────────────────────
+        # ROLES  (IDs estables: ADMIN=1, STOCK=2, PEDIDOS=3, CLIENT=4)
+        # ──────────────────────────────────────────────────────────
+        print("\n[ROLES]")
+        roles_spec = [
+            ("ADMIN",   "Administrador del sistema con acceso total"),
+            ("STOCK",   "Administrador de stock e inventario"),
+            ("PEDIDOS", "Encargado de gestión de pedidos"),
+            ("CLIENT",  "Cliente de la tienda"),
+        ]
+        roles: dict[str, Rol] = {}
+        for nombre, desc in roles_spec:
+            rol, created = await get_or_create(
+                session, Rol, {"nombre": nombre}, {"descripcion": desc}
             )
-            await get_or_create_rol(
-                session, "STOCK", "Administrador de stock e inventario"
+            roles[nombre] = rol
+            print(f"  {'[CREATE]' if created else '[EXISTS]'} {nombre} (id={rol.id})")
+
+        # ──────────────────────────────────────────────────────────
+        # ESTADOS PEDIDO
+        # ──────────────────────────────────────────────────────────
+        print("\n[ESTADOS PEDIDO]")
+        estados_spec = [
+            ("PENDIENTE",       "Pedido creado, en espera de confirmación de pago"),
+            ("CONFIRMADO",      "Pago confirmado, listo para preparar"),
+            ("EN_PREPARACIÓN",  "Siendo preparado en cocina"),
+            ("EN_CAMINO",       "En camino hacia el cliente"),
+            ("ENTREGADO",       "Entregado exitosamente"),
+            ("CANCELADO",       "Pedido cancelado"),
+        ]
+        for nombre, desc in estados_spec:
+            estado, created = await get_or_create(
+                session, EstadoPedido, {"nombre": nombre}, {"descripcion": desc}
             )
-            await get_or_create_rol(
-                session, "PEDIDOS", "Encargado de gestión de pedidos"
+            print(f"  {'[CREATE]' if created else '[EXISTS]'} {nombre} (id={estado.id})")
+
+        # ──────────────────────────────────────────────────────────
+        # FORMAS DE PAGO
+        # ──────────────────────────────────────────────────────────
+        print("\n[FORMAS DE PAGO]")
+        formas_spec = [
+            ("EFECTIVO",     "Pago en efectivo al recibir el pedido"),
+            ("MERCADOPAGO",  "Pago a través de MercadoPago (tarjeta, débito, QR)"),
+            ("TARJETA",      "Tarjeta de crédito o débito directo"),
+        ]
+        for nombre, desc in formas_spec:
+            forma, created = await get_or_create(
+                session, FormaPago, {"nombre": nombre}, {"descripcion": desc, "activo": True}
             )
-            await get_or_create_rol(
-                session, "CLIENT", "Cliente de la tienda"
+            print(f"  {'[CREATE]' if created else '[EXISTS]'} {nombre} (id={forma.id})")
+
+        # ──────────────────────────────────────────────────────────
+        # USUARIOS
+        # ──────────────────────────────────────────────────────────
+        print("\n[USUARIOS]")
+        users_spec = [
+            ("admin@foodstore.com",   "Admin",  "Sistema",   "admin123456",   "ADMIN"),
+            ("stock@foodstore.com",   "Carlos", "Inventario","stock123456",   "STOCK"),
+            ("pedidos@foodstore.com", "María",  "Pedidos",   "pedidos123456", "PEDIDOS"),
+            ("cliente@foodstore.com", "Juan",   "García",    "cliente123456", "CLIENT"),
+            ("cliente2@foodstore.com","Ana",    "López",     "cliente123456", "CLIENT"),
+        ]
+        for email, nombre, apellido, password, rol_name in users_spec:
+            usuario, created = await get_or_create(
+                session, Usuario, {"email": email},
+                {
+                    "nombre": nombre,
+                    "apellido": apellido,
+                    "hashed_password": hash_password(password),
+                    "activo": True,
+                },
             )
-            
-            # ===== SEED ORDER STATUSES =====
-            print("\n[STATUS] Seeding Order Statuses...")
-            await get_or_create_estado_pedido(
-                session, "PENDIENTE", "Pedido creado, en espera de confirmación"
+            if created:
+                ur = UsuarioRol(usuario_id=usuario.id, rol_id=roles[rol_name].id)
+                session.add(ur)
+                await session.flush()
+            print(f"  {'[CREATE]' if created else '[EXISTS]'} {email} / {password}  ->  {rol_name}")
+
+        # ──────────────────────────────────────────────────────────
+        # CATEGORÍAS (padre + subcategorías)
+        # ──────────────────────────────────────────────────────────
+        print("\n[CATEGORÍAS]")
+        # Padres
+        c_pizzas,  _ = await get_or_create(session, Categoria, {"nombre": "Pizzas"},
+                                            {"descripcion": "Pizzas artesanales al horno de piedra"})
+        c_hambur,  _ = await get_or_create(session, Categoria, {"nombre": "Hamburguesas"},
+                                            {"descripcion": "Hamburguesas gourmet con pan brioche"})
+        c_bebidas, _ = await get_or_create(session, Categoria, {"nombre": "Bebidas"},
+                                            {"descripcion": "Bebidas frías y calientes"})
+        c_postres, _ = await get_or_create(session, Categoria, {"nombre": "Postres"},
+                                            {"descripcion": "Postres caseros y helados artesanales"})
+
+        # Hijos
+        c_clasicas,  _ = await get_or_create(session, Categoria, {"nombre": "Pizzas Clásicas"},
+                                              {"descripcion": "Recetas tradicionales italianas", "padre_id": c_pizzas.id})
+        c_especiales,_ = await get_or_create(session, Categoria, {"nombre": "Pizzas Especiales"},
+                                              {"descripcion": "Creaciones del chef", "padre_id": c_pizzas.id})
+        c_combos,    _ = await get_or_create(session, Categoria, {"nombre": "Combos"},
+                                              {"descripcion": "Hamburguesa + bebida a precio especial", "padre_id": c_hambur.id})
+        c_gaseosas,  _ = await get_or_create(session, Categoria, {"nombre": "Gaseosas"},
+                                              {"descripcion": "Gaseosas bien frías", "padre_id": c_bebidas.id})
+        c_cervezas,  _ = await get_or_create(session, Categoria, {"nombre": "Cervezas"},
+                                              {"descripcion": "Cervezas artesanales locales", "padre_id": c_bebidas.id})
+        c_helados,   _ = await get_or_create(session, Categoria, {"nombre": "Helados"},
+                                              {"descripcion": "Helados artesanales de estación", "padre_id": c_postres.id})
+
+        all_cats = [c_pizzas, c_hambur, c_bebidas, c_postres,
+                    c_clasicas, c_especiales, c_combos, c_gaseosas, c_cervezas, c_helados]
+        for cat in all_cats:
+            padre = f" (padre_id={cat.padre_id})" if cat.padre_id else ""
+            print(f"  [OK] {cat.nombre} (id={cat.id}){padre}")
+
+        # ──────────────────────────────────────────────────────────
+        # INGREDIENTES
+        # ──────────────────────────────────────────────────────────
+        print("\n[INGREDIENTES]")
+        ingredientes_spec = [
+            # (nombre,               es_alergeno)  — alergeno = True
+            ("Mozzarella",           True),   # lácteo
+            ("Queso Cheddar",        True),   # lácteo
+            ("Queso Provolone",      True),   # lácteo
+            ("Harina de Trigo",      True),   # gluten
+            ("Salsa de Tomate",      False),
+            ("Pepperoni",            False),
+            ("Jamón Cocido",         False),
+            ("Champiñones",          False),
+            ("Pimiento Rojo",        False),
+            ("Cebolla",              False),
+            ("Lechuga",              False),
+            ("Tomate",               False),
+            ("Mayonesa",             True),   # huevo
+            ("Mostaza",              False),
+            ("Ketchup",              False),
+            ("Carne Vacuna",         False),
+            ("Pollo Grillado",       False),
+            ("Bacon Ahumado",        False),
+            ("Huevo",                True),   # huevo
+            ("Nueces",               True),   # frutos secos
+            ("Maní",                 True),   # frutos secos
+            ("Leche",                True),   # lácteo
+            ("Mariscos",             True),   # mariscos
+            ("Camarones",            True),   # mariscos
+            ("Maíz",                 False),
+        ]
+        ings: dict[str, Ingrediente] = {}
+        for nombre, es_alergeno in ingredientes_spec:
+            ing, created = await get_or_create(
+                session, Ingrediente, {"nombre": nombre}, {"es_alergeno": es_alergeno}
             )
-            await get_or_create_estado_pedido(
-                session, "CONFIRMADO", "Pedido confirmado"
+            ings[nombre] = ing
+            tag = "[ALERG]" if es_alergeno else "       "
+            print(f"  {tag} {'[CREATE]' if created else '[EXISTS]'} {nombre}")
+
+        # ──────────────────────────────────────────────────────────
+        # PRODUCTOS
+        # (nombre, descripcion, precio, stock, [cats], [(ing, es_removible)])
+        # ──────────────────────────────────────────────────────────
+        print("\n[PRODUCTOS]")
+        productos_spec = [
+            (
+                "Pizza Margherita",
+                "La clásica napolitana: salsa de tomate, mozzarella y albahaca fresca.",
+                Decimal("2800.00"), 50,
+                [c_clasicas],
+                [("Harina de Trigo", False), ("Salsa de Tomate", False), ("Mozzarella", True)],
+            ),
+            (
+                "Pizza Pepperoni",
+                "Abundante pepperoni importado con doble mozzarella.",
+                Decimal("3200.00"), 40,
+                [c_clasicas],
+                [("Harina de Trigo", False), ("Salsa de Tomate", False),
+                 ("Mozzarella", True), ("Pepperoni", True)],
+            ),
+            (
+                "Pizza 4 Quesos",
+                "Mozzarella, cheddar, provolone y parmesano sobre base blanca.",
+                Decimal("3500.00"), 30,
+                [c_especiales],
+                [("Harina de Trigo", False), ("Mozzarella", True),
+                 ("Queso Cheddar", True), ("Queso Provolone", True)],
+            ),
+            (
+                "Pizza Fugazzeta",
+                "Pizza de cebolla con abundante mozzarella. Un clásico porteño.",
+                Decimal("3000.00"), 35,
+                [c_clasicas],
+                [("Harina de Trigo", False), ("Mozzarella", True), ("Cebolla", True)],
+            ),
+            (
+                "Pizza Napolitana",
+                "Salsa de tomate, mozzarella y rodajas de tomate fresco con orégano.",
+                Decimal("3100.00"), 35,
+                [c_especiales],
+                [("Harina de Trigo", False), ("Salsa de Tomate", False),
+                 ("Mozzarella", True), ("Tomate", True)],
+            ),
+            (
+                "Pizza Marinera",
+                "Base de salsa de tomate, mariscos frescos y camarones salteados.",
+                Decimal("3900.00"), 20,
+                [c_especiales],
+                [("Harina de Trigo", False), ("Salsa de Tomate", False),
+                 ("Mariscos", True), ("Camarones", True)],
+            ),
+            (
+                "Hamburguesa Clásica",
+                "200g de carne vacuna, lechuga, tomate, cebolla y ketchup casero.",
+                Decimal("1800.00"), 60,
+                [c_hambur],
+                [("Carne Vacuna", False), ("Lechuga", True),
+                 ("Tomate", True), ("Cebolla", True), ("Ketchup", True)],
+            ),
+            (
+                "Hamburguesa Doble Cheddar",
+                "Doble medallón de carne, doble cheddar derretido y bacon crocante.",
+                Decimal("2600.00"), 40,
+                [c_hambur],
+                [("Carne Vacuna", False), ("Queso Cheddar", True),
+                 ("Bacon Ahumado", True), ("Lechuga", True), ("Mayonesa", True)],
+            ),
+            (
+                "Hamburguesa de Pollo",
+                "Pechuga de pollo grillado, mayonesa de la casa, lechuga y tomate.",
+                Decimal("1900.00"), 50,
+                [c_hambur],
+                [("Pollo Grillado", False), ("Lechuga", True),
+                 ("Tomate", True), ("Mayonesa", True)],
+            ),
+            (
+                "Combo Burger + Gaseosa",
+                "Hamburguesa clásica más gaseosa 500ml. Precio especial.",
+                Decimal("2400.00"), 30,
+                [c_combos, c_hambur],
+                [("Carne Vacuna", False), ("Lechuga", True),
+                 ("Tomate", True), ("Ketchup", True)],
+            ),
+            (
+                "Coca-Cola 500ml",
+                "Gaseosa refrescante bien fría. Clásico de siempre.",
+                Decimal("600.00"), 200,
+                [c_gaseosas, c_bebidas],
+                [],
+            ),
+            (
+                "Sprite 500ml",
+                "Lima limón sin azúcar, ideal para acompañar cualquier plato.",
+                Decimal("600.00"), 200,
+                [c_gaseosas, c_bebidas],
+                [],
+            ),
+            (
+                "Cerveza Artesanal IPA",
+                "IPA artesanal local 500ml, notas cítricas y amargor equilibrado.",
+                Decimal("1400.00"), 60,
+                [c_cervezas, c_bebidas],
+                [],
+            ),
+            (
+                "Helado Doble Sabor",
+                "Dos bochas de helado artesanal a elección. Cubierta opcional.",
+                Decimal("900.00"), 80,
+                [c_helados, c_postres],
+                [("Leche", False)],
+            ),
+            (
+                "Brownie con Helado",
+                "Brownie de chocolate negro tibio con bocha de helado de vainilla.",
+                Decimal("1400.00"), 25,
+                [c_postres, c_helados],
+                [("Harina de Trigo", False), ("Huevo", False),
+                 ("Leche", False), ("Nueces", True)],
+            ),
+        ]
+
+        for nombre, desc, precio, stock, categorias, ing_rel in productos_spec:
+            prod, created = await get_or_create(
+                session, Producto, {"nombre": nombre},
+                {
+                    "descripcion": desc,
+                    "precio_base": precio,
+                    "stock_cantidad": stock,
+                    "disponible": True,
+                },
             )
-            await get_or_create_estado_pedido(
-                session, "EN_PREPARACIÓN", "Siendo preparado en el almacén"
-            )
-            await get_or_create_estado_pedido(
-                session, "EN_CAMINO", "En camino hacia el cliente"
-            )
-            await get_or_create_estado_pedido(
-                session, "ENTREGADO", "Entregado exitosamente"
-            )
-            await get_or_create_estado_pedido(
-                session, "CANCELADO", "Pedido cancelado"
-            )
-            
-            # ===== SEED PAYMENT METHODS =====
-            print("\n[PAYMENT] Seeding Payment Methods...")
-            await get_or_create_forma_pago(
-                session, "MERCADOPAGO", "Pago a través de MercadoPago"
-            )
-            await get_or_create_forma_pago(
-                session, "EFECTIVO", "Pago en efectivo"
-            )
-            await get_or_create_forma_pago(
-                session, "TRANSFERENCIA", "Transferencia bancaria"
-            )
-            
-            # ===== SEED ADMIN USER =====
-            print("\n[USER] Seeding Admin User...")
-            await get_or_create_usuario(
-                session,
-                email="admin@foodstore.com",
-                nombre="Administrador",
-                apellido="Sistema",
-                password="admin123456",  # Change this in production!
-                rol_id=rol_admin.id,
-            )
-            
-            # Commit all changes
-            await session.commit()
-            print("\n" + "="*70)
-            print("[SUCCESS] Database seeding completed successfully!")
-            print("="*70 + "\n")
-            
-    except Exception as e:
-        print(f"\n[ERROR] Error during seeding: {e}")
-        raise
-    finally:
-        await engine.dispose()
+            if created:
+                for cat in categorias:
+                    session.add(ProductoCategoria(producto_id=prod.id, categoria_id=cat.id))
+                for ing_nombre, es_removible in ing_rel:
+                    ing = ings.get(ing_nombre)
+                    if ing:
+                        session.add(ProductoIngrediente(
+                            producto_id=prod.id,
+                            ingrediente_id=ing.id,
+                            es_removible=es_removible,
+                        ))
+                await session.flush()
+            print(f"  {'[CREATE]' if created else '[EXISTS]'} {nombre:<35} ${precio}  stock={stock}")
+
+        await session.commit()
+
+    # ──────────────────────────────────────────────────────────────
+    # RESUMEN
+    # ──────────────────────────────────────────────────────────────
+    print("\n" + "=" * 60)
+    print("[SUCCESS] Seed completado exitosamente.")
+    print("=" * 60)
+    print("\nCredenciales de acceso:")
+    print("  admin@foodstore.com    / admin123456    -> ADMIN")
+    print("  stock@foodstore.com    / stock123456    -> STOCK")
+    print("  pedidos@foodstore.com  / pedidos123456  -> PEDIDOS")
+    print("  cliente@foodstore.com  / cliente123456  -> CLIENT")
+    print("  cliente2@foodstore.com / cliente123456  -> CLIENT")
+    print()
+
+    await engine.dispose()
 
 
 if __name__ == "__main__":
-    """
-    Entry point for running the seed script.
-    
-    Usage from backend directory:
-        python scripts/seed.py
-    
-    Or using poetry:
-        poetry run python scripts/seed.py
-    """
-    # On Windows, use SelectorEventLoop for psycopg compatibility
     if sys.platform == "win32":
-        asyncio.run(
-            seed_database(),
-            loop_factory=asyncio.SelectorEventLoop
-        )
+        asyncio.run(seed_database(), loop_factory=asyncio.SelectorEventLoop)
     else:
         asyncio.run(seed_database())

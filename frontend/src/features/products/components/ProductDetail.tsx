@@ -20,7 +20,9 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { X, AlertTriangle, Plus, Minus } from 'lucide-react'
+import { apiClient } from '@/shared/api/axios'
 import type { Product } from '@/features/products/types'
 import { MIN_QUANTITY, MAX_QUANTITY } from '@/features/products/constants'
 
@@ -31,14 +33,6 @@ interface ProductDetailProps {
   onAddToCart: (product: Product, quantity: number) => void
 }
 
-/**
- * ProductDetail Modal Component
- * 
- * @param product - Product to display (null if modal not open)
- * @param isOpen - Whether modal is visible
- * @param onClose - Callback to close modal
- * @param onAddToCart - Callback to add product to cart with quantity
- */
 export function ProductDetail({
   product,
   isOpen,
@@ -49,11 +43,24 @@ export function ProductDetail({
   const modalRef = useRef<HTMLDivElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
+  // Fetch full product data (with ingredientes) when modal opens
+  const { data: fullProduct } = useQuery<Product>({
+    queryKey: ['product-detail', product?.id],
+    queryFn: async () => {
+      const res = await apiClient.get<Product>(`/api/v1/productos/${product!.id}`)
+      return res.data
+    },
+    enabled: isOpen && product != null,
+    staleTime: 1000 * 60 * 5,
+  })
+
+  // Merge: use fresh data when available, fall back to catalog data
+  const displayProduct = fullProduct ?? product
+
   // Reset quantity when modal opens
   useEffect(() => {
     if (isOpen) {
       setQuantity(1)
-      // Focus close button for accessibility
       closeButtonRef.current?.focus()
     }
   }, [isOpen])
@@ -111,14 +118,14 @@ export function ProductDetail({
     return () => document.removeEventListener('keydown', handleTabKey)
   }, [isOpen])
 
-  if (!isOpen || !product) return null
+  if (!isOpen || !displayProduct) return null
 
-  const priceNum = parseFloat(String(product.precio_base))
+  const priceNum = parseFloat(String(displayProduct.precio_base))
   const priceFormatted = isFinite(priceNum)
-    ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(priceNum)
+    ? new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(priceNum)
     : '—'
 
-  const hasAllergens = product.ingredientes.some((ing) => ing.is_alergeno)
+  const hasAllergens = displayProduct.ingredientes.some((ing) => ing.es_alergeno)
 
   const handleImageError = (event: React.SyntheticEvent<HTMLImageElement>) => {
     event.currentTarget.src =
@@ -126,7 +133,7 @@ export function ProductDetail({
   }
 
   const handleAddToCart = () => {
-    onAddToCart(product, quantity)
+    onAddToCart(displayProduct, quantity)
     onClose()
   }
 
@@ -173,8 +180,8 @@ export function ProductDetail({
             {/* Image */}
             <div className="flex items-center justify-center bg-muted rounded-lg overflow-hidden">
               <img
-                src={product.imagen_url}
-                alt={product.nombre}
+                src={displayProduct.imagen_url}
+                alt={displayProduct.nombre}
                 className="w-full h-full object-cover max-h-96"
                 onError={handleImageError}
               />
@@ -184,7 +191,7 @@ export function ProductDetail({
             <div className="flex flex-col">
               {/* Title */}
               <h2 id="modal-title" className="text-3xl font-bold text-foreground mb-2">
-                {product.nombre}
+                {displayProduct.nombre}
               </h2>
 
               {/* Price */}
@@ -194,15 +201,15 @@ export function ProductDetail({
 
               {/* Description */}
               <p className="text-foreground mb-4 flex-1">
-                {product.descripcion}
+                {displayProduct.descripcion}
               </p>
 
               {/* Categories */}
-              {product.categorias.length > 0 && (
+              {displayProduct.categorias.length > 0 && (
                 <div className="mb-4">
                   <p className="text-sm font-semibold text-foreground mb-2">Categories:</p>
                   <div className="flex flex-wrap gap-2">
-                    {product.categorias.map((cat) => (
+                    {displayProduct.categorias.map((cat) => (
                       <span
                         key={cat.id}
                         className="px-3 py-1 bg-accent text-accent-foreground rounded-full text-sm"
@@ -231,17 +238,17 @@ export function ProductDetail({
               <div className="mb-6">
                 <p className="text-sm font-semibold text-foreground mb-2">Ingredients:</p>
                 <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {product.ingredientes.length > 0 ? (
-                    product.ingredientes.map((ingredient) => (
+                  {displayProduct.ingredientes.length > 0 ? (
+                    displayProduct.ingredientes.map((ingredient) => (
                       <div
                         key={ingredient.id}
                         className={`text-sm p-2 rounded ${
-                          ingredient.is_alergeno
+                          ingredient.es_alergeno
                             ? 'bg-destructive/10 text-destructive border border-destructive/20'
                             : 'text-foreground'
                         }`}
                       >
-                        {ingredient.is_alergeno && (
+                        {ingredient.es_alergeno && (
                           <span className="font-semibold mr-2">🔴</span>
                         )}
                         {ingredient.nombre}
