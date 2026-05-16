@@ -150,6 +150,82 @@ class PedidoRepository(BaseRepository[Pedido]):
         result = await self.session.execute(stmt)
         return result.scalar_one()
 
+    async def list_all(
+        self,
+        skip: int = 0,
+        limit: int = 20,
+        estado_pedido_id: Optional[int] = None,
+        q: Optional[str] = None,
+        fecha_desde: Optional[str] = None,
+        fecha_hasta: Optional[str] = None,
+    ) -> list[Pedido]:
+        """Return all non-deleted orders (admin/staff view), with optional filters."""
+        from datetime import date
+        from core.models import Usuario
+
+        limit = min(limit, 1000)
+        stmt = select(Pedido).where(Pedido.eliminado_en.is_(None))
+
+        if estado_pedido_id is not None:
+            stmt = stmt.where(Pedido.estado_pedido_id == estado_pedido_id)
+
+        if q:
+            # Subquery: find usuario_ids whose email matches
+            sub = select(Usuario.id).where(Usuario.email.ilike(f"%{q}%"))
+            stmt = stmt.where(Pedido.usuario_id.in_(sub))
+
+        if fecha_desde:
+            try:
+                stmt = stmt.where(Pedido.creado_en >= date.fromisoformat(fecha_desde))
+            except ValueError:
+                pass
+
+        if fecha_hasta:
+            try:
+                stmt = stmt.where(Pedido.creado_en <= date.fromisoformat(fecha_hasta))
+            except ValueError:
+                pass
+
+        stmt = stmt.order_by(Pedido.creado_en.desc()).offset(skip).limit(limit)
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def count_all(
+        self,
+        estado_pedido_id: Optional[int] = None,
+        q: Optional[str] = None,
+        fecha_desde: Optional[str] = None,
+        fecha_hasta: Optional[str] = None,
+    ) -> int:
+        """Count all non-deleted orders (admin/staff view), with optional filters."""
+        from datetime import date
+        from sqlalchemy import func
+        from core.models import Usuario
+
+        stmt = select(func.count()).select_from(Pedido).where(Pedido.eliminado_en.is_(None))
+
+        if estado_pedido_id is not None:
+            stmt = stmt.where(Pedido.estado_pedido_id == estado_pedido_id)
+
+        if q:
+            sub = select(Usuario.id).where(Usuario.email.ilike(f"%{q}%"))
+            stmt = stmt.where(Pedido.usuario_id.in_(sub))
+
+        if fecha_desde:
+            try:
+                stmt = stmt.where(Pedido.creado_en >= date.fromisoformat(fecha_desde))
+            except ValueError:
+                pass
+
+        if fecha_hasta:
+            try:
+                stmt = stmt.where(Pedido.creado_en <= date.fromisoformat(fecha_hasta))
+            except ValueError:
+                pass
+
+        result = await self.session.execute(stmt)
+        return result.scalar_one()
+
     async def update_estado(self, pedido_id: int, nuevo_estado_pedido_id: int) -> Optional[Pedido]:
         """
         Update the estado_pedido_id and actualizado_en of a Pedido.

@@ -4,17 +4,20 @@ import { ProtectedRoute } from '@/shared/routing/ProtectedRoute'
 import { Spinner } from '@/shared/components/ui/Spinner'
 
 // Lazy-loaded pages — each becomes a separate chunk (code splitting)
-const Catalog          = lazy(() => import('@/pages/Catalog'))
-const Login            = lazy(() => import('@/pages/Login'))
-const Register         = lazy(() => import('@/pages/Register'))
-const NotFound         = lazy(() => import('@/pages/NotFound'))
-const ForbiddenPage    = lazy(() => import('@/pages/ForbiddenPage'))
-const Profile          = lazy(() => import('@/pages/Profile'))
-const Orders           = lazy(() => import('@/pages/Orders'))
-const Admin            = lazy(() => import('@/pages/Admin'))
-const MyAddressesPage  = lazy(() => import('@/pages/MyAddressesPage'))
-const CartPage         = lazy(() => import('@/pages/CartPage'))
-const CheckoutPage     = lazy(() => import('@/pages/CheckoutPage'))
+const Catalog           = lazy(() => import('@/pages/Catalog'))
+const Login             = lazy(() => import('@/pages/Login'))
+const Register          = lazy(() => import('@/pages/Register'))
+const NotFound          = lazy(() => import('@/pages/NotFound'))
+const ForbiddenPage     = lazy(() => import('@/pages/ForbiddenPage'))
+const Profile           = lazy(() => import('@/pages/Profile'))
+const Orders            = lazy(() => import('@/pages/Orders'))
+const Admin             = lazy(() => import('@/pages/Admin'))
+const MyAddressesPage   = lazy(() => import('@/pages/MyAddressesPage'))
+const CartPage          = lazy(() => import('@/pages/CartPage'))
+const CheckoutPage      = lazy(() => import('@/pages/CheckoutPage'))
+// Orders listing pages (change: frontend-orders-listing-ui)
+const MyOrdersPage      = lazy(() => import('@/pages/MyOrdersPage'))
+const OrdersPanelPage   = lazy(() => import('@/pages/OrdersPanelPage'))
 
 /**
  * Router — defines all application routes.
@@ -43,7 +46,8 @@ export default function Router() {
         {/* ── CLIENT routes: require CLIENT or ADMIN ────────── */}
         <Route element={<ProtectedRoute requiredRoles={['CLIENT', 'ADMIN']} />}>
           <Route path="/profile" element={<Profile />} />
-          <Route path="/orders" element={<Orders />} />
+          <Route path="/orders" element={<MyOrdersPage />} />
+          <Route path="/orders/:id" element={<MyOrdersPage />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/addresses" element={<MyAddressesPage />} />
@@ -58,7 +62,7 @@ export default function Router() {
 
         {/* ── PEDIDOS routes: require PEDIDOS or ADMIN ──────── */}
         <Route element={<ProtectedRoute requiredRoles={['PEDIDOS', 'ADMIN']} />}>
-          <Route path="/admin/pedidos" element={<Admin />} />
+          <Route path="/admin/pedidos" element={<OrdersPanelPage />} />
         </Route>
 
         {/* ── ADMIN-only routes ─────────────────────────────── */}

@@ -49,6 +49,10 @@
   --color-warning-foreground: oklch(14.5% 0.025 80);
   --color-info: oklch(55% 0.15 220);
   --color-info-foreground: oklch(98% 0.01 220);
+  --color-accent-orange: oklch(65% 0.18 40);
+  --color-accent-orange-foreground: oklch(98% 0.01 40);
+  --color-accent-purple: oklch(60% 0.15 280);
+  --color-accent-purple-foreground: oklch(98% 0.01 280);
 
   /* ── Radius tokens ──────────────────────────────────────── */
   --radius-sm: 0.25rem;
@@ -121,6 +125,10 @@
   --color-warning-foreground: oklch(14.5% 0.025 80);
   --color-info: oklch(55% 0.15 220);
   --color-info-foreground: oklch(98% 0.01 220);
+  --color-accent-orange: oklch(65% 0.18 40);
+  --color-accent-orange-foreground: oklch(98% 0.01 40);
+  --color-accent-purple: oklch(60% 0.15 280);
+  --color-accent-purple-foreground: oklch(98% 0.01 280);
 }
 
 /* ── Base styles ─────────────────────────────────────────────  */

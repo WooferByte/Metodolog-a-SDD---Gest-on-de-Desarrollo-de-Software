@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-15 (orders-api-endpoints archivado)
+> **Última actualización**: 2026-05-15 (frontend-orders-listing-ui archivado)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -475,11 +475,13 @@ Archivado: `2026-05-15-orders-api-endpoints`
 
 ---
 
-### ❌ `frontend-orders-listing-ui`
+### ✅ `frontend-orders-listing-ui`
+Archivado: `2026-05-15-frontend-orders-listing-ui`
+**Evidencia**: `openspec/changes/archive/2026-05-15-frontend-orders-listing-ui/`
 
-Página MyOrders (CLIENT). Página OrdersPanel (ADMIN/PEDIDOS). OrderCard con estado badge. Paginación, filtros, skeletons.
+MyOrdersPage (`/orders`) — timeline visual CLIENT con OrderCard, badge por estado, skeletons, paginación. OrdersPanelPage (`/admin/pedidos`) — tabla profesional ADMIN/PEDIDOS con filtros por estado/email/fecha. ORDER_STATUS_MAP como Record. Tokens `--color-accent-orange/purple` agregados. Backend: list_all() + count_all() con filtros q/estado/fecha. 314/314 vitest. Fixes post-testing: filtro email backend, nav links, rutas `/orders` y `/orders/:id`.
 
-**Skills**: `frontend-design`, `tailwind-design-system`
+**Skills**: `tailwind-design-system`, `ui-design-system`, `vercel-react-best-practices`, `zustand-state-management`, `frontend-state-management`, `testing-e2e-playwright`, `dashboard-crud-page`
 **Dependencias**: `orders-api-endpoints`, `frontend-layout-components-shared`
 
 ---
@@ -717,7 +719,7 @@ BLOQUE 5 — Pre-checkout + Pedidos
 ├─ ✅ checkout-pre-validation
 ├─ ✅ orders-fsm-backend
 ├─ ✅ orders-api-endpoints
-├─ ❌ frontend-orders-listing-ui
+├─ ✅ frontend-orders-listing-ui
 ├─ ❌ frontend-orders-detail-ui
 └─ ❌ frontend-orders-management-admin
 
@@ -755,6 +757,7 @@ BLOQUE 9 — Entrega Final
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 4.1 | 2026-05-15 | frontend-orders-listing-ui archivado. MyOrdersPage + OrdersPanelPage. ORDER_STATUS_MAP, filtros email/estado/fecha, tokens accent-orange/purple. 314/314 vitest. PRÓXIMO: frontend-orders-detail-ui. |
 | 4.0 | 2026-05-15 | orders-api-endpoints archivado. POST/GET/PATCH/DELETE /api/v1/pedidos. Rate limit por usuario_id, ownership 403, FSM ADMIN-only, soft delete atómico. 28/28 pytest. PRÓXIMO: frontend-orders-listing-ui. |
 | 3.9 | 2026-05-15 | orders-fsm-backend archivado. FSM 6 estados, PedidoRepository, HistorialEstadoPedidoRepository, VALID_TRANSITIONS, SELECT FOR UPDATE. 29/29 pytest 96% coverage. PRÓXIMO: orders-api-endpoints. |
 | 3.8 | 2026-05-15 | checkout-pre-validation archivado. POST /api/v1/pedidos/validar. Hard block 422/soft warning 200. precio_carrito congelado. PRÓXIMO: orders-fsm-backend. |

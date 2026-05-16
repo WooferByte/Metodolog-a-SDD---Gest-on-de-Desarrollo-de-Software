@@ -26,6 +26,8 @@ Rate limiting:
 """
 from datetime import datetime, timezone
 
+from typing import Optional
+
 from fastapi import APIRouter, Depends, Query, Request, Response, status
 
 from core.dependencies import require_role
@@ -179,33 +181,49 @@ async def create_pedido(
     "",
     response_model=PaginatedPedidosResponse,
     status_code=status.HTTP_200_OK,
-    summary="Listar mis pedidos",
+    summary="Listar pedidos",
     description=(
-        "Retorna la lista paginada de pedidos del usuario autenticado. "
-        "Excluye pedidos con eliminado_en seteado (soft-deleted). "
-        "Orden: más recientes primero."
+        "CLIENT: retorna solo sus propios pedidos. "
+        "ADMIN/PEDIDOS: retorna todos los pedidos del sistema. "
+        "Excluye soft-deleted. Orden: más recientes primero."
     ),
     responses={
         200: {"description": "Lista paginada de pedidos"},
         401: {"description": "No autenticado"},
-        403: {"description": "Rol insuficiente (requiere CLIENT)"},
+        403: {"description": "Rol insuficiente (requiere CLIENT, ADMIN o PEDIDOS)"},
     },
 )
 async def list_pedidos(
     limit: int = Query(default=20, ge=1, le=100, description="Máximo de resultados por página"),
     offset: int = Query(default=0, ge=0, description="Número de resultados a saltar"),
-    current_user: Usuario = Depends(require_role(["CLIENT"])),
+    estado_pedido_id: Optional[int] = Query(default=None, description="Filtrar por estado (1-6)"),
+    q: Optional[str] = Query(default=None, description="Buscar por email de usuario (solo ADMIN/PEDIDOS)"),
+    fecha_desde: Optional[str] = Query(default=None, description="Fecha desde (YYYY-MM-DD)"),
+    fecha_hasta: Optional[str] = Query(default=None, description="Fecha hasta (YYYY-MM-DD)"),
+    current_user: Usuario = Depends(require_role(["CLIENT", "ADMIN", "PEDIDOS"])),
     uow: UnitOfWork = Depends(get_uow),
 ) -> PaginatedPedidosResponse:
     """
-    Return paginated list of orders for the authenticated CLIENT.
-
-    Only shows orders owned by the current user. Soft-deleted orders
-    (cancelados y ocultados) are excluded.
+    CLIENT → own orders only (filters ignored except estado_pedido_id).
+    ADMIN/PEDIDOS → all orders with optional filters (q, estado, fecha).
     """
+    user_roles = {r.nombre for r in current_user.roles}
+    is_staff = bool(user_roles & {"ADMIN", "PEDIDOS"})
+
     async with uow:
-        items = await uow.pedidos.list_by_usuario(current_user.id, skip=offset, limit=limit)
-        total = await uow.pedidos.count_by_usuario(current_user.id)
+        if is_staff:
+            items = await uow.pedidos.list_all(
+                skip=offset, limit=limit,
+                estado_pedido_id=estado_pedido_id,
+                q=q, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta,
+            )
+            total = await uow.pedidos.count_all(
+                estado_pedido_id=estado_pedido_id,
+                q=q, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta,
+            )
+        else:
+            items = await uow.pedidos.list_by_usuario(current_user.id, skip=offset, limit=limit)
+            total = await uow.pedidos.count_by_usuario(current_user.id)
 
     return PaginatedPedidosResponse(
         items=[PedidoResponse.model_validate(p) for p in items],
