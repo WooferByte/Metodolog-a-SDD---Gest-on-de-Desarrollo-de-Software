@@ -320,6 +320,9 @@ class Pago(SQLModel, table=True):
     Payment entity for order transactions.
 
     Tracks payments with MercadoPago integration and idempotency.
+
+    Fields added by migration 010:
+    - preference_id: MercadoPago preference ID (created before payment completes)
     """
 
     __tablename__ = "pagos"
@@ -328,6 +331,7 @@ class Pago(SQLModel, table=True):
     pedido_id: int = Field(foreign_key="pedidos.id")
     mp_payment_id: Optional[str] = Field(default=None, unique=True)
     mp_status: Optional[str] = None
+    preference_id: Optional[str] = Field(default=None, max_length=255)
     external_reference: str  # UUID
     idempotency_key: str = Field(unique=True)  # UUID
     gateway_response: Optional[str] = None  # JSON

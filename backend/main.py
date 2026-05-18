@@ -205,6 +205,7 @@ from ingredientes.router import router as ingredientes_router
 from productos.router import router as productos_router
 from direcciones.router import router as direcciones_router
 from pedidos.router import router as pedidos_router
+from pagos.router import pagos_router, webhooks_router
 
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(role_router)
@@ -214,12 +215,8 @@ app.include_router(ingredientes_router, prefix="/api/v1")
 app.include_router(productos_router, prefix="/api/v1")
 app.include_router(direcciones_router, prefix="/api/v1")
 app.include_router(pedidos_router, prefix="/api/v1")
-
-# Registrar aquí cuando cada módulo esté listo:
-# from usuarios.router import router as usuarios_router
-# from pagos.router import router as pagos_router
-# app.include_router(usuarios_router, prefix="/api/v1")
-# app.include_router(pagos_router, prefix="/api/v1")
+app.include_router(pagos_router, prefix="/api/v1")
+app.include_router(webhooks_router, prefix="/api/v1")
 
 
 def custom_openapi():
@@ -242,7 +239,8 @@ def custom_openapi():
     # Apply BearerAuth to all routes that are not public
     public_paths = {"/", "/health", "/docs", "/redoc", "/openapi.json",
                     "/api/v1/auth/login", "/api/v1/auth/register",
-                    "/api/v1/auth/refresh", "/api/v1/auth/logout"}
+                    "/api/v1/auth/refresh", "/api/v1/auth/logout",
+                    "/api/v1/webhooks/mercadopago"}
     for path, methods in schema.get("paths", {}).items():
         if path not in public_paths:
             for method in methods.values():

@@ -30,6 +30,7 @@ Valid transitions:
 """
 import json
 from decimal import Decimal
+from typing import Optional
 
 from fastapi import HTTPException, status
 
@@ -398,7 +399,7 @@ async def create_pedido(
 async def avanzar_estado(
     pedido_id: int,
     nuevo_estado_id: int,
-    usuario_id: int,
+    usuario_id: Optional[int],
     uow: UnitOfWork,
     is_system: bool = False,
 ) -> Pedido:
@@ -574,3 +575,71 @@ async def cancelar(
     await uow.historial_estado_pedido.append(historial)
 
     return pedido_cancelado
+
+
+# ---------------------------------------------------------------------------
+# confirmar_pedido_por_pago — called by pagos/service.py webhook handler
+# ---------------------------------------------------------------------------
+
+
+async def confirmar_pedido_por_pago(
+    pedido_id: int,
+    uow: UnitOfWork,
+) -> None:
+    """
+    Transition a Pedido from PENDIENTE(1) → CONFIRMADO(2) triggered by a payment webhook.
+
+    This is a SYSTEM-ONLY transition (is_system=True internally) — cannot be triggered
+    manually by users. Called from pagos/service.py after MP payment approval.
+
+    The function delegates to avanzar_estado() with is_system=True so the
+    SYSTEM_ONLY_TARGETS guard is satisfied.
+
+    Args:
+        pedido_id: Primary key of the order to confirm.
+        uow: Injected UnitOfWork (transaction managed by caller, no commit here).
+
+    Raises:
+        HTTPException 404: Pedido not found or soft-deleted.
+        HTTPException 409: Pedido is not in PENDIENTE state (already confirmed or cancelled).
+    """
+    # Fetch pedido — 404 if not found
+    pedido = await uow.pedidos.get_by_id(pedido_id)
+    if pedido is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "type": "about:blank",
+                "title": "Pedido no encontrado",
+                "status": 404,
+                "detail": f"El pedido con id={pedido_id} no existe o fue eliminado.",
+                "instance": f"/api/v1/pagos/webhook",
+            },
+        )
+
+    # Verify pedido is in PENDIENTE state (id=1)
+    if pedido.estado_pedido_id != 1:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "type": "about:blank",
+                "title": "Pedido no está en estado PENDIENTE",
+                "status": 409,
+                "detail": (
+                    f"El pedido id={pedido_id} está en estado "
+                    f"{_ESTADO_NOMBRES.get(pedido.estado_pedido_id, pedido.estado_pedido_id)} "
+                    "y no puede ser confirmado por pago."
+                ),
+                "instance": f"/api/v1/pagos/webhook",
+                "estado_actual": pedido.estado_pedido_id,
+            },
+        )
+
+    # Delegate to avanzar_estado with is_system=True (bypasses SYSTEM_ONLY_TARGETS guard)
+    await avanzar_estado(
+        pedido_id=pedido_id,
+        nuevo_estado_id=2,  # CONFIRMADO
+        usuario_id=None,  # system action — no human user
+        uow=uow,
+        is_system=True,
+    )

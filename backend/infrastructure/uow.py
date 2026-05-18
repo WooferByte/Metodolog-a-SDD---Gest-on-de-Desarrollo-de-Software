@@ -30,10 +30,12 @@ from core.models import (
     DetallePedido,
     HistorialEstadoPedido,
     Pago,
-)
+)  # noqa: F401
 from categorias.repository import CategoriaRepository
 from direcciones.repository import DireccionRepository
 from ingredientes.repository import IngredienteRepository
+from pagos.model import PagoWebhookLog
+from pagos.repository import PagoRepository, PagoWebhookLogRepository
 from pedidos.repository import HistorialEstadoPedidoRepository, PedidoRepository
 from productos.repository import (
     ProductoCategoriaRepository,
@@ -192,11 +194,18 @@ class UnitOfWork:
         return self._repositories["usuario_roles"]
 
     @property
-    def pagos(self) -> BaseRepository[Pago]:
-        """Repository for Pago entity."""
+    def pagos(self) -> PagoRepository:
+        """Repository for Pago entity (PagoRepository with payment-specific queries)."""
         if "pagos" not in self._repositories:
-            self._repositories["pagos"] = BaseRepository(self.session, Pago)
+            self._repositories["pagos"] = PagoRepository(self.session)
         return self._repositories["pagos"]
+
+    @property
+    def pago_webhook_logs(self) -> PagoWebhookLogRepository:
+        """Repository for PagoWebhookLog entity (append-only audit trail)."""
+        if "pago_webhook_logs" not in self._repositories:
+            self._repositories["pago_webhook_logs"] = PagoWebhookLogRepository(self.session)
+        return self._repositories["pago_webhook_logs"]
 
     async def commit(self) -> None:
         """

@@ -21,6 +21,7 @@ Usage:
         ...
 """
 
+from functools import lru_cache
 from typing import Any, Callable, Optional
 
 from fastapi import Depends, Header, HTTPException, status
@@ -31,6 +32,40 @@ from sqlalchemy.orm import selectinload
 from core.database import get_db
 from core.models import Usuario
 from core.security import extract_token_from_header, verify_token
+
+
+# ---------------------------------------------------------------------------
+# MercadoPago SDK singleton
+# ---------------------------------------------------------------------------
+
+
+@lru_cache(maxsize=1)
+def _get_mp_sdk_cached():
+    """
+    Create and cache a MercadoPago SDK singleton (initialized once at first call).
+
+    Uses @lru_cache to avoid re-creating the SDK on each request.
+    MP_ACCESS_TOKEN is read from settings on first call.
+    """
+    import mercadopago  # noqa: PLC0415 — intentional lazy import
+
+    from core.config import settings
+
+    return mercadopago.SDK(settings.mp_access_token)
+
+
+def get_mp_sdk():
+    """
+    FastAPI dependency that provides the MercadoPago SDK singleton.
+
+    Usage in routers:
+        @router.post("/crear-preferencia")
+        async def crear_preferencia(
+            sdk = Depends(get_mp_sdk),
+            ...
+        ):
+    """
+    return _get_mp_sdk_cached()
 
 
 # ---------------------------------------------------------------------------
@@ -111,9 +146,7 @@ async def get_current_user(
         )
 
     stmt = (
-        select(Usuario)
-        .where(Usuario.id == int(user_id_str))
-        .options(selectinload(Usuario.roles))
+        select(Usuario).where(Usuario.id == int(user_id_str)).options(selectinload(Usuario.roles))
     )
     result = await session.execute(stmt)
     user: Optional[Usuario] = result.scalar_one_or_none()

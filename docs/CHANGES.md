@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-16 (frontend-orders-management-admin archivado)
+> **Última actualización**: 2026-05-18 (payments-mercadopago-integration-backend archivado)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -510,11 +510,13 @@ Panel admin completo de gestión de pedidos. OrdersManagementTable (tabla deskto
 
 ## EPIC 11 — Pagos
 
-### ❌ `payments-mercadopago-integration-backend`
+### ✅ `payments-mercadopago-integration-backend`
+Archivado: `2026-05-18-payments-mercadopago-integration-backend`
+**Evidencia**: `openspec/changes/archive/2026-05-18-payments-mercadopago-integration-backend/`
 
-Modelo `Pago` con `idempotency_key`. `POST /api/v1/pagos/crear`. Webhook `POST /api/v1/pagos/webhook` — validar firma, consultar API MP, idempotencia (RN-PA02), approved→PENDIENTE→CONFIRMADO+stock (RN-PA05). `GET /api/v1/pagos/:pedido_id`.
+Módulo `backend/pagos/` completo. `POST /api/v1/pagos/crear-preferencia` (CLIENT, rate 5/min) — crea preferencia MP, retorna `init_point`. `GET /api/v1/pagos/{pedido_id}/status` (CLIENT/ADMIN). `POST /api/v1/webhooks/mercadopago` (público) — valida firma HMAC-SHA256, audit log en `pago_webhook_log`, idempotencia UNIQUE (RN-PA02), `approved`→FSM `confirmar_pedido_por_pago`. `PagoWebhookLog` append-only. Migración 010. `get_mp_sdk()` singleton con `@lru_cache`. 18/18 pytest, 73% coverage. Bugfixes: `auto_return` eliminado (localhost inválido para MP), HTTP status check en webhook (int 404 rompía INSERT), mocks de tests actualizados con `"status": 200`.
 
-**Skills**: `fastapi-python`, `postgres`
+**Skills**: `python-fastapi-ddd-skill`, `supabase-postgres-best-practices`, `api-design`, `web-payments`, `post-change-verification`
 **Dependencias**: `orders-fsm-backend`
 
 ---
@@ -728,7 +730,7 @@ BLOQUE 5 — Pre-checkout + Pedidos
 └─ ❌ frontend-orders-management-admin
 
 BLOQUE 6 — Pagos
-├─ ❌ payments-mercadopago-integration-backend
+├─ ✅ payments-mercadopago-integration-backend
 ├─ ❌ frontend-payment-checkout-ui
 └─ ❌ frontend-payment-status-polling
 
@@ -761,6 +763,7 @@ BLOQUE 9 — Entrega Final
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 4.4 | 2026-05-18 | payments-mercadopago-integration-backend archivado. POST /pagos/crear-preferencia + GET /pagos/{id}/status + POST /webhooks/mercadopago. PagoWebhookLog audit log. HMAC-SHA256 firma. 18/18 pytest. PRÓXIMO: frontend-payment-checkout-ui. |
 | 4.3 | 2026-05-16 | frontend-orders-management-admin archivado. Tabla bulk + StateTransitionModal + BulkActionsBar + filtros avanzados. 430/430 vitest. PRÓXIMO: BLOQUE 6 pagos. |
 | 4.2 | 2026-05-16 | frontend-orders-detail-ui archivado. OrderDetailPage + OrderTimeline + CancelOrderModal + bugfixes (direccion_snapshot, cancel sin soft-delete, es_alergeno). PRÓXIMO: frontend-orders-management-admin. |
 | 4.1 | 2026-05-15 | frontend-orders-listing-ui archivado. MyOrdersPage + OrdersPanelPage. ORDER_STATUS_MAP, filtros email/estado/fecha, tokens accent-orange/purple. 314/314 vitest. PRÓXIMO: frontend-orders-detail-ui. |

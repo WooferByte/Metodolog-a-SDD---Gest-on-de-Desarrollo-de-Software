@@ -1,42 +1,68 @@
 """
 Pydantic v2 request/response schemas for payment endpoints.
 
-Supports MercadoPago IPN webhook validation and payment creation.
-No free-text fields — no XSS sanitization needed here.
+Supports:
+  - CrearPreferenciaRequest: client initiates MP payment preference for an order
+  - CrearPreferenciaResponse: returns init_point URL + preference_id + pago_id
+  - PagoStatusResponse: current payment state for a pedido
+  - WebhookMPPayload: tolerant schema for MP IPN / Webhooks v2
 """
 from datetime import datetime
-from typing import Optional
+from decimal import Decimal
+from typing import Any, Dict, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
-class PagoCreate(BaseModel):
-    """Schema for initiating a payment for an existing order."""
+class CrearPreferenciaRequest(BaseModel):
+    """Request to create a MercadoPago payment preference for an order."""
 
     pedido_id: int
-    forma_pago_id: int
 
 
-class WebhookIPNRequest(BaseModel):
-    """
-    Schema for MercadoPago IPN (Instant Payment Notification) webhook.
+class CrearPreferenciaResponse(BaseModel):
+    """Response after creating an MP preference — contains the redirect URL."""
 
-    MercadoPago sends POST requests with these fields when a payment status changes.
-    See: https://www.mercadopago.com/developers/en/guides/notifications/ipn
-    """
+    init_point: str
+    preference_id: str
+    pago_id: int
 
-    id: str
-    topic: str
+    model_config = ConfigDict(from_attributes=True)
 
 
-class PagoResponse(BaseModel):
-    """Payment representation."""
+class PagoStatusResponse(BaseModel):
+    """Current status of the payment for a given order."""
 
-    id: int
+    pago_id: int
     pedido_id: int
-    mp_payment_id: Optional[str]
-    mp_status: Optional[str]
-    external_reference: str
+    mercadopago_id: Optional[str] = None
+    preference_id: Optional[str] = None
+    estado: str
+    monto: Decimal
     creado_en: datetime
+    actualizado_en: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
+
+
+class WebhookMPPayload(BaseModel):
+    """
+    Tolerant schema for MercadoPago IPN / Webhooks v2 notifications.
+
+    MP sends varying payloads depending on the notification type.
+    Using extra='allow' to accept any additional fields MP may add.
+    """
+
+    topic: Optional[str] = None
+    id: Optional[str] = None
+    data: Optional[Dict[str, Any]] = None
+    type: Optional[str] = None
+    action: Optional[str] = None
+
+    model_config = ConfigDict(extra="allow")
+
+
+class WebhookStatusResponse(BaseModel):
+    """Simple 200 OK response for webhook endpoint."""
+
+    status: str = "ok"
