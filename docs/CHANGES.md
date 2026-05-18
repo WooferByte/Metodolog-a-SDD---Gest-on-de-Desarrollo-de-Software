@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-18 (payments-mercadopago-integration-backend archivado)
+> **Última actualización**: 2026-05-18 (frontend-payment-checkout-fixes archivado)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -521,12 +521,25 @@ Módulo `backend/pagos/` completo. `POST /api/v1/pagos/crear-preferencia` (CLIEN
 
 ---
 
-### ❌ `frontend-payment-checkout-ui`
+### ✅ `frontend-payment-checkout-ui`
+Archivado: `2026-05-18-frontend-payment-checkout-ui`
+**Evidencia**: `openspec/changes/archive/2026-05-18-frontend-payment-checkout-ui/`
 
-Checkout en pasos. Llama a `POST /api/v1/pedidos/validar` al entrar. CardPayment SDK MP (tokenización cliente). Estados: procesando/aprobado/rechazado/pendiente. Integración paymentStore.
+Página `/checkout` completa. `PaymentMethodSelector` (radiogroup ARIA, MercadoPago habilitado, Tarjeta/Efectivo disabled). `MercadoPagoButton` (SDK CDN defer, brickless `mp.checkout({ autoOpen: true })`). `PaymentStatusModal` (success/error/pending). `paymentStore` Zustand v5 sin persist. Hooks: `useCreateOrder`, `useCreatePreference`, `usePaymentStatus`. Detección resultado via query params `?payment=success|failure|pending&pedido_id=X`. Flujo 2 pasos: "Preparar pago" (crea pedido + preferencia) → "Pagar con MercadoPago" (abre modal). 491/491 vitest. Bugfixes post-testing: `setStatus('waiting_payment')` movido a MercadoPagoButton.handleClick (no en onSuccess del hook), selector reactivo `preferenceId` en CheckoutPage, botones mutuamente excluyentes.
 
-**Skills**: `frontend-design`, `tailwind-design-system`
+**Skills**: `tailwind-design-system`, `ui-design-system`, `vercel-react-best-practices`, `zustand-state-management`, `frontend-state-management`, `testing-e2e-playwright`, `web-payments`
 **Dependencias**: `payments-mercadopago-integration-backend`, `addresses-crud-by-user`, `frontend-shopping-cart-zustand`, `checkout-pre-validation`
+
+---
+
+### ✅ `frontend-payment-checkout-fixes`
+Archivado: `2026-05-18-frontend-payment-checkout-fixes`
+**Evidencia**: `openspec/changes/archive/2026-05-18-frontend-payment-checkout-fixes/`
+
+3 bugfixes post-testing. BUG1: validación teléfono — `replace(/\D/g,'')` antes del regex (números formateados como `+54 11 2345-6789` eran rechazados). BUG2: `onError` en ambas mutations con toast + `setStatus('idle')`, eliminado `aria-hidden` del botón. BUG3: `CartDrawer` retorna null en `/checkout` via `useLocation` (early return después de todos los hooks — Rules of Hooks), `setCartDrawerOpen(false)` al montar CheckoutPage, botón "← Volver al carrito". Hooks-level `onError` ya no sobreescriben status (lo maneja call-site). 491/491 vitest.
+
+**Skills**: `tailwind-design-system`, `ui-design-system`, `frontend-state-management`, `zustand-state-management`
+**Dependencias**: `frontend-payment-checkout-ui`
 
 ---
 
@@ -731,7 +744,8 @@ BLOQUE 5 — Pre-checkout + Pedidos
 
 BLOQUE 6 — Pagos
 ├─ ✅ payments-mercadopago-integration-backend
-├─ ❌ frontend-payment-checkout-ui
+├─ ✅ frontend-payment-checkout-ui
+├─ ✅ frontend-payment-checkout-fixes
 └─ ❌ frontend-payment-status-polling
 
 BLOQUE 7 — Admin
@@ -763,6 +777,8 @@ BLOQUE 9 — Entrega Final
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 4.6 | 2026-05-18 | frontend-payment-checkout-fixes archivado. 3 bugfixes: teléfono regex, onError mutations, CartDrawer bloqueado en /checkout. PRÓXIMO: frontend-payment-status-polling. |
+| 4.5 | 2026-05-18 | frontend-payment-checkout-ui archivado. CheckoutPage completa + PaymentMethodSelector + MercadoPagoButton + PaymentStatusModal + paymentStore. 491/491 vitest. |
 | 4.4 | 2026-05-18 | payments-mercadopago-integration-backend archivado. POST /pagos/crear-preferencia + GET /pagos/{id}/status + POST /webhooks/mercadopago. PagoWebhookLog audit log. HMAC-SHA256 firma. 18/18 pytest. PRÓXIMO: frontend-payment-checkout-ui. |
 | 4.3 | 2026-05-16 | frontend-orders-management-admin archivado. Tabla bulk + StateTransitionModal + BulkActionsBar + filtros avanzados. 430/430 vitest. PRÓXIMO: BLOQUE 6 pagos. |
 | 4.2 | 2026-05-16 | frontend-orders-detail-ui archivado. OrderDetailPage + OrderTimeline + CancelOrderModal + bugfixes (direccion_snapshot, cancel sin soft-delete, es_alergeno). PRÓXIMO: frontend-orders-management-admin. |

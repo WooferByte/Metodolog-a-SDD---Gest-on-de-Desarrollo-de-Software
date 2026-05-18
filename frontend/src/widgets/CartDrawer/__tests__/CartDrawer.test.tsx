@@ -7,6 +7,7 @@
  * - Clicking backdrop calls setCartDrawerOpen(false)
  * - Clicking close button calls setCartDrawerOpen(false)
  * - Escape key closes the drawer
+ * - BUG 3 fix: returns null when on /checkout route
  */
 
 import '@testing-library/jest-dom'
@@ -16,8 +17,8 @@ import { MemoryRouter } from 'react-router-dom'
 import { CartDrawer } from '@/widgets/CartDrawer/CartDrawer'
 import { useUIStore, useCartStore } from '@/store'
 
-function renderWithRouter(ui: React.ReactElement) {
-  return render(<MemoryRouter>{ui}</MemoryRouter>)
+function renderWithRouter(ui: React.ReactElement, initialPath = '/') {
+  return render(<MemoryRouter initialEntries={[initialPath]}>{ui}</MemoryRouter>)
 }
 
 describe('CartDrawer', () => {
@@ -80,5 +81,38 @@ describe('CartDrawer', () => {
     useUIStore.setState({ cartDrawerOpen: true })
     renderWithRouter(<CartDrawer />)
     expect(screen.getByText('Pepperoni Pizza')).toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// BUG 3 fix — CartDrawer returns null on /checkout route
+// ---------------------------------------------------------------------------
+
+describe('CartDrawer — BUG 3: disabled on /checkout', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    useCartStore.setState({ items: [] })
+    useUIStore.setState({
+      theme: 'light',
+      sidebarOpen: false,
+      cartDrawerOpen: true, // open to confirm it still returns null
+      toasts: [],
+      _hasHydrated: true,
+    })
+  })
+
+  it('returns null (nothing rendered) when route is /checkout', () => {
+    const { container } = renderWithRouter(<CartDrawer />, '/checkout')
+    expect(container.firstChild).toBeNull()
+  })
+
+  it('does NOT return null when route is / (renders normally)', () => {
+    const { container } = renderWithRouter(<CartDrawer />, '/')
+    expect(container.firstChild).not.toBeNull()
+  })
+
+  it('does NOT return null when route is /cart', () => {
+    const { container } = renderWithRouter(<CartDrawer />, '/cart')
+    expect(container.firstChild).not.toBeNull()
   })
 })

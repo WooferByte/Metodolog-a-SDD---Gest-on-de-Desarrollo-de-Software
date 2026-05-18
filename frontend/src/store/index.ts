@@ -25,3 +25,6 @@ export type {
   PaymentStore,
   UIStore,
 } from './types'
+
+// Re-export PaymentState (new checkout payment store shape)
+export type { PaymentState } from '@/features/payments/types/payment.types'

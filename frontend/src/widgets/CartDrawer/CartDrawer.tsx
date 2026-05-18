@@ -21,7 +21,7 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { X, ShoppingCart } from 'lucide-react'
 import { useUIStore, useCartStore, useAuthStore } from '@/store'
 import { CartItemRow } from '@/features/cart/components/CartItemRow'
@@ -29,6 +29,7 @@ import { EmptyCart } from '@/features/cart/components/EmptyCart'
 import { formatCurrency } from '@/features/cart/types'
 
 export function CartDrawer() {
+  const location = useLocation()
   const cartDrawerOpen = useUIStore((s) => s.cartDrawerOpen)
   const setCartDrawerOpen = useUIStore((s) => s.setCartDrawerOpen)
 
@@ -81,6 +82,11 @@ export function CartDrawer() {
       document.body.style.overflow = ''
     }
   }, [cartDrawerOpen])
+
+  // BUG 3 fix: disable CartDrawer on /checkout — must be AFTER all hooks (Rules of Hooks)
+  if (location.pathname === '/checkout') {
+    return null
+  }
 
   return (
     <>

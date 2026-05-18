@@ -1,66 +1,78 @@
 /**
- * PaymentStore - Checkout workflow and payment state
- * 
+ * PaymentStore - Checkout workflow and payment session state
+ *
  * Features:
- * - Multi-step checkout process (cart → shipping → payment → confirmation)
- * - Payment status tracking (idle, processing, completed, failed)
- * - Preference ID management for payment providers (MercadoPago)
- * - ZERO persistence for security (explicit empty storage config)
+ * - Track selected payment method (mercadopago | cash | null)
+ * - Track pedidoId, preferenceId, pagoId, initPoint from backend
+ * - Payment status transitions: idle → creating_order → creating_preference → waiting_payment → success | error | pending
+ * - ZERO persistence (no localStorage) — payment state is ephemeral by design
  * - Clears on every page reload (required for payment security)
- * 
+ *
+ * Usage:
+ * ```typescript
+ * const method = usePaymentStore((state) => state.method)
+ * const status = usePaymentStore((state) => state.status)
+ * const setMethod = usePaymentStore((state) => state.setMethod)
+ * const reset = usePaymentStore((state) => state.reset)
+ * ```
+ *
  * Important Security Note:
  * Payment state must NEVER persist across page reloads to prevent payment hijacking.
  * If user refreshes mid-checkout, they must restart from step 1.
- * This is an acceptable UX trade-off for security.
- * 
- * Usage:
- * ```typescript
- * const { checkoutStep, paymentStatus } = usePaymentStore()
- * const startCheckout = usePaymentStore((state) => state.startCheckout)
- * const resetPayment = usePaymentStore((state) => state.resetPayment)
- * ```
  */
 
 import { create } from 'zustand'
-import type { PaymentStore } from './types'
+import type { PaymentState } from '@/features/payments/types/payment.types'
 
 /**
- * Create paymentStore with TypeScript support and NO persistence
- * 
- * Important: Uses create<T>()() double parentheses pattern (future-proof)
- * NO persist middleware - payment data is never stored in localStorage
+ * usePaymentStore — Zustand v5 store for the checkout payment flow.
+ *
+ * Uses create<T>()() double parentheses pattern (required for TypeScript middleware compat).
+ * NO persist middleware — payment data is never stored in localStorage.
  */
-export const usePaymentStore = create<PaymentStore>()((set) => ({
+export const usePaymentStore = create<PaymentState>()((set) => ({
   // Initial state
-  checkoutStep: 'cart',
+  method: null,
+  pedidoId: null,
   preferenceId: null,
-  paymentStatus: 'idle',
+  pagoId: null,
+  initPoint: null,
+  status: 'idle',
+  error: null,
 
-  // Action: Initialize checkout workflow
-  startCheckout: () =>
+  // Action: Set selected payment method
+  // Also clears preference/pago state from any previous method selection
+  setMethod: (method) =>
     set({
-      checkoutStep: 'shipping',
-      paymentStatus: 'idle',
+      method,
       preferenceId: null,
+      pagoId: null,
+      initPoint: null,
     }),
 
-  // Action: Set MercadoPago preference ID after creating preference
-  setPreference: (preferenceId: string) =>
-    set({
-      preferenceId,
-      checkoutStep: 'payment',
-    }),
+  // Action: Store the created pedido ID (set after successful POST /api/v1/pedidos)
+  setPedidoId: (id) => set({ pedidoId: id }),
 
-  // Action: Update payment status as checkout progresses
-  updatePaymentStatus: (status: PaymentStore['paymentStatus']) =>
-    set({ paymentStatus: status }),
+  // Action: Store preference data atomically (all 3 fields set together)
+  setPreference: (preferenceId, pagoId, initPoint) =>
+    set({ preferenceId, pagoId, initPoint }),
 
-  // Action: Reset payment state to initial state
-  // Call on page reload, logout, or after failed payment
-  resetPayment: () =>
+  // Action: Update payment flow status
+  setStatus: (status) => set({ status }),
+
+  // Action: Set error message (set null to clear)
+  setError: (error) => set({ error }),
+
+  // Action: Reset all state to initial values
+  // Call after successful payment redirect, logout, or leaving checkout
+  reset: () =>
     set({
-      checkoutStep: 'cart',
+      method: null,
+      pedidoId: null,
       preferenceId: null,
-      paymentStatus: 'idle',
+      pagoId: null,
+      initPoint: null,
+      status: 'idle',
+      error: null,
     }),
 }))

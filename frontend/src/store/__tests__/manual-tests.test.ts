@@ -283,66 +283,71 @@ describe('MANUAL TESTS - CHANGE 8 (frontend-zustand-stores-setup)', () => {
 
   describe('Section 4: PaymentStore Testing', () => {
     beforeEach(() => {
+      usePaymentStore.getState().reset()
+    })
+
+    it('Test 17: Initial status is idle', () => {
       const store = usePaymentStore.getState()
-      store.resetPayment()
+      expect(store.status).toBe('idle')
+      expect(store.method).toBeNull()
     })
 
-    it('Test 17: Start checkout', () => {
-      const store = usePaymentStore.getState()
+    it('Test 18: Workflow progression through statuses', () => {
+      const { setStatus } = usePaymentStore.getState()
 
-      store.startCheckout()
+      setStatus('creating_order')
+      expect(usePaymentStore.getState().status).toBe('creating_order')
 
-      expect(store.checkoutStep).toBe('cart')
+      setStatus('creating_preference')
+      expect(usePaymentStore.getState().status).toBe('creating_preference')
+
+      setStatus('waiting_payment')
+      expect(usePaymentStore.getState().status).toBe('waiting_payment')
+
+      setStatus('success')
+      expect(usePaymentStore.getState().status).toBe('success')
     })
 
-    it('Test 18: Workflow progression', () => {
-      const { startCheckout, updatePaymentStatus } = usePaymentStore.getState()
-
-      startCheckout()
-      updatePaymentStatus('processing')
-      expect(usePaymentStore.getState().paymentStatus).toBe('processing')
-
-      updatePaymentStatus('completed')
-      expect(usePaymentStore.getState().paymentStatus).toBe('completed')
-    })
-
-    it('Test 19: Set preference ID', () => {
+    it('Test 19: Set preference data', () => {
       const { setPreference } = usePaymentStore.getState()
 
-      setPreference('pref-123-456')
+      setPreference('pref-123-456', 7, 'https://mp.com')
 
       expect(usePaymentStore.getState().preferenceId).toBe('pref-123-456')
+      expect(usePaymentStore.getState().pagoId).toBe(7)
+      expect(usePaymentStore.getState().initPoint).toBe('https://mp.com')
     })
 
-    it('Test 20: Payment status updates', () => {
-      const { updatePaymentStatus } = usePaymentStore.getState()
+    it('Test 20: Payment status updates to error and pending', () => {
+      const { setStatus } = usePaymentStore.getState()
 
-      updatePaymentStatus('processing')
-      expect(usePaymentStore.getState().paymentStatus).toBe('processing')
+      setStatus('error')
+      expect(usePaymentStore.getState().status).toBe('error')
 
-      updatePaymentStatus('failed')
-      expect(usePaymentStore.getState().paymentStatus).toBe('failed')
+      setStatus('pending')
+      expect(usePaymentStore.getState().status).toBe('pending')
     })
 
-    it('Test 21: Reset payment', () => {
+    it('Test 21: Reset payment clears all state', () => {
       const store = usePaymentStore.getState()
 
-      store.startCheckout()
-      store.setPreference('pref-123')
-      store.updatePaymentStatus('completed')
+      store.setMethod('mercadopago')
+      store.setPedidoId(99)
+      store.setPreference('pref-123', 5, 'https://mp.com')
+      store.setStatus('success')
 
-      store.resetPayment()
+      store.reset()
 
-      expect(store.checkoutStep).toBe('cart')
-      expect(store.preferenceId).toBe(null)
-      expect(store.paymentStatus).toBe('idle')
+      expect(usePaymentStore.getState().method).toBeNull()
+      expect(usePaymentStore.getState().preferenceId).toBeNull()
+      expect(usePaymentStore.getState().status).toBe('idle')
     })
 
     it('Test 22: NO persistence (security check)', () => {
       const store = usePaymentStore.getState()
 
-      store.startCheckout()
-      store.setPreference('pref-123')
+      store.setMethod('mercadopago')
+      store.setPreference('pref-123', 3, 'https://mp.com')
 
       const hasPaymentKey = localStorage.getItem('food-store-payment') !== null
       expect(hasPaymentKey).toBe(false)
