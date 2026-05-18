@@ -88,6 +88,19 @@ export interface CreatePreferenceRequest {
   pedido_id: number
 }
 
+/**
+ * Return type of usePaymentStatusPolling.
+ * Exposes observable polling state for UI feedback.
+ */
+export interface PollingResult {
+  /** true while the interval is active and status is still 'waiting_payment' */
+  isPolling: boolean
+  /** current retry attempt count (resets on successful response) */
+  retryCount: number
+  /** last error message if any, null otherwise */
+  lastError: string | null
+}
+
 /** Response from GET /api/v1/pagos/{pedido_id}/status */
 export interface PaymentStatusResponse {
   pago_id: number

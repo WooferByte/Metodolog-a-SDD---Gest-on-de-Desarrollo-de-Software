@@ -1,7 +1,7 @@
 # Food Store — Mapa Completo de Changes (SDD)
 
 > **Documento de referencia**: Define todos los changes necesarios para desarrollar Food Store de principio a fin.
-> **Última actualización**: 2026-05-18 (frontend-payment-checkout-fixes archivado)
+> **Última actualización**: 2026-05-18 (frontend-payment-status-polling archivado)
 > **Versión especificación**: 5.0 (ERD v5, Feature-First, SDD)
 > **Versión mapa**: 3.1 — Estado real sincronizado + inconsistencias marcadas para reparar
 
@@ -543,11 +543,13 @@ Archivado: `2026-05-18-frontend-payment-checkout-fixes`
 
 ---
 
-### ❌ `frontend-payment-status-polling`
+### ✅ `frontend-payment-status-polling`
+Archivado: `2026-05-18-frontend-payment-status-polling`
+**Evidencia**: `openspec/changes/archive/2026-05-18-frontend-payment-status-polling/`
 
-Polling cada 30s a `GET /api/v1/pagos/:pedido_id` mientras estado PENDIENTE. Detener cuando no sea PENDIENTE.
+Hook `usePaymentStatusPolling(pedidoId)` — polling cada 30s a `GET /api/v1/pagos/{pedido_id}/status`. Primera llamada inmediata al montar. Detiene automáticamente en `approved` → `setStatus('success')`, `rejected`/`cancelled` → `setStatus('error')`. Retry exponencial en error (1s→2s→4s, máx 3). `useRef` para `retryCountRef` (evita stale closure). `clearInterval` en cleanup. Integrado en `PaymentStatusModal` con spinner `role="status"` aria-live="polite". 503/503 vitest, 12 tests del hook.
 
-**Skills**: `frontend-design`
+**Skills**: `tailwind-design-system`, `ui-design-system`, `vercel-react-best-practices`, `zustand-state-management`, `frontend-state-management`
 **Dependencias**: `frontend-payment-checkout-ui`
 
 ---
@@ -746,7 +748,7 @@ BLOQUE 6 — Pagos
 ├─ ✅ payments-mercadopago-integration-backend
 ├─ ✅ frontend-payment-checkout-ui
 ├─ ✅ frontend-payment-checkout-fixes
-└─ ❌ frontend-payment-status-polling
+└─ ✅ frontend-payment-status-polling
 
 BLOQUE 7 — Admin
 ├─ ❌ backend-admin-users-endpoints
@@ -777,6 +779,7 @@ BLOQUE 9 — Entrega Final
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 4.7 | 2026-05-18 | frontend-payment-status-polling archivado. Hook polling 30s + retry exp + spinner ARIA. 503/503 vitest. BLOQUE 6 completo. PRÓXIMO: BLOQUE 7 — backend-admin-users-endpoints. |
 | 4.6 | 2026-05-18 | frontend-payment-checkout-fixes archivado. 3 bugfixes: teléfono regex, onError mutations, CartDrawer bloqueado en /checkout. PRÓXIMO: frontend-payment-status-polling. |
 | 4.5 | 2026-05-18 | frontend-payment-checkout-ui archivado. CheckoutPage completa + PaymentMethodSelector + MercadoPagoButton + PaymentStatusModal + paymentStore. 491/491 vitest. |
 | 4.4 | 2026-05-18 | payments-mercadopago-integration-backend archivado. POST /pagos/crear-preferencia + GET /pagos/{id}/status + POST /webhooks/mercadopago. PagoWebhookLog audit log. HMAC-SHA256 firma. 18/18 pytest. PRÓXIMO: frontend-payment-checkout-ui. |

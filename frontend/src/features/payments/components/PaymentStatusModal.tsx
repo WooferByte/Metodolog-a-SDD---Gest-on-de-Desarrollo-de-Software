@@ -22,6 +22,7 @@ import { useNavigate } from 'react-router-dom'
 import { usePaymentStore } from '@/store/paymentStore'
 import { useCartStore } from '@/store/cartStore'
 import { useCreatePreference } from '../hooks/useCreatePreference'
+import { usePaymentStatusPolling } from '../hooks/usePaymentStatusPolling'
 
 export function PaymentStatusModal() {
   const status = usePaymentStore((state) => state.status)
@@ -31,6 +32,9 @@ export function PaymentStatusModal() {
   const navigate = useNavigate()
 
   const { mutate: createPreference } = useCreatePreference()
+
+  // Active polling while modal is in waiting_payment state
+  const { isPolling } = usePaymentStatusPolling(pedidoId)
 
   const dialogRef = useRef<HTMLDialogElement>(null)
   const isVisible = status === 'success' || status === 'error' || status === 'pending'
@@ -200,6 +204,37 @@ export function PaymentStatusModal() {
               Cancelar
             </button>
           </div>
+        </div>
+      )}
+
+      {/* ── Polling indicator (shown while actively checking payment status) ── */}
+      {isPolling && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-center gap-2 text-sm text-muted-foreground"
+        >
+          <svg
+            className="size-4 animate-spin"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
+          </svg>
+          <span>Verificando pago...</span>
         </div>
       )}
 
